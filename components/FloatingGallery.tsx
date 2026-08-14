@@ -1,7 +1,7 @@
 // components/FloatingGallery.tsx
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -11,126 +11,220 @@ interface Investor {
   logo: string;
 }
 
+/*
+ * Investor / Partner logos
+ *
+ * These files are directly inside /public/
+ *
+ * Example:
+ * /public/Image-26.png
+ *
+ * Therefore the browser path is:
+ * /Image-26.png
+ */
 const PAST_INVESTORS: Investor[] = [
-  { id: 1, name: 'Partner 01', logo: '/Image-26.png' },
-  { id: 2, name: 'Partner 02', logo: '/Image-29.png' },
-  { id: 3, name: 'Partner 03', logo: '/Image-32.png' },
-  { id: 4, name: 'Partner 04', logo: '/Image-33.png' },
-  { id: 5, name: 'Partner 05', logo: '/Image-34.png' },
-  { id: 6, name: 'Partner 06', logo: '/Image-35.png' },
-  { id: 7, name: 'Partner 07', logo: '/Image-36.png' },
-  { id: 8, name: 'Partner 08', logo: '/Image-38-1.png' },
+  {
+    id: 1,
+    name: 'Partner 01',
+    logo: '/Image-26.png',
+  },
+  {
+    id: 2,
+    name: 'Partner 02',
+    logo: '/Image-29.png',
+  },
+  {
+    id: 3,
+    name: 'Partner 03',
+    logo: '/Image-32.png',
+  },
+  {
+    id: 4,
+    name: 'Partner 04',
+    logo: '/Image-33.png',
+  },
+  {
+    id: 5,
+    name: 'Partner 05',
+    logo: '/Image-34.png',
+  },
+  {
+    id: 6,
+    name: 'Partner 06',
+    logo: '/Image-35.png',
+  },
+  {
+    id: 7,
+    name: 'Partner 07',
+    logo: '/Image-36.png',
+  },
+  {
+    id: 8,
+    name: 'Partner 08',
+    logo: '/Image-38-1.png',
+  },
 ];
-
-const STRIP_COUNT = 9;
 
 export default function FloatingGallery() {
   const sectionRef = useRef<HTMLElement>(null);
-  const cylinderRef = useRef<HTMLDivElement>(null);
-  
-  const [mounted, setMounted] = useState(false);
-  const [radius, setRadius] = useState(480);
-  const [isDesktop, setIsDesktop] = useState(true);
-
-  // Safely initialize dimensions on mount
-  useEffect(() => {
-    setMounted(true);
-    const handleResize = () => {
-      setIsDesktop(window.innerWidth >= 768);
-      setRadius(Math.min(window.innerWidth * 0.38, 480));
-    };
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  const textRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Wait until React has fully mounted the DOM
-    if (!mounted) return;
-    
     gsap.registerPlugin(ScrollTrigger);
 
-    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReduced || !isDesktop) return;
-
-    const section = sectionRef.current;
-    if (!section) return;
-
-    // Create GSAP context scoped strictly to the HTML element (fixes 'Invalid scope' error)
     const ctx = gsap.context(() => {
-      // Because we scoped the context to `section`, we don't need to pass it into toArray
-      const items = gsap.utils.toArray('.cylinder-item');
-      const words = gsap.utils.toArray('.word-span');
-      
-      if (!items.length) return;
+      const section = sectionRef.current;
+      const text = textRef.current;
+      const track = trackRef.current;
 
-      // 1. Initial State for words
-      gsap.set(words, { opacity: 0, filter: 'blur(12px)' });
+      if (!section || !text || !track) return;
 
-      // 2. Initial State for items: Hiding them deep in the bottom-left corner
-      gsap.set(items, {
-        xPercent: -50,
-        yPercent: -50,
-        x: () => -window.innerWidth / 2 - 300,
-        y: () => window.innerHeight / 2 + 300,
-        z: -200,
-        rotateY: -90,
+      /*
+       * ---------------------------------------------------------
+       * INITIAL STATE
+       * ---------------------------------------------------------
+       */
+
+      gsap.set(text, {
         opacity: 0,
-        transformOrigin: `50% 50% ${-radius}px`,
+        scale: 0.92,
+        filter: 'blur(14px)',
       });
+
+      /*
+       * Start the complete logo track outside the left side.
+       *
+       * This means the first logo begins from the left and
+       * gradually enters the screen as the user scrolls.
+       */
+      const getStartX = () => {
+        return -(track.scrollWidth - window.innerWidth + 48);
+      };
+
+      gsap.set(track, {
+        x: getStartX(),
+      });
+
+      /*
+       * ---------------------------------------------------------
+       * MAIN SCROLL TIMELINE
+       * ---------------------------------------------------------
+       *
+       * Section pins to viewport.
+       *
+       * While scrolling:
+       *
+       * 1. PAST INVESTORS appears in center.
+       * 2. Logo cards move from left → right.
+       * 3. All cards stay exactly the same size.
+       * 4. After the final logo reaches the right side,
+       *    the section releases.
+       */
 
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: section,
           start: 'top top',
-          end: '+=800%',
+
+          /*
+           * Scroll distance is based on how far the logo track
+           * actually has to travel.
+           */
+          end: () => {
+            const travelDistance =
+              track.scrollWidth - window.innerWidth;
+
+            return `+=${Math.max(
+              1400,
+              travelDistance * 1.15
+            )}`;
+          },
+
           pin: true,
-          scrub: 1,
+          scrub: 1.1,
+          anticipatePin: 1,
           invalidateOnRefresh: true,
         },
       });
 
-      // 3. Reveal text word-by-word
-      if (words.length) {
-        tl.to(
-          words,
-          { opacity: 1, filter: 'blur(0px)', duration: 2, stagger: 0.1, ease: 'power2.out' },
-          0
-        );
-      }
+      /*
+       * ---------------------------------------------------------
+       * CENTER TEXT REVEAL
+       * ---------------------------------------------------------
+       */
 
-      // 4. The "Follow the Leader" Sequence
-      const staggerTime = 1.2;
-      const orbitDuration = 9.6;
+      tl.to(
+        text,
+        {
+          opacity: 1,
+          scale: 1,
+          filter: 'blur(0px)',
+          duration: 1.2,
+          ease: 'power3.out',
+        },
+        0
+      );
 
-      tl.to(items, {
-        keyframes: [
-          // A: Enter from bottom left
-          { x: 0, y: 0, z: 0, rotateY: 0, opacity: 1, ease: 'power2.out', duration: 2.5 },
-          // B: Orbit
-          { rotateY: -360, ease: 'none', duration: orbitDuration },
-          // C: Exit bottom right
-          { x: () => window.innerWidth / 2 + 300, y: () => window.innerHeight / 2 + 300, z: -200, rotateY: -450, opacity: 0, ease: 'power2.in', duration: 2.5 }
-        ],
-        stagger: staggerTime,
-      }, 1);
+      /*
+       * ---------------------------------------------------------
+       * LOGO MOVEMENT
+       * ---------------------------------------------------------
+       *
+       * The track starts from the left and travels all the way
+       * to the right.
+       */
 
-      // 5. Soft exit of center text
-      if (words.length) {
-        tl.to(
-          words,
-          { opacity: 0, filter: 'blur(10px)', duration: 2, stagger: 0.05, ease: 'power2.in' },
-          22 
-        );
-      }
+      tl.to(
+        track,
+        {
+          x: 0,
+          duration: 7,
+          ease: 'none',
+        },
+        0.45
+      );
 
-    }, section); // <- Passes the element directly as the scope
+      /*
+       * ---------------------------------------------------------
+       * TEXT EXIT
+       * ---------------------------------------------------------
+       *
+       * Near the end, the center heading subtly fades away while
+       * the final cards complete their movement.
+       */
+
+      tl.to(
+        text,
+        {
+          opacity: 0,
+          scale: 0.94,
+          filter: 'blur(12px)',
+          duration: 0.8,
+          ease: 'power3.in',
+        },
+        6.3
+      );
+
+      /*
+       * ---------------------------------------------------------
+       * RESIZE
+       * ---------------------------------------------------------
+       */
+
+      const handleResize = () => {
+        ScrollTrigger.refresh();
+      };
+
+      window.addEventListener('resize', handleResize);
+
+      return () => {
+        window.removeEventListener('resize', handleResize);
+      };
+    }, sectionRef);
 
     return () => ctx.revert();
-  }, [mounted, radius, isDesktop]);
-
-  // Removed `if (!mounted) return null;` to fix the `insertBefore` crash.
-  // Rendering the structure immediately ensures Next.js and React stay in sync.
+  }, []);
 
   return (
     <section
@@ -148,106 +242,124 @@ export default function FloatingGallery() {
         select-none
       "
     >
-      <div
-        className={`
-          cylinder-gallery-desktop absolute inset-0 flex items-center justify-center pointer-events-none
-          ${!mounted || !isDesktop ? 'opacity-0' : 'opacity-100'} 
-        `}
-        style={{ perspective: '1200px', transformStyle: 'preserve-3d', transition: 'opacity 0.3s ease' }}
-      >
-        <div
-          className="absolute text-center w-full max-w-5xl px-8 flex justify-center gap-x-4"
-          style={{ transform: `translateZ(${-radius}px)` }}
-        >
-          <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-sans font-medium tracking-tight leading-[1.05] flex gap-x-4">
-            <span className="word-span inline-block">PAST</span>
-            <span className="word-span inline-block font-serif italic font-normal text-gradient-brand">
-              INVESTORS
-            </span>
-          </h2>
-        </div>
+      {/* =====================================================
+          CENTER TEXT
+          ===================================================== */}
 
-        <div ref={cylinderRef} className="absolute inset-0" style={{ transformStyle: 'preserve-3d' }}>
-          {PAST_INVESTORS.map((investor) => (
-            <div
-              key={investor.id}
-              className="cylinder-item absolute top-1/2 left-1/2"
-              data-logo={investor.logo}
-              style={{
-                width: 'clamp(160px, 18vw, 280px)',
-                height: 'clamp(100px, 12vw, 170px)',
-                transformStyle: 'preserve-3d',
-              }}
-            >
-              <div
-                className="
-                  strip-container
-                  relative
-                  w-full
-                  h-full
-                  rounded-xl
-                  overflow-hidden
-                  border
-                  border-white/10
-                  bg-offwhite
-                  shadow-[0_20px_60px_rgba(0,0,0,0.35)]
-                "
-                style={{ transformStyle: 'preserve-3d' }}
-              >
-                {Array.from({ length: STRIP_COUNT }).map((_, s) => {
-                  const stripWidth = 100 / STRIP_COUNT;
-                  const stripAngle = (s - (STRIP_COUNT - 1) / 2) * 2.2;
-                  return (
-                    <div
-                      key={s}
-                      className="cylinder-strip absolute top-0 bottom-0"
-                      style={{
-                        width: `${stripWidth + 0.5}%`,
-                        left: `${s * stripWidth}%`,
-                        backgroundImage: `url(${investor.logo})`,
-                        backgroundPosition: `${(s / (STRIP_COUNT - 1)) * 100}% 50%`,
-                        backgroundSize: `${STRIP_COUNT * 100}% 100%`,
-                        transformOrigin: `50% 50% ${-radius}px`,
-                        transform: `rotateY(${stripAngle}deg) translateZ(0)`,
-                      }}
-                    />
-                  );
-                })}
-              </div>
-              <img
-                src={investor.logo}
-                alt={investor.name}
-                className="sr-only"
-              />
-            </div>
-          ))}
-        </div>
+      <div
+        ref={textRef}
+        className="
+          relative
+          z-[150]
+          w-full
+          max-w-5xl
+          px-8
+          text-center
+          pointer-events-none
+        "
+      >
+        <h2
+          className="
+            text-4xl
+            sm:text-5xl
+            md:text-6xl
+            lg:text-7xl
+            font-sans
+            font-medium
+            tracking-tight
+            leading-[1.05]
+          "
+        >
+          PAST{' '}
+          <span className="font-serif italic font-normal text-gradient-brand">
+            INVESTORS
+          </span>
+        </h2>
       </div>
 
-      <div className={`cylinder-gallery-mobile absolute left-0 right-0 bottom-10 z-[50] overflow-x-auto px-6 md:hidden ${mounted && !isDesktop ? 'opacity-100' : 'opacity-0'}`}>
-        <div className="flex w-max items-center gap-4">
+      {/* =====================================================
+          BOTTOM INVESTOR LOGO TRACK
+          ===================================================== */}
+
+      <div
+        className="
+          absolute
+          left-0
+          right-0
+          bottom-8
+          sm:bottom-10
+          md:bottom-14
+          z-[50]
+          overflow-visible
+        "
+      >
+        <div
+          ref={trackRef}
+          className="
+            flex
+            w-max
+            items-center
+            gap-4
+            sm:gap-5
+            md:gap-6
+            pl-6
+            md:pl-12
+            pr-6
+            md:pr-12
+            will-change-transform
+          "
+        >
           {PAST_INVESTORS.map((investor) => (
             <div
               key={investor.id}
               className="
                 relative
                 shrink-0
-                w-[160px]
-                h-[100px]
+
+                /* SAME CARD SIZE FOR EVERY LOGO */
+                w-[180px]
+                h-[110px]
+
+                sm:w-[220px]
+                sm:h-[130px]
+
+                md:w-[280px]
+                md:h-[160px]
+
+                lg:w-[320px]
+                lg:h-[180px]
+
                 rounded-xl
                 overflow-hidden
+
                 border
                 border-white/10
+
                 bg-offwhite
+
                 flex
                 items-center
                 justify-center
+
+                shadow-[0_20px_60px_rgba(0,0,0,0.35)]
+
+                will-change-transform
               "
             >
+              {/* =================================================
+                  ACTUAL INVESTOR LOGO
+                  ================================================= */}
+
               <img
                 src={investor.logo}
                 alt={investor.name}
-                className="max-w-[75%] max-h-[65%] object-contain"
+                className="
+                  max-w-[75%]
+                  max-h-[65%]
+                  w-auto
+                  h-auto
+                  object-contain
+                "
               />
             </div>
           ))}
