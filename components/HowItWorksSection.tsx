@@ -1,4 +1,3 @@
-// components/HowItWorksSection.tsx
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -25,86 +24,174 @@ const STEPS: Step[] = [
     id: 2,
     stepNum: '02',
     title: 'Get Evaluated',
-    description:
-      "Experts assess your idea's strength, market potential, and execution readiness.",
+    description: "Experts assess your idea's strength, market potential, and execution readiness.",
     image: '/Get Evalueted.jpg',
   },
   {
     id: 3,
     stepNum: '03',
     title: 'Make the Cut',
-    description:
-      'Strongest submissions advance to the next stage of Meraki competition.',
+    description: 'Strongest submissions advance to the next stage of Meraki competition.',
     image: '/Make the cut.jpg',
   },
   {
     id: 4,
     stepNum: '04',
     title: 'Refine Your Pitch',
-    description:
-      'Refine your idea through expert feedback and focused mentorship sessions.',
+    description: 'Refine your idea through expert feedback and focused mentorship sessions.',
     image: '/refine your pitch.jpg',
   },
   {
     id: 5,
     stepNum: '05',
     title: 'Pitch at Meraki',
-    description:
-      'Pitch your idea at FIIB before experts, investors, and innovators.',
+    description: 'Pitch your idea at FIIB before experts, investors, and innovators.',
     image: '/pitch at meraki.jpg',
   },
   {
     id: 6,
     stepNum: '06',
     title: 'Win',
-    description:
-      'Compete for prizes, build connections, and take your idea forward.',
+    description: 'Compete for prizes, build connections, and take your idea forward.',
     image: '/win.jpg',
   },
 ];
 
 export default function HowItWorksSection() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const pathRef = useRef<SVGPathElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
-  const coverRef = useRef<HTMLDivElement>(null);
+  const indicatorRef = useRef<HTMLDivElement>(null);
+  const previewRef = useRef<HTMLDivElement>(null);
+  const imageContainerRef = useRef<HTMLDivElement>(null);
+  const descriptionRef = useRef<HTMLDivElement>(null);
+  const stepNumberRef = useRef<HTMLSpanElement>(null);
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
 
-  const ROW_HEIGHT = 130;
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    setCursorPos({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    });
-  };
+  const ITEM_HEIGHT = 80; // adjust based on your text size
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
-    const prefersReduced =
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
     const ctx = gsap.context(() => {
-      const total = STEPS.length;
+      const container = containerRef.current;
+      const list = listRef.current;
+      const indicator = indicatorRef.current;
+      const preview = previewRef.current;
+      const images = imageContainerRef.current?.querySelectorAll('[data-step-img]');
+      const descriptions = descriptionRef.current?.querySelectorAll('[data-step-desc]');
+      const stepNumbers = stepNumberRef.current;
 
-      // Intro blur fade
-      gsap.fromTo(
-        containerRef.current,
-        { opacity: 0.15, filter: 'blur(8px)' },
-        {
-          opacity: 1,
-          filter: 'blur(0px)',
+      if (!container || !list || !indicator || !preview) return;
+
+      // ---- 1. Pin the section ----
+      ScrollTrigger.create({
+        trigger: container,
+        start: 'top top',
+        end: `+=${STEPS.length * 120}%`, // adjust scroll length
+        pin: true,
+        scrub: 0.8,
+        anticipatePin: 1,
+      });
+
+      // ---- 2. Move the list vertically ----
+      const totalHeight = (STEPS.length - 1) * ITEM_HEIGHT;
+      gsap.to(list, {
+        y: -totalHeight,
+        ease: 'power1.inOut',
+        scrollTrigger: {
+          trigger: container,
+          start: 'top top',
+          end: `+=${STEPS.length * 120}%`,
+          scrub: 0.8,
+          invalidateOnRefresh: true,
+          onUpdate: (self) => {
+            const progress = self.progress;
+            const rawIndex = progress * (STEPS.length - 1);
+            const idx = Math.min(Math.round(rawIndex), STEPS.length - 1);
+            setActiveIndex(idx);
+          },
+        },
+      });
+
+      // ---- 3. Move the indicator line ----
+      gsap.to(indicator, {
+        y: activeIndex * ITEM_HEIGHT + ITEM_HEIGHT / 2,
+        duration: 0.2,
+        ease: 'power2.out',
+        scrollTrigger: {
+          trigger: container,
+          start: 'top top',
+          end: `+=${STEPS.length * 120}%`,
+          scrub: 0.8,
+        },
+      });
+
+      // ---- 4. Image cross‑fade ----
+      if (images) {
+        images.forEach((img, i) => {
+          gsap.to(img, {
+            opacity: i === activeIndex ? 1 : 0,
+            scale: i === activeIndex ? 1 : 1.04,
+            duration: 0.7,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: container,
+              start: 'top top',
+              end: `+=${STEPS.length * 120}%`,
+              scrub: 0.8,
+            },
+          });
+        });
+      }
+
+      // ---- 5. Description text cross‑fade ----
+      if (descriptions) {
+        descriptions.forEach((desc, i) => {
+          gsap.to(desc, {
+            opacity: i === activeIndex ? 1 : 0,
+            y: i === activeIndex ? 0 : 12,
+            duration: 0.6,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: container,
+              start: 'top top',
+              end: `+=${STEPS.length * 120}%`,
+              scrub: 0.8,
+            },
+          });
+        });
+      }
+
+      // ---- 6. Step number update ----
+      if (stepNumbers) {
+        gsap.to(stepNumbers, {
+          textContent: STEPS[activeIndex]?.stepNum || '01',
+          duration: 0.3,
           ease: 'power2.out',
           scrollTrigger: {
-            trigger: containerRef.current,
+            trigger: container,
+            start: 'top top',
+            end: `+=${STEPS.length * 120}%`,
+            scrub: 0.8,
+          },
+        });
+      }
+
+      // ---- 7. Entrance animation: list items stagger in ----
+      const listItems = list.querySelectorAll('.step-item');
+      gsap.fromTo(
+        listItems,
+        { opacity: 0, y: 30 },
+        {
+          opacity: 1,
+          y: 0,
+          stagger: 0.08,
+          ease: 'power3.out',
+          scrollTrigger: {
+            trigger: container,
             start: 'top bottom',
             end: 'top center',
             scrub: 0.6,
@@ -112,229 +199,147 @@ export default function HowItWorksSection() {
         }
       );
 
-      if (pathRef.current && listRef.current && containerRef.current) {
-        const pathLength = pathRef.current.getTotalLength();
-        gsap.set(pathRef.current, {
-          strokeDasharray: pathLength,
-          strokeDashoffset: pathLength,
-        });
-
-        const vh = window.innerHeight;
-        const startY = vh / 2 - ROW_HEIGHT / 2;
-        const endY = vh / 2 - ((total - 1) * ROW_HEIGHT + ROW_HEIGHT / 2);
-
-        gsap.set(listRef.current, { y: startY });
-
-        const tl = gsap.timeline({
+      // ---- 8. Preview card entrance ----
+      gsap.fromTo(
+        preview,
+        { opacity: 0, y: 40, scale: 0.95 },
+        {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.8,
+          ease: 'power3.out',
           scrollTrigger: {
-            trigger: containerRef.current,
-            start: 'top top',
-            end: `+=${total * 160}%`,
-            pin: true,
-            scrub: 0.8, // Enhanced ultra-smooth scrolling lag/scrubbing
-            anticipatePin: 1,
+            trigger: container,
+            start: 'top bottom',
+            end: 'top center',
+            scrub: 0.6,
           },
-        });
+        }
+      );
 
-        // Titles scroll through center smoothly
-        tl.to(
-          listRef.current,
-          {
-            y: endY,
-            ease: 'power1.inOut',
-            duration: 1,
-            onUpdate: function () {
-              const rawIndex = this.progress() * (total - 1);
-              const idx = Math.min(Math.round(rawIndex), total - 1);
-              setActiveIndex(idx);
-            },
-          },
-          0
-        );
-
-        // Ribbon path draw in lockstep
-        tl.to(
-          pathRef.current,
-          {
-            strokeDashoffset: 0,
-            ease: 'power1.inOut',
-            duration: 1,
-          },
-          0
-        );
-
-        // Brief hold on last step
-        tl.to({}, { duration: 0.15 }, 1);
-
-        // Outro
-        tl.to(
-          containerRef.current,
-          {
-            opacity: 0.2,
-          filter: 'blur(8px)',
-            duration: 0.25,
-            ease: 'power2.inOut',
-          },
-          1.15
-        );
-      }
-
-      if (coverRef.current && !prefersReduced) {
-        gsap.set(coverRef.current, { y: 0, opacity: 0 });
-      }
+      // ---- 9. Outro fade ----
+      gsap.to(container, {
+        opacity: 0.15,
+        filter: 'blur(6px)',
+        duration: 0.3,
+        scrollTrigger: {
+          trigger: container,
+          start: `+=${(STEPS.length - 1) * 120}%`,
+          end: `+=${STEPS.length * 120}%`,
+          scrub: 1,
+        },
+      });
     }, containerRef);
 
     return () => ctx.revert();
-  }, []);
-
-  // Smooth active-step opacity/stagger via GSAP when index changes
-  useEffect(() => {
-    if (!cardRef.current) return;
-    const images = cardRef.current.querySelectorAll('[data-step-img]');
-    images.forEach((img, i) => {
-      gsap.to(img, {
-        opacity: i === activeIndex ? 1 : 0,
-        scale: i === activeIndex ? 1 : 1.04,
-        duration: 0.7,
-        ease: 'power3.out',
-      });
-    });
   }, [activeIndex]);
 
-  useEffect(() => {
-    if (!coverRef.current) return;
-    gsap.to(coverRef.current, {
-      opacity: isHovered ? 1 : 0,
-      y: isHovered ? -8 : 0,
-      duration: 0.45,
-      ease: 'power3.out',
+  // Manual hover effects on the preview card
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!previewRef.current) return;
+    const rect = previewRef.current.getBoundingClientRect();
+    setCursorPos({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
     });
-  }, [isHovered]);
-
-  const currentStep = STEPS[activeIndex];
+  };
 
   return (
     <section
       ref={containerRef}
-      className="relative w-full h-screen bg-black text-offwhite overflow-hidden flex items-center justify-between px-5 sm:px-8 md:px-16 select-none"
+      className="relative w-screen h-screen bg-black text-offwhite overflow-hidden flex items-center justify-between px-5 sm:px-8 md:px-16 select-none"
     >
-      {/* Background Ribbon Path */}
-      <svg
-        className="absolute top-0 left-0 w-full h-full pointer-events-none z-10 opacity-30 md:opacity-100"
-        viewBox="0 0 1000 1000"
-        fill="none"
-        preserveAspectRatio="none"
-      >
-        <defs>
-          <linearGradient
-            id="ribbonGradient"
-            x1="0%"
-            y1="0%"
-            x2="100%"
-            y2="100%"
-          >
-            <stop offset="0%" stopColor="#FB575F" />
-            <stop offset="100%" stopColor="#8F53FC" />
-          </linearGradient>
-        </defs>
-        <path
-          ref={pathRef}
-          d="M -150 250 C 150 -50, 350 150, 220 500 C 100 800, -20 680, 180 900 C 300 1020, 800 950, 1200 850"
-          stroke="url(#ribbonGradient)"
-          strokeWidth="85"
-          strokeLinecap="round"
-          className="opacity-90"
-        />
-      </svg>
+      {/* ---- Background glow (subtle) ---- */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(143,83,252,0.08),transparent_70%)] pointer-events-none" />
 
-      {/* Left counter */}
-      <div className="absolute left-4 sm:left-6 md:left-12 top-1/2 -translate-y-1/2 z-30 font-sans text-sm md:text-base text-neutral-300 tabular-nums">
-        ({currentStep.stepNum})
-      </div>
+      {/* ---- Left side: Sticky list ---- */}
+      <div className="relative z-10 w-full md:w-[55%] h-full flex items-center justify-center md:justify-start">
+        <div
+          ref={listRef}
+          className="relative w-full max-w-lg flex flex-col items-center md:items-start"
+        >
+          {/* Red indicator line */}
+          <div
+            ref={indicatorRef}
+            className="absolute left-0 w-1 h-[30px] bg-coral rounded-full transform -translate-y-1/2 hidden md:block"
+            style={{ top: 0 }}
+          />
 
-      {/* Vertical title list with curved layout offsets on mobile */}
-      <div className="relative z-20 w-full md:w-[55%] h-full overflow-hidden flex items-start justify-center md:justify-start px-4 md:pl-8 pt-8">
-        <div ref={listRef} className="w-full flex flex-col items-center md:items-start">
           {STEPS.map((step, idx) => {
             const isActive = idx === activeIndex;
-            const distance = idx - activeIndex;
-
-            // Curved positional offset mapping matching the reference video style
-            let mobileTranslateX = '0px';
-            if (distance === 0) {
-              mobileTranslateX = '-18px'; // Highlighted item shifts cleanly to the left
-            } else if (distance < 0) {
-              mobileTranslateX = `${Math.abs(distance) * 8}px`; // Previous items drift to the right
-            } else {
-              mobileTranslateX = `${distance * 8}px`; // Next items drift to the right
-            }
-
             return (
               <div
                 key={step.id}
+                className="step-item w-full flex items-center justify-center md:justify-start border-b border-white/5 py-3 md:py-4 cursor-pointer"
+                style={{ height: `${ITEM_HEIGHT}px` }}
                 onClick={() => setActiveIndex(idx)}
-                style={{ height: `${ROW_HEIGHT}px` }}
-                className="w-full flex items-center justify-center md:justify-start border-b border-neutral-800/60 cursor-pointer pr-0 md:pr-8"
               >
-                <h2
-                  style={{
-                    transform: `translateX(${mobileTranslateX})`,
-                  }}
-                  className={`text-2xl sm:text-4xl md:text-5xl lg:text-[4rem] font-sans tracking-tight whitespace-nowrap transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] leading-tight origin-center md:origin-left ${
+                <span className="text-xs font-mono text-neutral-500 mr-6 hidden md:inline">
+                  {step.stepNum}
+                </span>
+                <h3
+                  className={`text-2xl sm:text-3xl md:text-4xl lg:text-[3.2rem] font-sans tracking-tight transition-all duration-500 ease-[cubic-bezier(0.25,1,0.5,1)] ${
                     isActive
-                      ? 'text-white opacity-100 scale-105 md:-translate-x-8 font-bold'
-                      : 'text-neutral-600 opacity-30 scale-95 hover:opacity-50 font-medium'
+                      ? 'text-white scale-105 font-bold'
+                      : 'text-neutral-600 scale-95 hover:text-neutral-400 font-medium'
                   }`}
                 >
                   {step.title}
-                </h2>
+                </h3>
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* Right column – image card + desc (Hidden on mobile) */}
-      <div className="relative z-20 hidden md:flex w-[40vw] max-w-[500px] flex-col items-end mr-2 sm:mr-4 md:mr-16">
-        <div className="w-full flex justify-between text-xs font-sans font-medium tracking-widest uppercase text-coral-light mb-4 px-1">
-          <span>STEP {currentStep.stepNum}</span>
-          <span />
-        </div>
+      {/* ---- Right side: Preview card & description ---- */}
+      <div className="relative z-10 hidden md:flex w-[40%] flex-col items-end">
+        {/* Step number */}
+        <span
+          ref={stepNumberRef}
+          className="text-sm font-mono text-coral-light tracking-widest mb-2"
+        >
+          {STEPS[activeIndex]?.stepNum}
+        </span>
 
-        {/* Image card with floating cover */}
+        {/* Preview card with image cross‑fade */}
         <div
-          ref={cardRef}
+          ref={previewRef}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           onMouseMove={handleMouseMove}
-          className="relative w-full aspect-[16/10] rounded-2xl overflow-hidden border border-white/10 bg-[#0d0d0d] shadow-2xl cursor-none group"
+          className="relative w-full aspect-[4/3] rounded-xl overflow-hidden border border-white/10 bg-[#0d0d0d] shadow-2xl cursor-none group"
         >
-          {STEPS.map((step, idx) => (
-            <div
-              key={step.id}
-              data-step-img
-              className="absolute inset-0 opacity-0"
-              style={{ zIndex: idx === activeIndex ? 10 : 0 }}
-            >
-              <img
-                src={step.image}
-                alt={step.title}
-                className="w-full h-full object-cover filter grayscale opacity-70 contrast-125 transition-transform duration-[1.5s] group-hover:scale-105 group-hover:grayscale-0 group-hover:opacity-100"
-              />
-            </div>
-          ))}
+          <div ref={imageContainerRef} className="absolute inset-0">
+            {STEPS.map((step, idx) => (
+              <div
+                key={step.id}
+                data-step-img
+                className="absolute inset-0 opacity-0"
+                style={{ zIndex: idx === activeIndex ? 10 : 0 }}
+              >
+                <img
+                  src={step.image}
+                  alt={step.title}
+                  className="w-full h-full object-cover filter grayscale opacity-70 contrast-125 transition-transform duration-[1.5s] group-hover:scale-105 group-hover:grayscale-0 group-hover:opacity-100"
+                />
+              </div>
+            ))}
+          </div>
 
-          {/* Floating cover card on hover */}
+          {/* Hover overlay */}
           <div
-            ref={coverRef}
-            className="absolute inset-4 rounded-lg bg-black/40 backdrop-blur-md border border-white/15 flex items-center justify-center pointer-events-none z-20 opacity-0"
+            className={`absolute inset-4 rounded-lg bg-black/30 backdrop-blur-sm border border-white/10 flex items-center justify-center pointer-events-none transition-opacity duration-300 ${
+              isHovered ? 'opacity-100' : 'opacity-0'
+            }`}
           >
             <span className="text-offwhite text-sm font-sans font-medium tracking-widest uppercase">
-              {currentStep.title}
+              {STEPS[activeIndex]?.title}
             </span>
           </div>
 
-          {/* Cursor badge */}
+          {/* Custom cursor badge */}
           {isHovered && (
             <div
               style={{
@@ -342,21 +347,26 @@ export default function HowItWorksSection() {
                 top: `${cursorPos.y}px`,
                 transform: 'translate(-50%, -50%)',
               }}
-              className="absolute pointer-events-none z-30 transition-transform duration-75 ease-out hidden md:block"
+              className="absolute pointer-events-none z-30 transition-transform duration-75 ease-out"
             >
-              <span className="bg-offwhite text-black px-5 py-2.5 rounded-full text-xs font-sans font-bold uppercase tracking-wider shadow-2xl whitespace-nowrap">
-                Next Stage
+              <span className="bg-offwhite text-black px-4 py-2 rounded-full text-xs font-bold uppercase tracking-wider shadow-2xl whitespace-nowrap">
+                Next Step
               </span>
             </div>
           )}
         </div>
 
-        {/* Description */}
-        <div className="w-full h-[100px] mt-6 relative overflow-hidden">
+        {/* Description text */}
+        <div
+          ref={descriptionRef}
+          className="w-full mt-6 relative overflow-hidden"
+          style={{ height: '80px' }}
+        >
           {STEPS.map((step, idx) => (
             <p
               key={step.id}
-              className={`absolute top-0 left-0 w-full text-lg text-neutral-300 font-sans font-light leading-relaxed transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] ${
+              data-step-desc
+              className={`absolute top-0 left-0 w-full text-base text-neutral-300 font-sans font-light leading-relaxed transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] ${
                 idx === activeIndex
                   ? 'opacity-100 translate-y-0'
                   : 'opacity-0 translate-y-4 pointer-events-none'
@@ -367,6 +377,7 @@ export default function HowItWorksSection() {
           ))}
         </div>
 
+        {/* "Process" label */}
         <div className="absolute -right-12 top-0 text-[11px] font-sans font-medium uppercase tracking-widest text-neutral-400 origin-right">
           Process
         </div>
