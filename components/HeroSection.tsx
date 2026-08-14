@@ -13,9 +13,8 @@ export default function HeroSection() {
   // Opening loading animation refs
   const loaderRef = useRef<HTMLDivElement>(null);
   const loaderTitleRef = useRef<HTMLDivElement>(null);
-  const loaderRedFlashRef = useRef<HTMLDivElement>(null);
   
-  // NEW: Refs for the color wipe transition
+  // Wipe transition refs
   const loaderWipeRedRef = useRef<HTMLDivElement>(null);
   const loaderWipeBlackRef = useRef<HTMLDivElement>(null);
 
@@ -25,86 +24,69 @@ export default function HeroSection() {
     const ctx = gsap.context(() => {
       /*
        * =========================================================
-       * OPENING LOADING ANIMATION
+       * OPENING LOADING ANIMATION (Scale Up + Color Wipe)
        * =========================================================
        */
 
       const loader = loaderRef.current;
       const loaderTitle = loaderTitleRef.current;
-      const redFlash = loaderRedFlashRef.current;
-      
       const wipeRed = loaderWipeRedRef.current;
       const wipeBlack = loaderWipeBlackRef.current;
 
-      if (loader && loaderTitle && redFlash && wipeRed && wipeBlack) {
+      if (loader && loaderTitle && wipeRed && wipeBlack) {
         const loaderTl = gsap.timeline();
 
-        // Initial state
-        gsap.set(loader, { opacity: 1, visibility: 'visible' });
-        gsap.set(loaderTitle, { scale: 1, opacity: 1 });
-        gsap.set(redFlash, { opacity: 0, scale: 0.85 });
+        // Initial state: Title starts small and invisible
+        gsap.set(loader, { opacity: 1, visibility: 'visible', pointerEvents: 'auto' });
+        gsap.set(loaderTitle, { scale: 0.5, opacity: 0 });
 
         loaderTl
-          .to({}, { duration: 0.5 }) // Initial breath
-          
-          // Compress with an 'expo' ease for a very smooth, drawn-out curve
+          // 1. Text scales from small to big smoothly
           .to(loaderTitle, {
-            scale: 0.35,
-            opacity: 0.95,
-            duration: 1.2,
-            ease: 'expo.inOut',
-          })
-          
-          .to({}, { duration: 0.15 }) // Micro-pause
-          
-          // Brand Flash
-          .to(redFlash, {
+            scale: 1.05,
             opacity: 1,
+            duration: 1.2,
+            ease: 'expo.out',
+          })
+          .to(loaderTitle, {
             scale: 1,
-            duration: 0.15,
-            ease: 'power3.in',
+            duration: 0.4,
+            ease: 'power2.inOut',
           })
           
-          .to({}, { duration: 0.05 }) // Hold flash
-          
-          // Fade flash out
-          .to(redFlash, {
-            opacity: 0,
-            duration: 0.3,
-            ease: 'power2.out',
-          })
-          
-          // Expand title back out smoothly, overlapping slightly with the flash fade
-          .to(loaderTitle, {
-            scale: 1.05, // Slight over-scale for a breathing effect
-            opacity: 1,
-            duration: 1.2,
-            ease: 'expo.inOut',
-          }, '-=0.2')
-          
-          // 1. NEW: Color Wipe Transition to reveal the page
+          // 2. Color Wipe Transition reveals the page
           .fromTo(wipeRed, 
             { yPercent: -100 }, 
             { yPercent: 0, duration: 0.6, ease: "power3.inOut" }, 
-            '-=0.2'
+            '+=0.2'
           )
           .fromTo(wipeBlack, 
             { yPercent: -100 }, 
             { yPercent: 0, duration: 0.6, ease: "power3.inOut" }, 
             "-=0.4"
           )
+          
           // Hide loader background and text while screen is covered in black
           .set(loaderTitle, { opacity: 0 })
           .set(loader, { backgroundColor: 'transparent' })
-          .set(redFlash, { display: 'none' })
-          // Wipes slide down out of view, revealing the site beautifully
+          
+          // Wipes slide down out of view
           .to(wipeRed, { yPercent: 100, duration: 0.6, ease: "power3.inOut" })
           .to(wipeBlack, { 
             yPercent: 100, 
             duration: 0.6, 
             ease: "power3.inOut",
             onComplete: () => {
+              // Safety cleanups to prevent page freezing
               gsap.set(loader, { visibility: 'hidden', pointerEvents: 'none' });
+              document.body.style.overflow = ''; // Release standard CSS scroll lock if applied
+              
+              // Release Lenis scroll lock if you are using it
+              if (typeof window !== 'undefined' && (window as any).__unlockLenis) {
+                (window as any).__unlockLenis();
+              }
+              // Refresh ScrollTrigger so it knows the new positions after load
+              ScrollTrigger.refresh();
             }
           }, "-=0.4");
       }
@@ -119,7 +101,7 @@ export default function HeroSection() {
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: '+=250%', // Increased scroll distance to make the animation feel less rushed
+          end: '+=250%', // Increased scroll distance
           scrub: 1.5, // Increased scrub smoothing
           pin: true,
         },
@@ -155,7 +137,7 @@ export default function HeroSection() {
           '<' // Syncs this animation to start at the exact same time as the expansion
         )
 
-        // 3. NEW: Smooth exit transition — content dissolves and lifts up
+        // 3. Smooth exit transition — content dissolves and lifts up
         .to(
           containerRef.current,
           {
@@ -180,10 +162,10 @@ export default function HeroSection() {
           ORIGINAL HERO
           ===================================================== */}
 
-      {/* Background Glow — subtle brand-colored ambience */}
+      {/* Background Glow */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(143,83,252,0.16),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(251,87,95,0.12),transparent_55%)] pointer-events-none z-0" />
 
-      {/* Top Header (Eyebrow) */}
+      {/* Top Header */}
       <div className="relative z-10 flex justify-between items-center text-[10px] md:text-xs tracking-widest text-neutral-400 uppercase font-sans">
         <p className="max-w-sm leading-relaxed">
           Your idea deserves more than a{' '}
@@ -297,21 +279,8 @@ export default function HeroSection() {
           items-center
           justify-center
           overflow-hidden
-          pointer-events-none
         "
       >
-        {/* Brand Flash Layer */}
-        <div
-          ref={loaderRedFlashRef}
-          className="
-            absolute
-            inset-0
-            bg-coral
-            opacity-0
-            scale-[0.85]
-          "
-        />
-
         {/* Center Loading Title */}
         <div
           ref={loaderTitleRef}
@@ -361,9 +330,9 @@ export default function HeroSection() {
           </span>
         </div>
         
-        {/* NEW: Wipe Transition Layers (Z-index ensures they render over the background but below the final content) */}
-        <div ref={loaderWipeRedRef} className="absolute inset-0 bg-coral transform -translate-y-full z-20" />
-        <div ref={loaderWipeBlackRef} className="absolute inset-0 bg-black transform -translate-y-full z-30" />
+        {/* Wipe Transition Layers */}
+        <div ref={loaderWipeRedRef} className="absolute inset-0 bg-coral transform -translate-y-full z-20 pointer-events-none" />
+        <div ref={loaderWipeBlackRef} className="absolute inset-0 bg-black transform -translate-y-full z-30 pointer-events-none" />
       </div>
     </section>
   );
