@@ -1,0 +1,240 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html {
+  background-color: #0a0a0a;
+  color: #fffefa;
+  overflow-x: hidden;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+/* =====================================================
+   LENIS RECOMMENDED CSS
+   ===================================================== */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
+}
+
+/* =====================================================
+   BRAND SELECTION + SCROLLBAR
+   ===================================================== */
+::selection {
+  background-color: #8f53fc;
+  color: #fffefa;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #fb575f, #8f53fc);
+  border-radius: 999px;
+}
+
+/* =====================================================
+   REUSABLE BRAND GRADIENT TEXT
+   ===================================================== */
+.text-gradient-brand {
+  background-image: linear-gradient(90deg, #fb575f 0%, #8f53fc 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.text-gradient-brand-light {
+  background-image: linear-gradient(90deg, #ff7d8a 0%, #a880ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* =====================================================
+   CHARACTER DUAL-LAYER SYSTEM
+   (lukebaffait-style hover clip-path)
+   ===================================================== */
+.split-chars {
+  display: inline-flex;
+  flex-wrap: wrap;
+}
+
+.char {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  line-height: 1.1;
+  vertical-align: top;
+}
+
+.char .ch-top,
+.char .ch-bot {
+  display: block;
+  position: relative;
+}
+
+.char .ch-top {
+  position: absolute;
+  inset: 0;
+  clip-path: inset(100% 0 0 0);
+  will-change: clip-path;
+}
+
+.char .ch-bot {
+  will-change: transform;
+}
+
+.char-space {
+  display: inline-block;
+  width: 0.3em;
+}
+
+/* Word split helper */
+.split-words .word {
+  display: inline-block;
+  will-change: opacity, filter, transform;
+}
+
+/* =====================================================
+   CYLINDRICAL 3D GALLERY (FloatingGallery)
+   ===================================================== */
+.cylinder-gallery {
+  perspective: 1200px;
+  perspective-origin: 50% 50%;
+  transform-style: preserve-3d;
+}
+
+.cylinder-item {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform-style: preserve-3d;
+  will-change: transform, opacity;
+}
+
+.cylinder-strip {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background-size: cover;
+  background-repeat: no-repeat;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+/* Mobile fallback – hide complex 3D */
+@media (max-width: 767px) {
+  .cylinder-gallery-desktop {
+    display: none !important;
+  }
+  .cylinder-gallery-mobile {
+    display: block !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .cylinder-gallery-mobile {
+    display: none !important;
+  }
+}
+
+/* =====================================================
+   PREFERS-REDUCED-MOTION
+   ===================================================== */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .char .ch-top {
+    clip-path: none !important;
+  }
+}
+
+/* =====================================================
+   SCROLL PROGRESS INDICATOR
+   ===================================================== */
+.scroll-progress {
+  position: fixed;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.scroll-progress.visible {
+  opacity: 1;
+}
+
+.scroll-progress-track {
+  width: 2px;
+  height: 120px;
+  background: rgba(255, 254, 250, 0.15);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.scroll-progress-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background: linear-gradient(180deg, #fb575f, #8f53fc);
+  border-radius: 999px;
+  transform-origin: top;
+  transform: scaleY(0);
+}
+
+.scroll-progress-pct {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: rgba(255, 254, 250, 0.6);
+  font-family: var(--font-urbanist), sans-serif;
+}
+
+/* =====================================================
+   UTILITY
+   ===================================================== */
+.will-change-transform {
+  will-change: transform;
+}
+
+.will-change-opacity {
+  will-change: opacity;
+}
