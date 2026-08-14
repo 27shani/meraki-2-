@@ -1,4 +1,3 @@
-// app/LenisProvider.tsx
 'use client';
 
 import { useEffect } from 'react';
@@ -13,7 +12,7 @@ export default function LenisProvider({ children }: { children: React.ReactNode 
       smoothWheel: true,
     });
 
-    // Expose unlock method globally
+    // Expose unlock method globally (called by HeroSection after loader)
     (window as any).__unlockLenis = () => {
       lenis.start();
       document.body.style.overflow = '';
@@ -23,7 +22,7 @@ export default function LenisProvider({ children }: { children: React.ReactNode 
     lenis.stop();
     document.body.style.overflow = 'hidden';
 
-    // RAF for Lenis
+    // RAF loop for Lenis
     function raf(time: number) {
       lenis.raf(time);
       requestAnimationFrame(raf);
