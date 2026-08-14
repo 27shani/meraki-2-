@@ -107,12 +107,12 @@ export default function HeroSection() {
         },
       });
 
-      // 1. Reveal initial compact card in center
+      // 1. Reveal initial compact card in center (Removed border radius)
       tl.to(expandBoxRef.current, {
         width: '350px',
         height: '200px',
         opacity: 1,
-        borderRadius: '24px',
+        borderRadius: '0px', // Removed rounded corners here
         ease: 'power3.out',
       })
 
@@ -129,12 +129,12 @@ export default function HeroSection() {
           '+=0.1'
         )
 
-        // 2.5 Fade and slide in the new text content simultaneously with the expansion
+        // 2.5 Fade and slide in the new text content VERY smoothly
         .fromTo(
           expandContentRef.current,
-          { opacity: 0, y: 40 },
-          { opacity: 1, y: 0, ease: 'power2.out' },
-          '<' // Syncs this animation to start at the exact same time as the expansion
+          { opacity: 0, y: 60, filter: 'blur(12px)' }, // Added blur and slightly more Y offset for smoothness
+          { opacity: 1, y: 0, filter: 'blur(0px)', ease: 'power3.out', duration: 1.5 }, // Increased duration and ease
+          '<0.2' // Starts slightly after the image begins expanding
         )
 
         // 3. Smooth exit transition — content dissolves and lifts up
