@@ -262,8 +262,8 @@ export default function HowItWorksSection() {
       </div>
 
       {/* Vertical title list */}
-      <div className="relative z-20 w-[54%] sm:w-[55%] h-full overflow-hidden flex items-start ml-8 sm:ml-12 md:ml-20 pt-8 pl-8">
-        <div ref={listRef} className="w-full flex flex-col">
+      <div className="relative z-20 w-full md:w-[55%] h-full overflow-hidden flex items-start justify-center md:justify-start px-2 md:pl-8 pt-8">
+        <div ref={listRef} className="w-full flex flex-col items-center md:items-start">
           {STEPS.map((step, idx) => {
             const isActive = idx === activeIndex;
             return (
@@ -271,12 +271,12 @@ export default function HowItWorksSection() {
                 key={step.id}
                 onClick={() => setActiveIndex(idx)}
                 style={{ height: `${ROW_HEIGHT}px` }}
-                className="w-full flex items-center border-b border-neutral-800/60 cursor-pointer pr-4 sm:pr-8"
+                className="w-full flex items-center justify-center md:justify-start border-b border-neutral-800/60 cursor-pointer pr-0 md:pr-8"
               >
                 <h2
-                  className={`text-2xl sm:text-4xl md:text-5xl lg:text-[4rem] font-sans tracking-tight transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] leading-tight origin-left ${
+                  className={`text-2xl sm:text-4xl md:text-5xl lg:text-[4rem] font-sans tracking-tight whitespace-nowrap transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] leading-tight origin-center md:origin-left ${
                     isActive
-                      ? 'text-white opacity-100 scale-105 -translate-x-4 md:-translate-x-8 font-bold'
+                      ? 'text-white opacity-100 scale-105 translate-x-0 md:-translate-x-8 font-bold'
                       : 'text-neutral-600 opacity-30 scale-95 translate-x-0 hover:opacity-50 font-medium'
                   }`}
                 >
@@ -288,11 +288,11 @@ export default function HowItWorksSection() {
         </div>
       </div>
 
-      {/* Right column – image card + desc */}
-      <div className="relative z-20 w-[40vw] max-w-[160px] sm:max-w-[280px] md:max-w-[500px] flex flex-col items-end mr-2 sm:mr-4 md:mr-16">
-        <div className="w-full flex justify-between text-[9px] sm:text-xs font-sans font-medium tracking-widest uppercase text-coral-light mb-2 sm:mb-4 px-1">
+      {/* Right column – image card + desc (Hidden on mobile) */}
+      <div className="relative z-20 hidden md:flex w-[40vw] max-w-[500px] flex-col items-end mr-2 sm:mr-4 md:mr-16">
+        <div className="w-full flex justify-between text-xs font-sans font-medium tracking-widest uppercase text-coral-light mb-4 px-1">
           <span>STEP {currentStep.stepNum}</span>
-          <span className="hidden sm:inline" />
+          <span />
         </div>
 
         {/* Image card with floating cover */}
@@ -301,7 +301,7 @@ export default function HowItWorksSection() {
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           onMouseMove={handleMouseMove}
-          className="relative w-full aspect-[16/10] rounded-xl md:rounded-2xl overflow-hidden border border-white/10 bg-[#0d0d0d] shadow-2xl cursor-none group"
+          className="relative w-full aspect-[16/10] rounded-2xl overflow-hidden border border-white/10 bg-[#0d0d0d] shadow-2xl cursor-none group"
         >
           {STEPS.map((step, idx) => (
             <div
@@ -321,9 +321,9 @@ export default function HowItWorksSection() {
           {/* Floating cover card on hover */}
           <div
             ref={coverRef}
-            className="absolute inset-3 md:inset-4 rounded-lg bg-black/40 backdrop-blur-md border border-white/15 flex items-center justify-center pointer-events-none z-20 opacity-0"
+            className="absolute inset-4 rounded-lg bg-black/40 backdrop-blur-md border border-white/15 flex items-center justify-center pointer-events-none z-20 opacity-0"
           >
-            <span className="text-offwhite text-xs md:text-sm font-sans font-medium tracking-widest uppercase">
+            <span className="text-offwhite text-sm font-sans font-medium tracking-widest uppercase">
               {currentStep.title}
             </span>
           </div>
@@ -346,11 +346,11 @@ export default function HowItWorksSection() {
         </div>
 
         {/* Description */}
-        <div className="w-full h-[60px] sm:h-[80px] md:h-[100px] mt-3 sm:mt-6 relative overflow-hidden hidden sm:block">
+        <div className="w-full h-[100px] mt-6 relative overflow-hidden">
           {STEPS.map((step, idx) => (
             <p
               key={step.id}
-              className={`absolute top-0 left-0 w-full text-sm md:text-lg text-neutral-300 font-sans font-light leading-relaxed transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] ${
+              className={`absolute top-0 left-0 w-full text-lg text-neutral-300 font-sans font-light leading-relaxed transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] ${
                 idx === activeIndex
                   ? 'opacity-100 translate-y-0'
                   : 'opacity-0 translate-y-4 pointer-events-none'
@@ -361,7 +361,7 @@ export default function HowItWorksSection() {
           ))}
         </div>
 
-        <div className="absolute -right-12 top-0 text-[11px] font-sans font-medium uppercase tracking-widest text-neutral-400 rotate-90 md:rotate-0 origin-right hidden md:block">
+        <div className="absolute -right-12 top-0 text-[11px] font-sans font-medium uppercase tracking-widest text-neutral-400 origin-right">
           Process
         </div>
       </div>
