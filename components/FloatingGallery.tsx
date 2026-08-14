@@ -32,7 +32,7 @@ export default function FloatingGallery() {
   const [radius, setRadius] = useState(480);
   const [isDesktop, setIsDesktop] = useState(true);
 
-  // Safely initialize dimensions on mount to prevent SSR hydration mismatches
+  // Safely initialize dimensions on mount
   useEffect(() => {
     setMounted(true);
     const handleResize = () => {
@@ -45,19 +45,22 @@ export default function FloatingGallery() {
   }, []);
 
   useEffect(() => {
+    // Wait until React has fully mounted the DOM
     if (!mounted) return;
+    
     gsap.registerPlugin(ScrollTrigger);
 
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (prefersReduced || !isDesktop) return;
 
-    const ctx = gsap.context(() => {
-      const section = sectionRef.current;
-      if (!section) return;
+    const section = sectionRef.current;
+    if (!section) return;
 
-      // Scope queries specifically to this section to prevent bleed-over
-      const items = gsap.utils.toArray('.cylinder-item', section);
-      const words = gsap.utils.toArray('.word-span', section);
+    // Create GSAP context scoped strictly to the HTML element (fixes 'Invalid scope' error)
+    const ctx = gsap.context(() => {
+      // Because we scoped the context to `section`, we don't need to pass it into toArray
+      const items = gsap.utils.toArray('.cylinder-item');
+      const words = gsap.utils.toArray('.word-span');
       
       if (!items.length) return;
 
@@ -102,8 +105,11 @@ export default function FloatingGallery() {
 
       tl.to(items, {
         keyframes: [
+          // A: Enter from bottom left
           { x: 0, y: 0, z: 0, rotateY: 0, opacity: 1, ease: 'power2.out', duration: 2.5 },
+          // B: Orbit
           { rotateY: -360, ease: 'none', duration: orbitDuration },
+          // C: Exit bottom right
           { x: () => window.innerWidth / 2 + 300, y: () => window.innerHeight / 2 + 300, z: -200, rotateY: -450, opacity: 0, ease: 'power2.in', duration: 2.5 }
         ],
         stagger: staggerTime,
@@ -118,15 +124,13 @@ export default function FloatingGallery() {
         );
       }
 
-      return () => {
-        ScrollTrigger.refresh();
-      };
-    }, sectionRef);
+    }, section); // <- Passes the element directly as the scope
 
     return () => ctx.revert();
   }, [mounted, radius, isDesktop]);
 
-  if (!mounted) return null;
+  // Removed `if (!mounted) return null;` to fix the `insertBefore` crash.
+  // Rendering the structure immediately ensures Next.js and React stay in sync.
 
   return (
     <section
@@ -144,24 +148,13 @@ export default function FloatingGallery() {
         select-none
       "
     >
-      {/* =====================================================
-          DESKTOP – TRUE 3D CONTAINER
-          ===================================================== */}
       <div
-        className="
-          cylinder-gallery-desktop
-          absolute
-          inset-0
-          flex
-          items-center
-          justify-center
-          pointer-events-none
-        "
-        style={{ perspective: '1200px', transformStyle: 'preserve-3d' }}
+        className={`
+          cylinder-gallery-desktop absolute inset-0 flex items-center justify-center pointer-events-none
+          ${!mounted || !isDesktop ? 'opacity-0' : 'opacity-100'} 
+        `}
+        style={{ perspective: '1200px', transformStyle: 'preserve-3d', transition: 'opacity 0.3s ease' }}
       >
-        {/* 
-          TEXT - Splitting words natively in React to avoid GSAP/DOM conflicts 
-        */}
         <div
           className="absolute text-center w-full max-w-5xl px-8 flex justify-center gap-x-4"
           style={{ transform: `translateZ(${-radius}px)` }}
@@ -174,7 +167,6 @@ export default function FloatingGallery() {
           </h2>
         </div>
 
-        {/* CYLINDRICAL ITEMS */}
         <div ref={cylinderRef} className="absolute inset-0" style={{ transformStyle: 'preserve-3d' }}>
           {PAST_INVESTORS.map((investor) => (
             <div
@@ -232,10 +224,7 @@ export default function FloatingGallery() {
         </div>
       </div>
 
-      {/* =====================================================
-          MOBILE FALLBACK
-          ===================================================== */}
-      <div className="cylinder-gallery-mobile absolute left-0 right-0 bottom-10 z-[50] overflow-x-auto px-6 md:hidden">
+      <div className={`cylinder-gallery-mobile absolute left-0 right-0 bottom-10 z-[50] overflow-x-auto px-6 md:hidden ${mounted && !isDesktop ? 'opacity-100' : 'opacity-0'}`}>
         <div className="flex w-max items-center gap-4">
           {PAST_INVESTORS.map((investor) => (
             <div
