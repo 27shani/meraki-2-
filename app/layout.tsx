@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { Merriweather, Urbanist } from 'next/font/google';
 import './globals.css';
+import LenisProvider from './LenisProvider';
 
-// Primary typeface — used sparingly for headers, sub-headers, annotations & buttons
 const merriweather = Merriweather({
   subsets: ['latin'],
   weight: ['300', '400', '700', '900'],
@@ -11,7 +11,6 @@ const merriweather = Merriweather({
   display: 'swap',
 });
 
-// Secondary typeface — the workhorse font used across most of the page
 const urbanist = Urbanist({
   subsets: ['latin'],
   weight: ['300', '400', '500', '600', '700'],
@@ -36,7 +35,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${merriweather.variable} ${urbanist.variable}`}>
       <body className="font-sans bg-black text-offwhite antialiased">
-        {children}
+        <LenisProvider>
+          {children}
+        </LenisProvider>
       </body>
     </html>
   );
