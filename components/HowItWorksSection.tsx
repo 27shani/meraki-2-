@@ -98,7 +98,7 @@ export default function HowItWorksSection() {
       // Intro blur fade
       gsap.fromTo(
         containerRef.current,
-        { opacity: 0, filter: 'blur(14px)' },
+        { opacity: 0.15, filter: 'blur(8px)' },
         {
           opacity: 1,
           filter: 'blur(0px)',
@@ -107,7 +107,7 @@ export default function HowItWorksSection() {
             trigger: containerRef.current,
             start: 'top bottom',
             end: 'top center',
-            scrub: 1.5,
+            scrub: 0.6,
           },
         }
       );
@@ -131,7 +131,7 @@ export default function HowItWorksSection() {
             start: 'top top',
             end: `+=${total * 160}%`,
             pin: true,
-            scrub: 1.8, // Enhanced ultra-smooth scrolling lag/scrubbing
+            scrub: 0.8, // Enhanced ultra-smooth scrolling lag/scrubbing
             anticipatePin: 1,
           },
         });
@@ -170,8 +170,8 @@ export default function HowItWorksSection() {
         tl.to(
           containerRef.current,
           {
-            opacity: 0,
-            filter: 'blur(12px)',
+            opacity: 0.2,
+          filter: 'blur(8px)',
             duration: 0.25,
             ease: 'power2.inOut',
           },
