@@ -14,40 +14,63 @@ declare global {
 }
 
 /**
- * Global Lenis + GSAP ticker setup
- * - lerp: 0.06
- * - Starts STOPPED so Hero loader can finish first
- * - Hero calls window.__unlockLenis() after intro
+ * Exact lukebaffait.fr Lenis + GSAP pattern:
+ *   const lenis = new Lenis({ lerp: 0.06 });
+ *   lenis.on('scroll', ScrollTrigger.update);
+ *   gsap.ticker.add((time) => lenis.raf(time * 1000));
+ *   gsap.ticker.lagSmoothing(0);
+ *   lenis.stop() during intro → lenis.start() after
  */
 export default function LenisProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
-    const lenis = new Lenis({
-      lerp: 0.06,
-      smoothWheel: true,
-    });
+    const html = document.documentElement;
+    html.classList.add('lenis', 'lenis-smooth');
 
-    // Start locked — Hero unlocks after loader
-    lenis.stop();
+    // Exact config from lukebaffait.fr
+    const lenis = new Lenis({ lerp: 0.06 });
+
     window.__lenis = lenis;
 
-    window.__unlockLenis = () => {
-      lenis.start();
-    };
-
     lenis.on('scroll', ScrollTrigger.update);
-
-    const tickerFn = (time: number) => {
+    gsap.ticker.add((time) => {
       lenis.raf(time * 1000);
-    };
-
-    gsap.ticker.add(tickerFn);
+    });
     gsap.ticker.lagSmoothing(0);
 
+    // Lock during intro (same as reference)
+    lenis.stop();
+    lenis.scrollTo(0, { immediate: true });
+    html.classList.add('lenis-stopped');
+    html.style.overflow = 'hidden';
+
+    const unlock = () => {
+      html.style.overflow = '';
+      html.classList.remove('lenis-stopped');
+      lenis.start();
+      lenis.scrollTo(0, { immediate: true });
+      requestAnimationFrame(() => {
+        ScrollTrigger.refresh();
+      });
+    };
+
+    window.__unlockLenis = unlock;
+
+    // Safety unlock if loader never fires
+    const safety = window.setTimeout(() => {
+      if (html.classList.contains('lenis-stopped')) unlock();
+    }, 5000);
+
+    const onLoad = () => ScrollTrigger.refresh();
+    window.addEventListener('load', onLoad);
+
     return () => {
+      window.clearTimeout(safety);
+      window.removeEventListener('load', onLoad);
       lenis.destroy();
-      gsap.ticker.remove(tickerFn);
+      html.classList.remove('lenis', 'lenis-smooth', 'lenis-stopped');
+      html.style.overflow = '';
       window.__lenis = null;
       window.__unlockLenis = undefined;
     };
