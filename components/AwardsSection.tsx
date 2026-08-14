@@ -272,8 +272,8 @@ export default function AwardsSection() {
                 >
                   <span
                     ref={(el) => { textRefs.current[index] = el; }}
-                    // Increased text size for mobile (text-3xl) to match full big texts
-                    className="text-3xl sm:text-4xl md:text-2xl font-sans font-medium pr-6"
+                    // Added whitespace-nowrap to force the full text to show in one line
+                    className="text-3xl sm:text-4xl md:text-2xl font-sans font-medium pr-6 whitespace-nowrap"
                   >
                     {faq.question}
                   </span>
