@@ -9,6 +9,7 @@ export default function AboutSection() {
   const containerRef = useRef<HTMLDivElement>(null);
   const textContainerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLDivElement>(null);
+  const boxesWrapperRef = useRef<HTMLDivElement>(null); // Added ref for horizontal scrolling
 
   // Refs for the boxes to animate their Y position
   const boxRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -34,8 +35,12 @@ export default function AboutSection() {
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
-    const ctx = gsap.context(() => {
-      // Smooth fade + rise intro as the section arrives
+    const mm = gsap.matchMedia();
+
+    // =========================================================================
+    // GLOBAL: Smooth fade + rise intro as the section arrives (All devices)
+    // =========================================================================
+    mm.add("all", () => {
       gsap.fromTo(
         containerRef.current,
         { opacity: 0, filter: 'blur(14px)' },
@@ -48,70 +53,109 @@ export default function AboutSection() {
             trigger: containerRef.current,
             start: 'top bottom',
             end: 'top center',
-            scrub: 1.5, // Increased for a buttery smooth intro
+            scrub: 1.5,
           },
         }
       );
+    });
 
+    // =========================================================================
+    // DESKTOP ANIMATION: >= 768px (Remains exactly identical to original)
+    // =========================================================================
+    mm.add("(min-width: 768px)", () => {
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          // Increased end distance gives the user more pixels to scroll through, 
-          // making the animation feel significantly less rushed and much smoother.
           end: '+=150%',
           pin: true,
-          scrub: 1.5, // High scrub value for fluid interpolation
+          scrub: 1.5,
         },
       });
 
-      // 1. Initial background image reveal - retains a slight blur (4px) as requested
       tl.to(imageRef.current, {
-        filter: 'blur(4px) brightness(1)', 
+        filter: 'blur(4px) brightness(1)',
         opacity: 1,
         duration: 0.8,
         ease: 'power2.out',
       }, '0');
 
-      // 2. Shift whole text block UP smoothly as soon as scrolling starts
       tl.to(
         textContainerRef.current,
-        {
-          y: '-50px',
-          opacity: 0.8,
-          duration: 1,
-          ease: 'power2.inOut',
-        },
+        { y: '-50px', opacity: 0.8, duration: 1, ease: 'power2.inOut' },
         '0'
       );
 
-      // 3. Reveal the liquid glass boxes by sliding them UP from off-screen
       tl.to(
         boxRefs.current,
-        {
-          y: 0,
-          stagger: 0.15, // Slightly increased stagger for a cleaner waterfall effect
-          duration: 1.8,
-          ease: 'power3.out',
-        },
-        '0.2' // Start smoothly after text begins moving
+        { y: 0, stagger: 0.15, duration: 1.8, ease: 'power3.out' },
+        '0.2'
       );
 
-      // 4. SMOOTH OUTRO: Fade out and blur the entire section seamlessly before moving on
       tl.to(
         containerRef.current,
-        {
-          opacity: 0,
-          filter: 'blur(16px)',
-          duration: 1,
-          ease: 'power2.inOut',
+        { opacity: 0, filter: 'blur(16px)', duration: 1, ease: 'power2.inOut' },
+        '+=0.4'
+      );
+    });
+
+    // =========================================================================
+    // MOBILE ANIMATION: < 768px
+    // =========================================================================
+    mm.add("(max-width: 767px)", () => {
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: 'top top',
+          end: '+=350%', // Extra scroll distance for horizontal sequence
+          pin: true,
+          scrub: 1.5,
+          invalidateOnRefresh: true, // Recalculates horizontal scroll distance on resize
         },
-        '+=0.4' // Comfortable pause before it starts fading out
+      });
+
+      // 1. Initial background image reveal
+      tl.to(imageRef.current, {
+        filter: 'blur(4px) brightness(1)',
+        opacity: 1,
+        duration: 0.8,
+        ease: 'power2.out',
+      }, '0');
+
+      // 2. Smoothly scroll text upward 
+      tl.to(
+        textContainerRef.current,
+        { y: '-15vh', opacity: 0.6, duration: 1.5, ease: 'power2.inOut' },
+        '0'
       );
 
-    }, containerRef);
+      // 3. Horizontally scroll the 3 boxes
+      const getScrollAmount = () => {
+        let wrapperWidth = boxesWrapperRef.current?.scrollWidth || 0;
+        let viewportWidth = window.innerWidth;
+        // Scroll total width minus viewport + padding to show the last box perfectly
+        return -(wrapperWidth - viewportWidth + 48); 
+      };
 
-    return () => ctx.revert();
+      tl.to(
+        boxesWrapperRef.current,
+        {
+          x: getScrollAmount,
+          duration: 3, 
+          ease: 'none', // Linear ease creates the most natural horizontal scroll feel
+        },
+        '0.5' // Starts smoothly after text begins rising
+      );
+
+      // 4. Smooth Outro
+      tl.to(
+        containerRef.current,
+        { opacity: 0, filter: 'blur(16px)', duration: 1, ease: 'power2.inOut' },
+        '+=0.2'
+      );
+    });
+
+    return () => mm.revert();
   }, []);
 
   return (
@@ -128,9 +172,7 @@ export default function AboutSection() {
           <div>
             <span className="font-serif italic font-normal text-gradient-brand">3 key benefits</span> &
           </div>
-          <div>
-            outcomes for
-          </div>
+          <div>outcomes for</div>
           <div>
             <span className="font-serif italic font-normal text-offwhite">applicants.</span>
           </div>
@@ -138,18 +180,24 @@ export default function AboutSection() {
       </div>
 
       {/* Liquid Glass Boxes Container */}
-      <div className="absolute bottom-4 sm:bottom-8 md:bottom-20 left-0 right-0 w-full z-30 px-6 md:px-16 pointer-events-none">
-        <div className="max-w-7xl mx-auto flex flex-row overflow-x-auto md:overflow-visible snap-x snap-mandatory md:snap-none justify-start md:justify-end items-end gap-3 sm:gap-4 md:gap-6 lg:gap-8 pl-0 md:pl-32 pb-1 md:pb-0 [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {/* Added mobile overflow-hidden wrapper so GSAP can move the inner container smoothly */}
+      <div className="absolute bottom-6 sm:bottom-10 md:bottom-20 left-0 right-0 w-full z-30 pointer-events-none px-6 md:px-16 overflow-hidden md:overflow-visible">
+        
+        {/* Changed to w-max on mobile to allow items to span horizontally off-screen */}
+        <div 
+          ref={boxesWrapperRef}
+          className="flex flex-row justify-start md:justify-end items-end gap-4 sm:gap-6 lg:gap-8 pb-1 md:pb-0 w-max md:w-full max-w-7xl mx-auto md:pl-32"
+        >
           {benefits.map((benefit, index) => (
             <div
               key={index}
               ref={(el) => { boxRefs.current[index] = el; }}
-              // Start the boxes completely off-screen at the bottom to prevent FOUC
-              style={{ transform: 'translateY(100vh)' }}
-              className="pointer-events-auto shrink-0 snap-start w-[210px] sm:w-[240px] md:w-full md:flex-1 md:max-w-[300px] will-change-transform"
+              // Prevent FOUC: Hidden downward initially ONLY on desktop. 
+              // On mobile, they sit properly at y-0 to be horizontally scrolled.
+              className="pointer-events-auto shrink-0 md:translate-y-[100vh] w-[280px] sm:w-[320px] md:w-full md:flex-1 md:max-w-[300px] will-change-transform"
             >
-              {/* INNER DIV: Premium fully active glassmorphism */}
-              <div className="h-[190px] sm:h-[230px] md:h-[300px] flex flex-col justify-between p-4 sm:p-6 md:p-8 rounded-[18px] sm:rounded-[24px] md:rounded-[32px] 
+              {/* INNER DIV: Increased heights and paddings for mobile readability */}
+              <div className="h-[260px] sm:h-[280px] md:h-[300px] flex flex-col justify-between p-5 sm:p-6 md:p-8 rounded-[20px] sm:rounded-[24px] md:rounded-[32px] 
                               bg-white/[0.08]
                               backdrop-blur-2xl 
                               border border-white/20 
@@ -157,18 +205,19 @@ export default function AboutSection() {
                               transition-transform duration-500 hover:-translate-y-2
                               relative overflow-hidden"
               >
-                {/* Subtle gradient overlay for extra glass reflection */}
-                <div className="absolute inset-0 bg-gradient-to-br from-coral/10 via-transparent to-purple/10 pointer-events-none rounded-[18px] sm:rounded-[24px] md:rounded-[32px]" />
+                <div className="absolute inset-0 bg-gradient-to-br from-coral/10 via-transparent to-purple/10 pointer-events-none rounded-[20px] sm:rounded-[24px] md:rounded-[32px]" />
 
                 <div className="relative z-10">
-                  <span className="font-sans text-[9px] sm:text-[10px] md:text-xs font-medium tracking-widest text-coral-light uppercase">
+                  <span className="font-sans text-[10px] sm:text-xs md:text-xs font-medium tracking-widest text-coral-light uppercase">
                     {benefit.step}
                   </span>
-                  <h3 className="text-base sm:text-xl md:text-3xl font-serif italic font-normal text-offwhite mt-2 sm:mt-3 leading-[1.2]">
+                  {/* Increased title sizes */}
+                  <h3 className="text-xl sm:text-2xl md:text-3xl font-serif italic font-normal text-offwhite mt-3 sm:mt-4 leading-[1.2]">
                     {benefit.title}
                   </h3>
                 </div>
-                <p className="relative z-10 text-[11px] sm:text-xs md:text-sm text-neutral-300 font-light leading-relaxed font-sans line-clamp-3 md:line-clamp-none">
+                {/* Increased text sizes & removed line-clamp so text is fully readable */}
+                <p className="relative z-10 text-[13px] sm:text-sm md:text-sm text-neutral-300 font-light leading-relaxed font-sans">
                   {benefit.desc}
                 </p>
               </div>
@@ -187,7 +236,6 @@ export default function AboutSection() {
           alt="Hackathon Event"
           className="w-full h-full object-cover object-center"
         />
-        {/* Simple black fade edge gradient to seamlessly blend the image edge into the background, without altering the overall image colors */}
         <div className="absolute inset-0 bg-gradient-to-l from-transparent via-black/20 to-black border-l-0" />
       </div>
     </section>
