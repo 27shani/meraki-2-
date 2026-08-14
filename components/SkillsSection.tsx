@@ -157,9 +157,10 @@ export default function SkillsSection() {
                 >
                   <button
                     onClick={() => toggle(idx)}
-                    className="w-full flex justify-between items-center py-5 md:py-8 text-left group"
+                    className="w-full flex justify-between items-center py-5 md:py-8 text-left group overflow-x-auto no-scrollbar"
                   >
-                    <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-6">
+                    {/* Updated wrapper to enforce a single row & no wrapping on mobile */}
+                    <div className="flex flex-row items-center gap-3 md:gap-6 whitespace-nowrap">
                       <span className="text-xl sm:text-3xl md:text-4xl font-sans font-normal group-hover:text-coral-light transition-colors">
                         {event.title}
                       </span>
@@ -167,7 +168,7 @@ export default function SkillsSection() {
                         {event.date}
                       </span>
                     </div>
-                    <span className="text-xl md:text-2xl font-light text-neutral-500 transition-transform duration-300">
+                    <span className="text-xl md:text-2xl font-light text-neutral-500 transition-transform duration-300 ml-4 shrink-0">
                       {isOpen ? '—' : '+'}
                     </span>
                   </button>
@@ -193,7 +194,8 @@ export default function SkillsSection() {
       {/* Arrow */}
       <div
         ref={arrowRef}
-        className="absolute bottom-12 md:bottom-20 left-0 z-10 will-change-transform pointer-events-none"
+        {/* Added hidden md:block to hide graphic on mobile */}
+        className="absolute bottom-12 md:bottom-20 left-0 z-10 will-change-transform pointer-events-none hidden md:block"
       >
         <svg
           width="400"
