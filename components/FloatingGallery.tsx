@@ -6,40 +6,46 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { splitIntoWords } from '@/lib/splitText';
 
-interface Project {
+interface Investor {
   id: number;
   name: string;
-  image: string;
+  logo: string;
 }
 
 /*
- * Placeholder images - replace with your actual portfolio screenshots
+ * Investor / Partner logos
+ * These files live directly in /public/
  */
-const PROJECTS: Project[] = [
-  { id: 1, name: 'Project 01', image: '/Screenshot-1.jpg' },
-  { id: 2, name: 'Project 02', image: '/Screenshot-2.jpg' },
-  { id: 3, name: 'Project 03', image: '/Screenshot-3.jpg' },
-  { id: 4, name: 'Project 04', image: '/Screenshot-4.jpg' },
-  { id: 5, name: 'Project 05', image: '/Screenshot-5.jpg' },
-  { id: 6, name: 'Project 06', image: '/Screenshot-6.jpg' },
-  { id: 7, name: 'Project 07', image: '/Screenshot-7.jpg' },
-  { id: 8, name: 'Project 08', image: '/Screenshot-8.jpg' },
-  { id: 9, name: 'Project 09', image: '/Screenshot-9.jpg' },
+const PAST_INVESTORS: Investor[] = [
+  { id: 1, name: 'Partner 01', logo: '/Image-26.png' },
+  { id: 2, name: 'Partner 02', logo: '/Image-29.png' },
+  { id: 3, name: 'Partner 03', logo: '/Image-32.png' },
+  { id: 4, name: 'Partner 04', logo: '/Image-33.png' },
+  { id: 5, name: 'Partner 05', logo: '/Image-34.png' },
+  { id: 6, name: 'Partner 06', logo: '/Image-35.png' },
+  { id: 7, name: 'Partner 07', logo: '/Image-36.png' },
+  { id: 8, name: 'Partner 08', logo: '/Image-38-1.png' },
 ];
 
-const STRIP_COUNT = 12; // Increased for a smoother curve
+const STRIP_COUNT = 9; // vertical slices per logo (8–10 range)
 
 export default function FloatingGallery() {
   const sectionRef = useRef<HTMLElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const cylinderRef = useRef<HTMLDivElement>(null);
+  
   const [isDesktop, setIsDesktop] = useState(true);
+  const [radius, setRadius] = useState(480);
 
+  // Manage responsive state and radius calculation safely in React
   useEffect(() => {
-    const check = () => setIsDesktop(window.innerWidth >= 768);
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth >= 768);
+      setRadius(Math.min(window.innerWidth * 0.38, 480));
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   useEffect(() => {
@@ -59,134 +65,109 @@ export default function FloatingGallery() {
       const cylinder = cylinderRef.current;
       if (!section || !text || !cylinder) return;
 
-      // -------------------------------------------------
-      // Text Reveal Setup
-      // -------------------------------------------------
       const heading = text.querySelector('h2');
       let words: HTMLElement[] = [];
       if (heading) {
         words = splitIntoWords(heading);
-        gsap.set(words, { opacity: 0.1, filter: 'blur(8px)' }); // Starts slightly visible
+        gsap.set(words, { opacity: 0, filter: 'blur(12px)' });
       }
 
-      // -------------------------------------------------
-      // Build Scattered Cylindrical Items
-      // -------------------------------------------------
       const items = cylinder.querySelectorAll<HTMLElement>('.cylinder-item');
-      // Wider radius to wrap around the central text
-      const radius = Math.min(window.innerWidth * 0.45, 600); 
       const total = items.length;
       const angleStep = 360 / total;
 
-      items.forEach((item, i) => {
-        const angle = i * angleStep;
-        
-        // Stagger the vertical positions to match the scattered look
-        // We alternate high/low and add a bit of randomness
-        const yOffset = (i % 2 === 0 ? 1 : -1) * (Math.random() * 150 + 50);
-
-        gsap.set(item, {
-          rotateY: angle,
-          y: yOffset + 300, // Start lower for the entry effect
-          transformOrigin: `50% 50% ${-radius}px`,
-          z: 0,
-          opacity: 0,
-          scale: 0.9,
-        });
-
-        const imgUrl = item.dataset.logo || '';
-        const stripContainer = item.querySelector('.strip-container') as HTMLElement;
-        if (!stripContainer) return;
-
-        stripContainer.innerHTML = '';
-        const stripWidth = 100 / STRIP_COUNT;
-
-        for (let s = 0; s < STRIP_COUNT; s++) {
-          const strip = document.createElement('div');
-          strip.className = 'cylinder-strip absolute h-full';
-          strip.style.width = `${stripWidth + 0.5}%`; // +0.5 to overlap and prevent seams
-          strip.style.left = `${s * stripWidth}%`;
-          strip.style.backgroundImage = `url(${imgUrl})`;
-          strip.style.backgroundPosition = `${(s / (STRIP_COUNT - 1)) * 100}% 50%`;
-          strip.style.backgroundSize = `${STRIP_COUNT * 100}% 100%`;
-          
-          // Curve calculation
-          const stripAngle = (s - (STRIP_COUNT - 1) / 2) * 3; // Adjust angle multiplier for curve intensity
-          strip.style.transformOrigin = `50% 50% ${-radius}px`;
-          strip.style.transform = `rotateY(${stripAngle}deg) translateZ(0)`;
-          stripContainer.appendChild(strip);
-        }
+      // 1. Initial 3D placement around the cylinder
+      gsap.set(items, {
+        rotateY: (i) => i * angleStep,
+        transformOrigin: `50% 50% ${-radius}px`,
+        z: 0,
       });
 
       // -------------------------------------------------
-      // MAIN SCROLL TIMELINE
+      // MAIN PINNED SCROLL TIMELINE
       // -------------------------------------------------
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: section,
           start: 'top top',
-          end: '+=400%', // Longer scroll for the full rotation
+          end: '+=400%', // Lengthened slightly for full sequence
           pin: true,
-          scrub: 1, // Smoother scrub
+          scrub: 1.2,
           anticipatePin: 1,
           invalidateOnRefresh: true,
         },
       });
 
-      // 1. Text fades in sharply
+      // Reveal center text
       if (words.length) {
         tl.to(
           words,
-          {
-            opacity: 1,
-            filter: 'blur(0px)',
-            duration: 0.8,
-            stagger: 0.05,
-            ease: 'power2.out',
-          },
+          { opacity: 1, filter: 'blur(0px)', duration: 1.4, stagger: 0.08, ease: 'power3.out' },
           0
         );
       }
 
-      // 2. Images float up and fade in
-      tl.to(
+      // 2. Images fly in ONE BY ONE (staggered) from Bottom-Left
+      tl.fromTo(
         items,
         {
+          x: () => -window.innerWidth / 2 - 300, // Bottom-left off-screen
+          y: () => window.innerHeight / 2 + 300,
+          z: 250,
+          opacity: 0,
+          rotationZ: -45, // Tilt effect while flying in
+          scale: 0.3,
+        },
+        {
+          x: 0,
+          y: 0,
+          z: 0,
           opacity: 1,
-          y: (i) => {
-             const baseOffset = (i % 2 === 0 ? 1 : -1) * (Math.random() * 150 + 50);
-             return baseOffset; // Rise to their resting vertical offset
-          },
+          rotationZ: 0,
           scale: 1,
-          duration: 2,
+          duration: 2.5,
+          stagger: 0.18, // Makes them follow the 1st image sequentially
           ease: 'power2.out',
         },
-        0.2
+        0.5 // Start after text begins revealing
       );
 
-      // 3. Continuous rotation and slight upward floating
+      // 3. Entire Cylinder Rotates 360 degrees
       tl.to(
         cylinder,
         {
-          rotateY: -angleStep * (total + 1.5), // Full 360+ rotation
-          y: -200, // The whole cylinder floats up slightly during the scroll
-          duration: 8,
-          ease: 'none',
+          rotateY: -360,
+          duration: 6,
+          ease: 'power1.inOut',
         },
-        0 // Start rotation immediately
+        2 // Overlaps with the end of the fly-in animation
       );
 
-      // 4. Fade out everything at the end of the pin
+      // 4. Images fly out ONE BY ONE (staggered) to Bottom-Right
       tl.to(
-        [words, cylinder],
+        items,
         {
+          x: () => window.innerWidth / 2 + 300, // Bottom-right off-screen
+          y: () => window.innerHeight / 2 + 300,
+          z: 250,
           opacity: 0,
-          filter: 'blur(10px)',
-          duration: 1,
-          ease: 'power2.inOut',
+          rotationZ: 45,
+          scale: 0.3,
+          duration: 2.5,
+          stagger: 0.18, // Sequentially follow each other out
+          ease: 'power2.in',
         },
-        7 // Trigger near the end of the timeline duration
+        6 // Starts near the end of the cylinder rotation
       );
+
+      // 5. Soft exit of center text
+      if (words.length) {
+        tl.to(
+          words,
+          { opacity: 0, filter: 'blur(10px)', duration: 1, stagger: 0.04, ease: 'power2.in' },
+          7
+        );
+      }
 
       const handleResize = () => ScrollTrigger.refresh();
       window.addEventListener('resize', handleResize);
@@ -197,7 +178,7 @@ export default function FloatingGallery() {
     }, sectionRef);
 
     return () => ctx.revert();
-  }, [isDesktop]);
+  }, [isDesktop, radius]);
 
   return (
     <section
@@ -206,8 +187,8 @@ export default function FloatingGallery() {
         relative
         w-full
         h-screen
-        bg-black
-        text-white
+        bg-[#070707]
+        text-offwhite
         overflow-hidden
         flex
         items-center
@@ -224,7 +205,7 @@ export default function FloatingGallery() {
           relative
           z-[150]
           w-full
-          max-w-4xl
+          max-w-5xl
           px-8
           text-center
           pointer-events-none
@@ -235,17 +216,17 @@ export default function FloatingGallery() {
             text-4xl
             sm:text-5xl
             md:text-6xl
-            lg:text-[80px]
+            lg:text-7xl
             font-sans
-            font-semibold
+            font-medium
             tracking-tight
-            leading-[1.1]
-            text-[#e0e0e0]
+            leading-[1.05]
           "
         >
-          Each project is a chance <br />
-          to <span className="font-serif italic font-normal text-white">learn, experiment</span> and <br />
-          push my limits.
+          PAST{' '}
+          <span className="font-serif italic font-normal text-gradient-brand">
+            INVESTORS
+          </span>
         </h2>
       </div>
 
@@ -263,7 +244,7 @@ export default function FloatingGallery() {
           justify-center
           pointer-events-none
         "
-        style={{ perspective: '1200px' }} // Added perspective to the wrapper for better 3D depth
+        style={{ perspective: '1500px' }}
       >
         <div
           ref={cylinderRef}
@@ -271,21 +252,23 @@ export default function FloatingGallery() {
             cylinder-gallery
             relative
             w-full
-            h-full
+            h-[280px]
+            md:h-[340px]
+            lg:h-[400px]
           "
           style={{ transformStyle: 'preserve-3d' }}
         >
-          {PROJECTS.map((project) => (
+          {PAST_INVESTORS.map((investor) => (
             <div
-              key={project.id}
-              className="cylinder-item absolute top-1/2 left-1/2"
-              data-logo={project.image}
+              key={investor.id}
+              className="cylinder-item absolute top-1/2 left-1/2" // Ensures correct pivot
+              data-logo={investor.logo}
               style={{
-                width: 'clamp(200px, 22vw, 320px)',
-                height: 'clamp(140px, 16vw, 220px)',
-                marginLeft: 'calc(clamp(200px, 22vw, 320px) / -2)',
-                marginTop: 'calc(clamp(140px, 16vw, 220px) / -2)',
-                transformStyle: 'preserve-3d'
+                width: 'clamp(160px, 18vw, 280px)',
+                height: 'clamp(100px, 12vw, 170px)',
+                marginLeft: 'calc(clamp(160px, 18vw, 280px) / -2)',
+                marginTop: 'calc(clamp(100px, 12vw, 170px) / -2)',
+                transformStyle: 'preserve-3d',
               }}
             >
               <div
@@ -294,14 +277,39 @@ export default function FloatingGallery() {
                   relative
                   w-full
                   h-full
+                  rounded-xl
                   overflow-hidden
-                  shadow-[0_20px_60px_rgba(0,0,0,0.8)]
+                  border
+                  border-white/10
+                  bg-offwhite
+                  shadow-[0_20px_60px_rgba(0,0,0,0.35)]
                 "
                 style={{ transformStyle: 'preserve-3d' }}
-              />
+              >
+                {/* Dynamically rendering the 3D strips in React prevents DOM freezing */}
+                {Array.from({ length: STRIP_COUNT }).map((_, s) => {
+                  const stripWidth = 100 / STRIP_COUNT;
+                  const stripAngle = (s - (STRIP_COUNT - 1) / 2) * 2.2;
+                  return (
+                    <div
+                      key={s}
+                      className="cylinder-strip absolute top-0 bottom-0"
+                      style={{
+                        width: `${stripWidth + 0.5}%`,
+                        left: `${s * stripWidth}%`,
+                        backgroundImage: `url(${investor.logo})`,
+                        backgroundPosition: `${(s / (STRIP_COUNT - 1)) * 100}% 50%`,
+                        backgroundSize: `${STRIP_COUNT * 100}% 100%`,
+                        transformOrigin: `50% 50% ${-radius}px`,
+                        transform: `rotateY(${stripAngle}deg) translateZ(0)`,
+                      }}
+                    />
+                  );
+                })}
+              </div>
               <img
-                src={project.image}
-                alt={project.name}
+                src={investor.logo}
+                alt={investor.name}
                 className="sr-only"
               />
             </div>
@@ -310,7 +318,7 @@ export default function FloatingGallery() {
       </div>
 
       {/* =====================================================
-          MOBILE FALLBACK
+          MOBILE FALLBACK – simple horizontal track
           ===================================================== */}
       <div
         className="
@@ -322,29 +330,31 @@ export default function FloatingGallery() {
           z-[50]
           overflow-x-auto
           px-6
-          md:hidden
         "
       >
         <div className="flex w-max items-center gap-4">
-          {PROJECTS.map((project) => (
+          {PAST_INVESTORS.map((investor) => (
             <div
-              key={project.id}
+              key={investor.id}
               className="
                 relative
                 shrink-0
-                w-[200px]
-                h-[140px]
+                w-[160px]
+                h-[100px]
+                rounded-xl
                 overflow-hidden
-                bg-[#111]
+                border
+                border-white/10
+                bg-offwhite
                 flex
                 items-center
                 justify-center
               "
             >
               <img
-                src={project.image}
-                alt={project.name}
-                className="w-full h-full object-cover"
+                src={investor.logo}
+                alt={investor.name}
+                className="max-w-[75%] max-h-[65%] object-contain"
               />
             </div>
           ))}
