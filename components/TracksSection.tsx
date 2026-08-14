@@ -59,7 +59,7 @@ export default function TracksSection() {
       // Intro blur
       gsap.fromTo(
         containerRef.current,
-        { opacity: 0, filter: 'blur(14px)' },
+        { opacity: 0.15, filter: 'blur(8px)' },
         {
           opacity: 1,
           filter: 'blur(0px)',
@@ -68,7 +68,7 @@ export default function TracksSection() {
             trigger: containerRef.current,
             start: 'top bottom',
             end: 'top center',
-            scrub: 1.4,
+            scrub: 0.6,
           },
         }
       );
@@ -81,7 +81,7 @@ export default function TracksSection() {
           start: 'top top',
           end: isMobile ? '+=380%' : '+=250%',
           pin: true,
-          scrub: 1.2,
+          scrub: 0.5,
           anticipatePin: 1,
           invalidateOnRefresh: true,
         },
@@ -122,8 +122,8 @@ export default function TracksSection() {
           if (!box) return;
           gsap.set(box, {
             x: 120,
-            opacity: 0,
-            filter: 'blur(10px)',
+            opacity: 0.2,
+          filter: 'blur(8px)',
           });
           tl.to(
             box,
@@ -220,8 +220,8 @@ export default function TracksSection() {
       tl.to(
         containerRef.current,
         {
-          opacity: 0,
-          filter: 'blur(12px)',
+          opacity: 0.2,
+          filter: 'blur(8px)',
           duration: 0.8,
           ease: 'power2.inOut',
         },
