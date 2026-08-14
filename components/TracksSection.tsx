@@ -17,6 +17,7 @@ export default function TracksSection() {
   const titleRef = useRef<HTMLDivElement>(null);
   const boxRefs = useRef<(HTMLDivElement | null)[]>([]);
   const prizeRef = useRef<HTMLDivElement>(null);
+  const prizeBoxRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const tracks = [
     {
@@ -39,6 +40,12 @@ export default function TracksSection() {
       whoCanApply:
         'Any undergraduate student or team with an innovative, scalable idea aligned with one or more Sustainable Development Goals.',
     },
+  ];
+
+  const prizes = [
+    { title: 'Winner', prize: '₹150,000 | $1,800', note: '(Each Track)' },
+    { title: '1st Runner up', prize: '₹100,000 | $1,200', note: '(Each Track)' },
+    { title: '2nd Runner up', prize: '₹50,000 | $ 600', note: '(Each Track)' },
   ];
 
   useEffect(() => {
@@ -66,13 +73,16 @@ export default function TracksSection() {
         }
       );
 
+      const isMobile = window.innerWidth < 768;
+
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: '+=250%',
+          end: isMobile ? '+=380%' : '+=250%',
           pin: true,
           scrub: 1.2,
+          anticipatePin: 1,
           invalidateOnRefresh: true,
         },
       });
@@ -106,40 +116,92 @@ export default function TracksSection() {
         );
       }
 
-      // Track cards – clip-path + y + blur
-      boxRefs.current.forEach((box, i) => {
-        if (!box) return;
-        gsap.set(box, {
-          y: 80,
-          opacity: 0,
-          clipPath: 'inset(100% 0 0 0)',
-          filter: 'blur(12px)',
+      // Track cards animation
+      if (isMobile) {
+        // Mobile: cards enter from right and move towards left sequentially
+        boxRefs.current.forEach((box, i) => {
+          if (!box) return;
+          gsap.set(box, {
+            x: 120,
+            opacity: 0,
+            filter: 'blur(10px)',
+          });
+          tl.to(
+            box,
+            {
+              x: 0,
+              opacity: 1,
+              filter: 'blur(0px)',
+              duration: 1.2,
+              ease: 'power3.out',
+            },
+            0.3 + i * 0.9
+          );
         });
+
+        // Prize title + individual prize cards entering from below sequentially on mobile
+        gsap.set(prizeRef.current, { opacity: 0, y: 40 });
         tl.to(
-          box,
+          prizeRef.current,
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.8,
+            ease: 'power3.out',
+          },
+          2.1
+        );
+
+        prizeBoxRefs.current.forEach((pBox, i) => {
+          if (!pBox) return;
+          gsap.set(pBox, { y: 60, opacity: 0, filter: 'blur(8px)' });
+          tl.to(
+            pBox,
+            {
+              y: 0,
+              opacity: 1,
+              filter: 'blur(0px)',
+              duration: 1,
+              ease: 'power3.out',
+            },
+            2.3 + i * 0.6
+          );
+        });
+      } else {
+        // Desktop layout animations
+        boxRefs.current.forEach((box, i) => {
+          if (!box) return;
+          gsap.set(box, {
+            y: 80,
+            opacity: 0,
+            clipPath: 'inset(100% 0 0 0)',
+            filter: 'blur(12px)',
+          });
+          tl.to(
+            box,
+            {
+              y: 0,
+              opacity: 1,
+              clipPath: 'inset(0% 0 0 0)',
+              filter: 'blur(0px)',
+              duration: 1.15,
+              ease: 'power3.out',
+            },
+            0.25 + i * 0.18
+          );
+        });
+
+        tl.to(
+          prizeRef.current,
           {
             y: 0,
             opacity: 1,
-            clipPath: 'inset(0% 0 0 0)',
-            filter: 'blur(0px)',
             duration: 1.15,
             ease: 'power3.out',
           },
-          0.25 + i * 0.18
+          0.7
         );
-      });
-
-      // Prize section
-      tl.to(
-        prizeRef.current,
-        {
-          y: 0,
-          opacity: 1,
-          duration: 1.15,
-          ease: 'power3.out',
-        },
-        0.7
-      );
+      }
 
       // Pan content if overflowing
       tl.to(
@@ -154,7 +216,7 @@ export default function TracksSection() {
           ease: 'none',
           duration: 2,
         },
-        1.1
+        isMobile ? 3.5 : 1.1
       );
 
       // Outro
@@ -208,8 +270,8 @@ export default function TracksSection() {
                   flex flex-col justify-between
                   p-6 sm:p-8 md:p-10
                   rounded-[20px] sm:rounded-[28px] md:rounded-[32px]
-                  bg-[#0f0f0f]
-                  border border-white/5
+                  bg-white/[0.04] backdrop-blur-xl
+                  border border-white/10
                   shadow-2xl
                   relative overflow-hidden
                   group
@@ -226,7 +288,7 @@ export default function TracksSection() {
                   <span className="font-sans text-[10px] sm:text-xs font-semibold tracking-widest text-[#FB575F] uppercase">
                     {track.trackNum}
                   </span>
-                  <span className="font-serif italic text-xl sm:text-2xl text-neutral-600 font-light group-hover:text-coral-light transition-colors duration-400">
+                  <span className="font-serif italic text-xl sm:text-2xl text-neutral-400 font-light group-hover:text-coral-light transition-colors duration-400">
                     {track.numLabel}
                   </span>
                 </div>
@@ -238,16 +300,16 @@ export default function TracksSection() {
                   <p className="text-xs md:text-sm text-neutral-300 font-sans font-medium leading-relaxed">
                     {track.subtitle}
                   </p>
-                  <p className="hidden sm:block text-xs md:text-sm text-neutral-500 font-sans font-light leading-relaxed pt-4 border-t border-white/5">
+                  <p className="block text-xs md:text-sm text-neutral-400 font-sans font-light leading-relaxed pt-4 border-t border-white/10">
                     {track.description}
                   </p>
                 </div>
 
-                <div className="hidden md:block relative z-10 pt-4 border-t border-white/5 text-[11px] text-neutral-500 font-sans mt-6">
+                <div className="block relative z-10 pt-4 border-t border-white/10 text-[11px] text-neutral-400 font-sans mt-6">
                   <span className="text-[#FB575F] font-semibold uppercase tracking-wider block mb-1">
                     Who can apply:
                   </span>
-                  <p className="line-clamp-2">{track.whoCanApply}</p>
+                  <p>{track.whoCanApply}</p>
                 </div>
               </div>
             </div>
@@ -264,39 +326,25 @@ export default function TracksSection() {
             Prize Money
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-            <div className="bg-[#0f0f0f] border border-white/5 rounded-2xl p-6 md:p-8 flex flex-col items-center justify-center text-center shadow-xl group hover:border-[#FB575F]/30 hover:-translate-y-1 transition-all duration-400">
-              <h4 className="text-2xl md:text-3xl font-serif italic font-normal text-offwhite mb-2">
-                Winner
-              </h4>
-              <p className="text-base md:text-lg text-neutral-300 font-sans font-medium">
-                ₹150,000 | $1,800
-              </p>
-              <p className="text-xs md:text-sm text-neutral-500 font-sans font-light mt-1">
-                (Each Track)
-              </p>
-            </div>
-            <div className="bg-[#0f0f0f] border border-white/5 rounded-2xl p-6 md:p-8 flex flex-col items-center justify-center text-center shadow-xl group hover:border-[#FB575F]/30 hover:-translate-y-1 transition-all duration-400">
-              <h4 className="text-2xl md:text-3xl font-serif italic font-normal text-offwhite mb-2">
-                1st Runner up
-              </h4>
-              <p className="text-base md:text-lg text-neutral-300 font-sans font-medium">
-                ₹100,000 | $1,200
-              </p>
-              <p className="text-xs md:text-sm text-neutral-500 font-sans font-light mt-1">
-                (Each Track)
-              </p>
-            </div>
-            <div className="bg-[#0f0f0f] border border-white/5 rounded-2xl p-6 md:p-8 flex flex-col items-center justify-center text-center shadow-xl group hover:border-[#FB575F]/30 hover:-translate-y-1 transition-all duration-400">
-              <h4 className="text-2xl md:text-3xl font-serif italic font-normal text-offwhite mb-2">
-                2nd Runner up
-              </h4>
-              <p className="text-base md:text-lg text-neutral-300 font-sans font-medium">
-                ₹50,000 | $ 600
-              </p>
-              <p className="text-xs md:text-sm text-neutral-500 font-sans font-light mt-1">
-                (Each Track)
-              </p>
-            </div>
+            {prizes.map((p, index) => (
+              <div
+                key={index}
+                ref={(el) => {
+                  prizeBoxRefs.current[index] = el;
+                }}
+                className="bg-white/[0.04] backdrop-blur-xl border border-white/10 rounded-2xl p-6 md:p-8 flex flex-col items-center justify-center text-center shadow-xl group hover:border-[#FB575F]/30 hover:-translate-y-1 transition-all duration-400 will-change-transform"
+              >
+                <h4 className="text-2xl md:text-3xl font-serif italic font-normal text-offwhite mb-2">
+                  {p.title}
+                </h4>
+                <p className="text-base md:text-lg text-neutral-300 font-sans font-medium">
+                  {p.prize}
+                </p>
+                <p className="text-xs md:text-sm text-neutral-400 font-sans font-light mt-1">
+                  {p.note}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </div>
