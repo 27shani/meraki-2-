@@ -43,7 +43,7 @@ export default function AboutSection() {
     mm.add("all", () => {
       gsap.fromTo(
         containerRef.current,
-        { opacity: 0, filter: 'blur(14px)' },
+        { opacity: 0.15, filter: 'blur(8px)' },
         {
           opacity: 1,
           filter: 'blur(0px)',
@@ -53,7 +53,7 @@ export default function AboutSection() {
             trigger: containerRef.current,
             start: 'top bottom',
             end: 'top center',
-            scrub: 1.5,
+            scrub: 0.6,
           },
         }
       );
@@ -69,7 +69,7 @@ export default function AboutSection() {
           start: 'top top',
           end: '+=150%',
           pin: true,
-          scrub: 1.5,
+          scrub: 0.6,
         },
       });
 
@@ -94,7 +94,7 @@ export default function AboutSection() {
 
       tl.to(
         containerRef.current,
-        { opacity: 0, filter: 'blur(16px)', duration: 1, ease: 'power2.inOut' },
+        { opacity: 0.15, filter: 'blur(8px)', duration: 1, ease: 'power2.inOut' },
         '+=0.4'
       );
     });
@@ -109,7 +109,7 @@ export default function AboutSection() {
           start: 'top top',
           end: '+=350%', // Extra scroll distance for horizontal sequence
           pin: true,
-          scrub: 1.5,
+          scrub: 0.6,
           invalidateOnRefresh: true, // Recalculates horizontal scroll distance on resize
         },
       });
@@ -150,7 +150,7 @@ export default function AboutSection() {
       // 4. Smooth Outro
       tl.to(
         containerRef.current,
-        { opacity: 0, filter: 'blur(16px)', duration: 1, ease: 'power2.inOut' },
+        { opacity: 0.15, filter: 'blur(8px)', duration: 1, ease: 'power2.inOut' },
         '+=0.2'
       );
     });
