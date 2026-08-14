@@ -4,25 +4,19 @@
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { splitIntoChars, applyCharHover, initCharHover } from '@/lib/splitText';
+import { splitIntoChars, initCharHover } from '@/lib/splitText';
 
-/**
- * HeroSection
- * -------------------------------------------------
- * - Loader with character-level title split
- * - Characters rise from yPercent: 110 → 0, stagger from center
- * - On scroll: letters exit left/right, tagline + bottom bar fade
- * - Strong scrubbed transition into next section
- */
 export default function HeroSection() {
   const containerRef = useRef<HTMLDivElement>(null);
   const expandBoxRef = useRef<HTMLDivElement>(null);
   const expandContentRef = useRef<HTMLDivElement>(null);
+  const topHeaderRef = useRef<HTMLDivElement>(null);
 
   // Loader refs
   const loaderRef = useRef<HTMLDivElement>(null);
   const loaderTitleRef = useRef<HTMLDivElement>(null);
-  const loaderRedFlashRef = useRef<HTMLDivElement>(null);
+  const loaderWipeRedRef = useRef<HTMLDivElement>(null);
+  const loaderWipeBlackRef = useRef<HTMLDivElement>(null);
 
   // Main title + bottom bar refs for scroll exit
   const mainTitleRef = useRef<HTMLHeadingElement>(null);
@@ -44,113 +38,82 @@ export default function HeroSection() {
     const ctx = gsap.context(() => {
       /*
        * =========================================================
-       * OPENING LOADING ANIMATION + CHARACTER SPLIT
+       * OPENING LOADING ANIMATION: TEXT SCRAMBLE + WIPE REVEAL
        * =========================================================
        */
       const loader = loaderRef.current;
       const loaderTitle = loaderTitleRef.current;
-      const redFlash = loaderRedFlashRef.current;
+      const wipeRed = loaderWipeRedRef.current;
+      const wipeBlack = loaderWipeBlackRef.current;
 
-      if (loader && loaderTitle && redFlash && !prefersReduced && !skipIntro) {
-        // Split loader title into characters
+      if (loader && loaderTitle && wipeRed && wipeBlack && !prefersReduced && !skipIntro) {
         const pitchSpan = loaderTitle.querySelector('[data-word="pitch"]') as HTMLElement;
         const connectSpan = loaderTitle.querySelector('[data-word="connect"]') as HTMLElement;
 
-        let allChars: HTMLElement[] = [];
+        // Custom text scramble function
+        const scrambleWord = (element: HTMLElement, finalStr: string) => {
+          const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$&*';
+          let iterations = 0;
+          const interval = setInterval(() => {
+            element.innerText = finalStr
+              .split('')
+              .map((letter, index) => {
+                if (letter === ' ') return ' ';
+                if (index < iterations) return finalStr[index];
+                return chars[Math.floor(Math.random() * chars.length)];
+              })
+              .join('');
 
-        if (pitchSpan) {
-          const chars = splitIntoChars(pitchSpan);
-          allChars = allChars.concat(chars.map((c) => c.wrapper));
-        }
-        if (connectSpan) {
-          const chars = splitIntoChars(connectSpan);
-          allChars = allChars.concat(chars.map((c) => c.wrapper));
-        }
-
-        // Initial: characters below
-        gsap.set(allChars, { yPercent: 110, opacity: 0 });
-
-        const loaderTl = gsap.timeline({
-          onComplete: () => {
-            sessionStorage.setItem('meraki-intro-seen', '1');
-            // Unlock Lenis after intro finishes
-            if (typeof window !== 'undefined' && window.__unlockLenis) {
-              window.__unlockLenis();
+            if (iterations >= finalStr.length) {
+              clearInterval(interval);
+              element.innerText = finalStr;
             }
-          },
-        });
+            iterations += 1 / 3;
+          }, 35);
+        };
 
-        gsap.set(loader, { opacity: 1, visibility: 'visible' });
-        gsap.set(redFlash, { opacity: 0, scale: 0.85 });
+        // Trigger scramble
+        if (pitchSpan) scrambleWord(pitchSpan, "Pitch.");
+        if (connectSpan) scrambleWord(connectSpan, "Connect.");
+
+        const loaderTl = gsap.timeline();
 
         loaderTl
-          .to({}, { duration: 0.35 })
-          // Characters rise from center outward
-          .to(allChars, {
-            yPercent: 0,
-            opacity: 1,
-            duration: 1.1,
-            stagger: {
-              each: 0.025,
-              from: 'center',
-            },
-            ease: 'power3.out',
-          })
-          .to({}, { duration: 0.4 })
-          // Compress
-          .to(loaderTitle, {
-            scale: 0.38,
-            opacity: 0.92,
-            duration: 1.1,
-            ease: 'expo.inOut',
-          })
-          .to({}, { duration: 0.12 })
-          // Brand flash
-          .to(redFlash, {
-            opacity: 1,
-            scale: 1,
-            duration: 0.14,
-            ease: 'power3.in',
-          })
-          .to(redFlash, {
-            opacity: 0,
-            duration: 0.28,
-            ease: 'power2.out',
-          })
-          // Expand back
-          .to(
-            loaderTitle,
-            {
-              scale: 1.04,
-              opacity: 1,
-              duration: 1.1,
-              ease: 'expo.inOut',
-            },
-            '-=0.18'
+          // Wait for the scramble effect to finish
+          .to({}, { duration: 1.4 }) 
+          // Wipes slide down from top to cover the screen
+          .fromTo(wipeRed, 
+            { yPercent: -100 }, 
+            { yPercent: 0, duration: 0.6, ease: "power3.inOut" }
           )
-          // Fade loader
-          .to(
-            loader,
-            {
-              opacity: 0,
-              duration: 0.75,
-              ease: 'power3.inOut',
-              onComplete: () => {
-                gsap.set(loader, { visibility: 'hidden', pointerEvents: 'none' });
-              },
-            },
-            '-=0.35'
-          );
+          .fromTo(wipeBlack, 
+            { yPercent: -100 }, 
+            { yPercent: 0, duration: 0.6, ease: "power3.inOut" }, 
+            "-=0.4"
+          )
+          // Hide loader background and text while screen is covered in black
+          .set(loaderTitle, { opacity: 0 })
+          .set(loader, { backgroundColor: 'transparent' })
+          // Wipes slide down out of view, revealing the site
+          .to(wipeRed, { yPercent: 100, duration: 0.6, ease: "power3.inOut" })
+          .to(wipeBlack, { 
+            yPercent: 100, 
+            duration: 0.6, 
+            ease: "power3.inOut",
+            onComplete: () => {
+              sessionStorage.setItem('meraki-intro-seen', '1');
+              gsap.set(loader, { visibility: 'hidden', pointerEvents: 'none' });
+              if (typeof window !== 'undefined' && (window as any).__unlockLenis) {
+                (window as any).__unlockLenis();
+              }
+            }
+          }, "-=0.4");
+
       } else if (loader) {
         // Skip intro — unlock scroll immediately
         gsap.set(loader, { opacity: 0, visibility: 'hidden', pointerEvents: 'none' });
-        if (typeof window !== 'undefined' && window.__unlockLenis) {
-          window.__unlockLenis();
-        }
-      } else {
-        // Safety: always unlock
-        if (typeof window !== 'undefined' && window.__unlockLenis) {
-          window.__unlockLenis();
+        if (typeof window !== 'undefined' && (window as any).__unlockLenis) {
+          (window as any).__unlockLenis();
         }
       }
 
@@ -163,7 +126,7 @@ export default function HeroSection() {
        * =========================================================
        */
       const mainTitle = mainTitleRef.current;
-      let titleChars: { left: HTMLElement[]; right: HTMLElement[] } = {
+      const titleChars: { left: HTMLElement[]; right: HTMLElement[] } = {
         left: [],
         right: [],
       };
@@ -184,7 +147,7 @@ export default function HeroSection() {
 
       /*
        * =========================================================
-       * HERO SCROLL TIMELINE (pinned)
+       * HERO SCROLL TIMELINE (Pinned Text Split & Reveal)
        * =========================================================
        */
       const tl = gsap.timeline({
@@ -197,75 +160,43 @@ export default function HeroSection() {
         },
       });
 
-      // Reveal compact card
-      tl.to(expandBoxRef.current, {
-        width: '350px',
-        height: '200px',
-        opacity: 1,
-        borderRadius: '24px',
-        ease: 'power3.out',
-      })
-        // Expand full screen
-        .to(
-          expandBoxRef.current,
-          {
-            width: '100%',
-            height: '100%',
-            borderRadius: '0px',
-            borderWidth: '0px',
-            ease: 'power3.inOut',
-          },
-          '+=0.08'
-        )
-        // Content fade in
-        .fromTo(
-          expandContentRef.current,
-          { opacity: 0, y: 40, filter: 'blur(8px)' },
-          { opacity: 1, y: 0, filter: 'blur(0px)', ease: 'power2.out' },
-          '<'
-        )
-        // Title letters exit left / right
-        .to(
-          titleChars.left,
-          {
-            xPercent: -140,
-            opacity: 0,
-            ease: 'power3.in',
-            stagger: 0.012,
-          },
-          '+=0.15'
-        )
-        .to(
-          titleChars.right,
-          {
-            xPercent: 140,
-            opacity: 0,
-            ease: 'power3.in',
-            stagger: 0.012,
-          },
-          '<'
-        )
-        // Tagline + bottom bar fade
-        .to(
-          [taglineRef.current, bottomBarRef.current],
-          {
-            opacity: 0,
-            y: -20,
-            filter: 'blur(10px)',
-            ease: 'power2.in',
-          },
-          '<'
-        )
-        // Final dissolve of whole hero
-        .to(
-          containerRef.current,
-          {
-            opacity: 0,
-            filter: 'blur(18px)',
-            ease: 'power2.inOut',
-          },
-          '+=0.2'
-        );
+      // 1. UI elements fade out & Text splits open
+      tl.to(
+        [topHeaderRef.current, taglineRef.current, bottomBarRef.current],
+        { opacity: 0, y: -20, filter: 'blur(10px)', duration: 0.8, ease: 'power2.inOut' },
+        0
+      )
+      .to(
+        titleChars.left,
+        { xPercent: -200, opacity: 0, ease: 'power3.inOut', stagger: 0.02, duration: 1.2 },
+        0
+      )
+      .to(
+        titleChars.right,
+        { xPercent: 200, opacity: 0, ease: 'power3.inOut', stagger: 0.02, duration: 1.2 },
+        0
+      )
+      // 2. Image emerges from middle and expands to full screen
+      .fromTo(
+        expandBoxRef.current,
+        { width: '15vw', height: '15vh', opacity: 0, borderRadius: '24px', scale: 0.8 },
+        { width: '100%', height: '100%', opacity: 1, borderRadius: '0px', scale: 1, duration: 1.6, ease: 'power3.inOut' },
+        0.2 // Starts slightly after the text begins splitting
+      )
+      // 3. Text inside image smoothly fades in
+      .fromTo(
+        expandContentRef.current,
+        { opacity: 0, y: 40, filter: 'blur(8px)' },
+        { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1, ease: 'power2.out' },
+        "-=0.6" // overlaps with the end of the image expansion
+      )
+      // 4. Final transition to next section (scrolls up and dissolves)
+      .to(
+        containerRef.current,
+        { opacity: 0, filter: 'blur(15px)', yPercent: -15, duration: 1.2, ease: 'power2.inOut' },
+        "+=0.4"
+      );
+
     }, containerRef);
 
     return () => ctx.revert();
@@ -280,7 +211,7 @@ export default function HeroSection() {
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(143,83,252,0.16),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(251,87,95,0.12),transparent_55%)] pointer-events-none z-0" />
 
       {/* Top Header */}
-      <div className="relative z-10 flex justify-between items-center text-[10px] md:text-xs tracking-widest text-neutral-400 uppercase font-sans">
+      <div ref={topHeaderRef} className="relative z-10 flex justify-between items-center text-[10px] md:text-xs tracking-widest text-neutral-400 uppercase font-sans">
         <p className="max-w-sm leading-relaxed">
           Your idea deserves more than a{' '}
           <span className="italic font-serif font-normal text-offwhite">
@@ -350,7 +281,7 @@ export default function HeroSection() {
       {/* FULL-SCREEN EXPANDING OVERLAY */}
       <div
         ref={expandBoxRef}
-        className="absolute inset-0 m-auto w-0 h-0 opacity-0 z-30 overflow-hidden bg-ink border border-white/20 shadow-2xl flex items-center justify-center text-center pointer-events-none"
+        className="absolute inset-0 m-auto w-0 h-0 opacity-0 z-30 overflow-hidden bg-ink shadow-2xl flex items-center justify-center text-center pointer-events-none"
       >
         <img
           src="/C3675T01.JPG"
@@ -405,11 +336,6 @@ export default function HeroSection() {
         "
       >
         <div
-          ref={loaderRedFlashRef}
-          className="absolute inset-0 bg-coral opacity-0 scale-[0.85]"
-        />
-
-        <div
           ref={loaderTitleRef}
           className="
             relative
@@ -458,6 +384,10 @@ export default function HeroSection() {
             Connect.
           </span>
         </div>
+
+        {/* Wipe Transition Layers */}
+        <div ref={loaderWipeRedRef} className="absolute inset-0 bg-coral transform -translate-y-full z-20" />
+        <div ref={loaderWipeBlackRef} className="absolute inset-0 bg-black transform -translate-y-full z-30" />
       </div>
     </section>
   );
