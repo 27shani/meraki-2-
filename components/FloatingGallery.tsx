@@ -12,10 +12,6 @@ interface Investor {
   logo: string;
 }
 
-/*
- * Investor / Partner logos
- * These files live directly in /public/
- */
 const PAST_INVESTORS: Investor[] = [
   { id: 1, name: 'Partner 01', logo: '/Image-26.png' },
   { id: 2, name: 'Partner 02', logo: '/Image-29.png' },
@@ -27,18 +23,20 @@ const PAST_INVESTORS: Investor[] = [
   { id: 8, name: 'Partner 08', logo: '/Image-38-1.png' },
 ];
 
-const STRIP_COUNT = 9; // vertical slices per logo (8–10 range)
+const STRIP_COUNT = 9;
 
 export default function FloatingGallery() {
   const sectionRef = useRef<HTMLElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const cylinderRef = useRef<HTMLDivElement>(null);
   
-  const [isDesktop, setIsDesktop] = useState(true);
+  const [mounted, setMounted] = useState(false);
   const [radius, setRadius] = useState(480);
+  const [isDesktop, setIsDesktop] = useState(true);
 
-  // Manage responsive state and radius calculation safely in React
+  // Safely initialize dimensions on mount to prevent SSR hydration mismatches
   useEffect(() => {
+    setMounted(true);
     const handleResize = () => {
       setIsDesktop(window.innerWidth >= 768);
       setRadius(Math.min(window.innerWidth * 0.38, 480));
@@ -49,21 +47,17 @@ export default function FloatingGallery() {
   }, []);
 
   useEffect(() => {
+    if (!mounted) return;
     gsap.registerPlugin(ScrollTrigger);
 
-    const prefersReduced =
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    if (prefersReduced || !isDesktop) {
-      return;
-    }
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReduced || !isDesktop) return;
 
     const ctx = gsap.context(() => {
       const section = sectionRef.current;
       const text = textRef.current;
-      const cylinder = cylinderRef.current;
-      if (!section || !text || !cylinder) return;
+      const items = gsap.utils.toArray('.cylinder-item');
+      if (!section || !text || !items.length) return;
 
       const heading = text.querySelector('h2');
       let words: HTMLElement[] = [];
@@ -72,113 +66,84 @@ export default function FloatingGallery() {
         gsap.set(words, { opacity: 0, filter: 'blur(12px)' });
       }
 
-      const items = cylinder.querySelectorAll<HTMLElement>('.cylinder-item');
-      const total = items.length;
-      const angleStep = 360 / total;
-
-      // 1. Initial 3D placement around the cylinder
+      // 1. Initial State: Hiding items deep in the bottom-left corner
       gsap.set(items, {
-        rotateY: (i) => i * angleStep,
+        xPercent: -50,
+        yPercent: -50,
+        x: () => -window.innerWidth / 2 - 300, // Bottom-left off-screen
+        y: () => window.innerHeight / 2 + 300,
+        z: -200,
+        rotateY: -90, // Tilted away
+        opacity: 0,
         transformOrigin: `50% 50% ${-radius}px`,
-        z: 0,
       });
 
-      // -------------------------------------------------
-      // MAIN PINNED SCROLL TIMELINE
-      // -------------------------------------------------
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: section,
           start: 'top top',
-          end: '+=400%', // Lengthened slightly for full sequence
+          end: '+=800%', // Increased scroll duration for a very smooth, unhurried animation
           pin: true,
-          scrub: 1.2,
-          anticipatePin: 1,
+          scrub: 1, // Smooth interpolation
           invalidateOnRefresh: true,
         },
       });
 
-      // Reveal center text
+      // 2. Reveal text word-by-word
       if (words.length) {
         tl.to(
           words,
-          { opacity: 1, filter: 'blur(0px)', duration: 1.4, stagger: 0.08, ease: 'power3.out' },
+          { opacity: 1, filter: 'blur(0px)', duration: 2, stagger: 0.1, ease: 'power2.out' },
           0
         );
       }
 
-      // 2. Images fly in ONE BY ONE (staggered) from Bottom-Left
-      tl.fromTo(
-        items,
-        {
-          x: () => -window.innerWidth / 2 - 300, // Bottom-left off-screen
-          y: () => window.innerHeight / 2 + 300,
-          z: 250,
-          opacity: 0,
-          rotationZ: -45, // Tilt effect while flying in
-          scale: 0.3,
-        },
-        {
-          x: 0,
-          y: 0,
-          z: 0,
-          opacity: 1,
-          rotationZ: 0,
-          scale: 1,
-          duration: 2.5,
-          stagger: 0.18, // Makes them follow the 1st image sequentially
-          ease: 'power2.out',
-        },
-        0.5 // Start after text begins revealing
-      );
+      // 3. The "Follow the Leader" Sequence
+      // By using keyframes and an exact stagger ratio, the items seamlessly form a rotating 3D circle
+      const staggerTime = 1.2;
+      const orbitDuration = 9.6; // Exactly 8 items * 1.2 stagger = 9.6 (Ensures perfect 360/8 degree spacing)
 
-      // 3. Entire Cylinder Rotates 360 degrees
-      tl.to(
-        cylinder,
-        {
-          rotateY: -360,
-          duration: 6,
-          ease: 'power1.inOut',
-        },
-        2 // Overlaps with the end of the fly-in animation
-      );
+      tl.to(items, {
+        keyframes: [
+          // Step A: Fly in from bottom left to center
+          {
+            x: 0, y: 0, z: 0, rotateY: 0, opacity: 1,
+            ease: 'power2.out', duration: 2.5
+          },
+          // Step B: Lock into orbit and rotate around the text
+          {
+            rotateY: -360,
+            ease: 'none', duration: orbitDuration
+          },
+          // Step C: Break orbit and exit bottom right
+          {
+            x: () => window.innerWidth / 2 + 300, // Bottom-right off-screen
+            y: () => window.innerHeight / 2 + 300,
+            z: -200, rotateY: -450, opacity: 0,
+            ease: 'power2.in', duration: 2.5
+          }
+        ],
+        stagger: staggerTime, // Each item follows the exact same path, perfectly delayed
+      }, 1);
 
-      // 4. Images fly out ONE BY ONE (staggered) to Bottom-Right
-      tl.to(
-        items,
-        {
-          x: () => window.innerWidth / 2 + 300, // Bottom-right off-screen
-          y: () => window.innerHeight / 2 + 300,
-          z: 250,
-          opacity: 0,
-          rotationZ: 45,
-          scale: 0.3,
-          duration: 2.5,
-          stagger: 0.18, // Sequentially follow each other out
-          ease: 'power2.in',
-        },
-        6 // Starts near the end of the cylinder rotation
-      );
-
-      // 5. Soft exit of center text
+      // 4. Soft exit of center text as the last items are leaving
       if (words.length) {
         tl.to(
           words,
-          { opacity: 0, filter: 'blur(10px)', duration: 1, stagger: 0.04, ease: 'power2.in' },
-          7
+          { opacity: 0, filter: 'blur(10px)', duration: 2, stagger: 0.05, ease: 'power2.in' },
+          22 
         );
       }
 
-      const handleResize = () => ScrollTrigger.refresh();
-      window.addEventListener('resize', handleResize);
-
       return () => {
-        window.removeEventListener('resize', handleResize);
+        ScrollTrigger.refresh();
       };
     }, sectionRef);
 
     return () => ctx.revert();
-  }, [isDesktop, radius]);
+  }, [mounted, radius, isDesktop]);
+
+  if (!mounted) return null;
 
   return (
     <section
@@ -197,77 +162,44 @@ export default function FloatingGallery() {
       "
     >
       {/* =====================================================
-          CENTER TEXT
-          ===================================================== */}
-      <div
-        ref={textRef}
-        className="
-          relative
-          z-[150]
-          w-full
-          max-w-5xl
-          px-8
-          text-center
-          pointer-events-none
-        "
-      >
-        <h2
-          className="
-            text-4xl
-            sm:text-5xl
-            md:text-6xl
-            lg:text-7xl
-            font-sans
-            font-medium
-            tracking-tight
-            leading-[1.05]
-          "
-        >
-          PAST{' '}
-          <span className="font-serif italic font-normal text-gradient-brand">
-            INVESTORS
-          </span>
-        </h2>
-      </div>
-
-      {/* =====================================================
-          DESKTOP – CYLINDRICAL 3D GALLERY
+          DESKTOP – TRUE 3D CONTAINER
           ===================================================== */}
       <div
         className="
           cylinder-gallery-desktop
           absolute
           inset-0
-          z-[40]
           flex
           items-center
           justify-center
           pointer-events-none
         "
-        style={{ perspective: '1500px' }}
+        style={{ perspective: '1200px', transformStyle: 'preserve-3d' }}
       >
+        {/* TEXT - Pushed back in Z-space so the items orbit accurately around it */}
         <div
-          ref={cylinderRef}
-          className="
-            cylinder-gallery
-            relative
-            w-full
-            h-[280px]
-            md:h-[340px]
-            lg:h-[400px]
-          "
-          style={{ transformStyle: 'preserve-3d' }}
+          ref={textRef}
+          className="absolute text-center w-full max-w-5xl px-8"
+          style={{ transform: `translateZ(${-radius}px)` }}
         >
+          <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-sans font-medium tracking-tight leading-[1.05]">
+            PAST{' '}
+            <span className="font-serif italic font-normal text-gradient-brand">
+              INVESTORS
+            </span>
+          </h2>
+        </div>
+
+        {/* CYLINDRICAL ITEMS */}
+        <div ref={cylinderRef} className="absolute inset-0" style={{ transformStyle: 'preserve-3d' }}>
           {PAST_INVESTORS.map((investor) => (
             <div
               key={investor.id}
-              className="cylinder-item absolute top-1/2 left-1/2" // Ensures correct pivot
+              className="cylinder-item absolute top-1/2 left-1/2"
               data-logo={investor.logo}
               style={{
                 width: 'clamp(160px, 18vw, 280px)',
                 height: 'clamp(100px, 12vw, 170px)',
-                marginLeft: 'calc(clamp(160px, 18vw, 280px) / -2)',
-                marginTop: 'calc(clamp(100px, 12vw, 170px) / -2)',
                 transformStyle: 'preserve-3d',
               }}
             >
@@ -286,7 +218,10 @@ export default function FloatingGallery() {
                 "
                 style={{ transformStyle: 'preserve-3d' }}
               >
-                {/* Dynamically rendering the 3D strips in React prevents DOM freezing */}
+                {/* 
+                  Rendered natively in React to eliminate freezing. 
+                  This creates the physical curve of each card.
+                */}
                 {Array.from({ length: STRIP_COUNT }).map((_, s) => {
                   const stripWidth = 100 / STRIP_COUNT;
                   const stripAngle = (s - (STRIP_COUNT - 1) / 2) * 2.2;
@@ -320,18 +255,7 @@ export default function FloatingGallery() {
       {/* =====================================================
           MOBILE FALLBACK – simple horizontal track
           ===================================================== */}
-      <div
-        className="
-          cylinder-gallery-mobile
-          absolute
-          left-0
-          right-0
-          bottom-10
-          z-[50]
-          overflow-x-auto
-          px-6
-        "
-      >
+      <div className="cylinder-gallery-mobile absolute left-0 right-0 bottom-10 z-[50] overflow-x-auto px-6 md:hidden">
         <div className="flex w-max items-center gap-4">
           {PAST_INVESTORS.map((investor) => (
             <div
