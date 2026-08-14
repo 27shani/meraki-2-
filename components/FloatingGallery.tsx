@@ -12,52 +12,21 @@ interface Investor {
 }
 
 const PAST_INVESTORS: Investor[] = [
-  {
-    id: 1,
-    name: 'Partner 01',
-    logo: '/Image-26.png',
-  },
-  {
-    id: 2,
-    name: 'Partner 02',
-    logo: '/Image-29.png',
-  },
-  {
-    id: 3,
-    name: 'Partner 03',
-    logo: '/Image-32.png',
-  },
-  {
-    id: 4,
-    name: 'Partner 04',
-    logo: '/Image-33.png',
-  },
-  {
-    id: 5,
-    name: 'Partner 05',
-    logo: '/Image-34.png',
-  },
-  {
-    id: 6,
-    name: 'Partner 06',
-    logo: '/Image-35.png',
-  },
-  {
-    id: 7,
-    name: 'Partner 07',
-    logo: '/Image-36.png',
-  },
-  {
-    id: 8,
-    name: 'Partner 08',
-    logo: '/Image-38-1.png',
-  },
+  { id: 1, name: 'Partner 01', logo: '/Image-26.png' },
+  { id: 2, name: 'Partner 02', logo: '/Image-29.png' },
+  { id: 3, name: 'Partner 03', logo: '/Image-32.png' },
+  { id: 4, name: 'Partner 04', logo: '/Image-33.png' },
+  { id: 5, name: 'Partner 05', logo: '/Image-34.png' },
+  { id: 6, name: 'Partner 06', logo: '/Image-35.png' },
+  { id: 7, name: 'Partner 07', logo: '/Image-36.png' },
+  { id: 8, name: 'Partner 08', logo: '/Image-38-1.png' },
 ];
 
 export default function FloatingGallery() {
   const sectionRef = useRef<HTMLElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
@@ -66,43 +35,44 @@ export default function FloatingGallery() {
       const section = sectionRef.current;
       const text = textRef.current;
       const track = trackRef.current;
+      const cards = cardRefs.current;
 
       if (!section || !text || !track) return;
 
+      // --- Initial states ---
       gsap.set(text, {
         opacity: 0,
         scale: 0.92,
         filter: 'blur(14px)',
       });
 
+      // Cards start below and invisible
+      gsap.set(cards, {
+        y: 60,
+        opacity: 0,
+        scale: 0.85,
+      });
+
+      // Track starts to the right (so it scrolls left)
       const getStartX = () => {
         return -(track.scrollWidth - window.innerWidth + 48);
       };
+      gsap.set(track, { x: getStartX() });
 
-      gsap.set(track, {
-        x: getStartX(),
-      });
-
+      // --- Main timeline with pin ---
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: section,
           start: 'top top',
-          end: () => {
-            const travelDistance =
-              track.scrollWidth - window.innerWidth;
-
-            return `+=${Math.max(
-              1400,
-              travelDistance * 1.15
-            )}`;
-          },
+          end: '+=800%',  // 🔽 Reduced from dynamic huge value to a fixed 8 screens – adjust as needed
           pin: true,
-          scrub: 1.1,
+          scrub: 1.2,
           anticipatePin: 1,
           invalidateOnRefresh: true,
         },
       });
 
+      // 1. Text fades in (opening)
       tl.to(
         text,
         {
@@ -115,6 +85,21 @@ export default function FloatingGallery() {
         0
       );
 
+      // 2. Cards stagger in from below (opening)
+      tl.to(
+        cards,
+        {
+          y: 0,
+          opacity: 1,
+          scale: 1,
+          stagger: 0.08,
+          duration: 1.2,
+          ease: 'power2.out',
+        },
+        0.1
+      );
+
+      // 3. Horizontal track movement (scrubbed)
       tl.to(
         track,
         {
@@ -125,6 +110,7 @@ export default function FloatingGallery() {
         0.45
       );
 
+      // 4. Text fades out (closing)
       tl.to(
         text,
         {
@@ -137,10 +123,23 @@ export default function FloatingGallery() {
         6.3
       );
 
+      // 5. Whole section scales down and fades (closing)
+      tl.to(
+        section,
+        {
+          scale: 0.88,
+          opacity: 0.15,
+          filter: 'blur(8px)',
+          duration: 1.2,
+          ease: 'power2.inOut',
+        },
+        '+=0.5'
+      );
+
+      // Handle resize to recalc track position
       const handleResize = () => {
         ScrollTrigger.refresh();
       };
-
       window.addEventListener('resize', handleResize);
 
       return () => {
@@ -167,10 +166,7 @@ export default function FloatingGallery() {
         select-none
       "
     >
-      {/* =====================================================
-          CENTER TEXT (Shifted slightly upward on mobile via -translate-y-6 or top positioning)
-          ===================================================== */}
-
+      {/* Center Text */}
       <div
         ref={textRef}
         className="
@@ -207,10 +203,7 @@ export default function FloatingGallery() {
         </h2>
       </div>
 
-      {/* =====================================================
-          INVESTOR LOGO TRACK (Centered vertically on mobile via absolute top-1/2 -translate-y-1/2)
-          ===================================================== */}
-
+      {/* Investor Logo Track */}
       <div
         className="
           absolute
@@ -242,47 +235,33 @@ export default function FloatingGallery() {
             will-change-transform
           "
         >
-          {PAST_INVESTORS.map((investor) => (
+          {PAST_INVESTORS.map((investor, index) => (
             <div
               key={investor.id}
+              ref={(el) => { cardRefs.current[index] = el; }}
               className="
                 relative
                 shrink-0
-
-                /* SAME CARD SIZE FOR EVERY LOGO */
                 w-[180px]
                 h-[110px]
-
                 sm:w-[220px]
                 sm:h-[130px]
-
                 md:w-[280px]
                 md:h-[160px]
-
                 lg:w-[320px]
                 lg:h-[180px]
-
                 rounded-xl
                 overflow-hidden
-
                 border
                 border-white/10
-
                 bg-offwhite
-
                 flex
                 items-center
                 justify-center
-
                 shadow-[0_20px_60px_rgba(0,0,0,0.35)]
-
                 will-change-transform
               "
             >
-              {/* =================================================
-                  ACTUAL INVESTOR LOGO
-                  ================================================= */}
-
               <img
                 src={investor.logo}
                 alt={investor.name}
