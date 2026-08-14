@@ -30,10 +30,13 @@ const faqs = [
 
 export default function AwardsSection() {
   const sectionRef = useRef<HTMLDivElement>(null);
+  
+  // NOTE: Type is HTMLSpanElement to match the JSX span tags precisely (Fixes Vercel build)
   const textRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const iconRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const bgRefs = useRef<(HTMLDivElement | null)[]>([]);
   const cursorRef = useRef<HTMLDivElement>(null);
+  
   const [openIndex, setOpenIndex] = useState<number | null>(0);
   const [cursorVisible, setCursorVisible] = useState(false);
 
@@ -44,11 +47,10 @@ export default function AwardsSection() {
       typeof window !== 'undefined' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    // Use MatchMedia to completely separate Desktop and Mobile performance logic
     const mm = gsap.matchMedia();
 
     /* ====================================================================
-       GLOBAL INTRO (Runs on both)
+       GLOBAL INTRO (Runs on both Desktop & Mobile)
        ==================================================================== */
     mm.add("all", () => {
       gsap.fromTo(
@@ -153,33 +155,49 @@ export default function AwardsSection() {
        MOBILE ANIMATION: < 768px (Smooth scroll, NO lag, middle highlight)
        ==================================================================== */
     mm.add("(max-width: 767px)", () => {
-      // Set initial dark gray color
-      gsap.set(textRefs.current, { color: '#525252' });
-      gsap.set(iconRefs.current, { color: '#525252' });
+      // Set initial dark gray color (Un-highlighted state)
+      const inactiveColor = '#333333';
+      const activeColor = '#ffffff';
+
+      gsap.set(textRefs.current, { color: inactiveColor });
+      gsap.set(iconRefs.current, { color: inactiveColor });
 
       textRefs.current.forEach((text, i) => {
         if (!text) return;
         const icon = iconRefs.current[i];
         
+        // Target the parent row to determine when it hits the center of the screen
+        const row = text.closest('.faq-row'); 
+        
         // Highlight the text white smoothly as it crosses the center of the screen
-        gsap.to([text, icon], {
-          color: '#ffffff',
-          duration: 0.4,
-          ease: 'power2.out',
-          scrollTrigger: {
-            trigger: text,
-            start: 'top 60%',    // Starts highlighting just below middle
-            end: 'bottom 40%',   // Fades out just above middle
-            toggleActions: 'play reverse play reverse', // Fades in and out naturally on scroll
-          },
+        ScrollTrigger.create({
+          trigger: row,
+          start: 'top 55%',    // When the top of the row hits 55% of the viewport height
+          end: 'bottom 45%',   // When the bottom of the row leaves 45% of the viewport height
+          onEnter: () => gsap.to([text, icon], { color: activeColor, duration: 0.3, ease: 'power2.out' }),
+          onLeave: () => gsap.to([text, icon], { color: inactiveColor, duration: 0.3, ease: 'power2.out' }),
+          onEnterBack: () => gsap.to([text, icon], { color: activeColor, duration: 0.3, ease: 'power2.out' }),
+          onLeaveBack: () => gsap.to([text, icon], { color: inactiveColor, duration: 0.3, ease: 'power2.out' }),
         });
+      });
+
+      // Mobile Outro: Smooth fade/blur into the next section
+      gsap.to(sectionRef.current, {
+        opacity: 0,
+        filter: 'blur(12px)',
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: 'bottom 70%',
+          end: 'bottom 20%',
+          scrub: true,
+        }
       });
     });
 
     return () => mm.revert();
   }, []);
 
-  // Custom cursor
+  // Custom cursor (Desktop only)
   useEffect(() => {
     const cursor = cursorRef.current;
     if (!cursor) return;
@@ -205,12 +223,16 @@ export default function AwardsSection() {
   return (
     <section
       ref={sectionRef}
-      // Changed to overflow-x-hidden so the mobile sticky ribbon works correctly
       className="bg-[#070707] text-offwhite px-0 md:px-8 py-24 min-h-screen flex flex-col justify-center select-none overflow-x-hidden relative"
     >
-      {/* Mobile Sticky Red Ribbon (Matches reference images, pure CSS for zero lag) */}
+      {/* 
+        Mobile Sticky Red Ribbon 
+        - Matches reference images precisely.
+        - Fixed purely via CSS (sticky) for zero JS lag.
+        - `w-3` makes it show only partially on the left edge.
+      */}
       <div className="absolute inset-y-0 left-0 w-8 md:hidden z-0 pointer-events-none">
-        <div className="sticky top-[45vh] -translate-y-1/2 w-10 sm:w-12 h-[30vh] bg-[#ff0000] rounded-r-full" />
+        <div className="sticky top-[50vh] -translate-y-1/2 w-3 sm:w-4 h-24 sm:h-32 bg-[#ff0000] rounded-r-full" />
       </div>
 
       {/* Custom cursor (Desktop only) */}
@@ -227,17 +249,18 @@ export default function AwardsSection() {
           </span>
         </h2>
 
-        <div className="flex flex-col border-t border-white/10 relative z-10 pl-6 md:pl-0">
+        <div className="flex flex-col border-t border-white/10 relative z-10 pl-6 pr-4 md:px-0">
           {faqs.map((faq, index) => {
             const isOpen = openIndex === index;
             return (
               <div
                 key={index}
-                className="relative flex flex-col px-4 md:px-8 py-6 md:py-8 border-b border-white/10 overflow-hidden will-change-transform transition-colors duration-300"
+                // Added 'faq-row' class for scroll triggering on mobile
+                className="faq-row relative flex flex-col px-4 md:px-8 py-8 md:py-8 border-b border-white/10 overflow-hidden will-change-transform transition-colors duration-300"
                 onMouseEnter={handleRowEnter}
                 onMouseLeave={handleRowLeave}
               >
-                {/* Desktop Wipe Background (Hidden on Mobile) */}
+                {/* Desktop Wipe Background (Strictly hidden on Mobile) */}
                 <div
                   ref={(el) => { bgRefs.current[index] = el; }}
                   className="hidden md:block absolute inset-0 bg-offwhite z-0"
@@ -249,24 +272,26 @@ export default function AwardsSection() {
                 >
                   <span
                     ref={(el) => { textRefs.current[index] = el; }}
-                    className="text-2xl sm:text-3xl md:text-2xl font-sans font-medium pr-6"
+                    // Increased text size for mobile (text-3xl) to match full big texts
+                    className="text-3xl sm:text-4xl md:text-2xl font-sans font-medium pr-6"
                   >
                     {faq.question}
                   </span>
                   <span 
                     ref={(el) => { iconRefs.current[index] = el; }}
-                    className="text-xl md:text-2xl font-light transition-transform duration-300 shrink-0 pr-4 md:pr-0"
+                    className="text-xl md:text-2xl font-light transition-transform duration-300 shrink-0"
                   >
                     {isOpen ? '—' : '+'}
                   </span>
                 </button>
 
+                {/* Accordion Answer (Ensuring no images, clean text only) */}
                 <div
                   className={`relative z-10 overflow-hidden transition-all duration-500 ease-in-out ${
                     isOpen ? 'max-h-[300px] pt-4 opacity-100' : 'max-h-0 pt-0 opacity-0'
                   }`}
                 >
-                  <p className="font-sans text-sm md:text-base leading-relaxed max-w-4xl opacity-90 text-neutral-300 md:text-inherit">
+                  <p className="font-sans text-base md:text-base leading-relaxed max-w-4xl opacity-90 text-neutral-300 md:text-inherit">
                     {faq.answer}
                   </p>
                 </div>
