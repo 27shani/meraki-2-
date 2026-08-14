@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { initCharHover } from '@/lib/splitText';
+import { initCharHover } from '@/lib/splitText'; // Ensure this exists
 
 const timelineEvents = [
   {
@@ -34,12 +34,6 @@ const timelineEvents = [
   },
 ];
 
-/**
- * SkillsSection (timeline / dates)
- * -------------------------------------------------
- * - Accordion-style groups, only one open at a time
- * - Height animation with power3.inOut (~0.45s)
- */
 export default function SkillsSection() {
   const containerRef = useRef<HTMLDivElement>(null);
   const rightWrapRef = useRef<HTMLDivElement>(null);
@@ -52,6 +46,7 @@ export default function SkillsSection() {
     gsap.registerPlugin(ScrollTrigger);
 
     const ctx = gsap.context(() => {
+      // 1. Character hover effect on "REGISTER NOW +"
       initCharHover(containerRef.current || document);
 
       const getMaxScroll = () => {
@@ -64,17 +59,19 @@ export default function SkillsSection() {
         );
       };
 
+      // 2. Main scroll‑driven timeline (pins the section)
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
           end: () => `+=${getMaxScroll() * 1.5}`,
           pin: true,
-          scrub: 2,
+          scrub: 2, // smooth, lagged scrolling
           invalidateOnRefresh: true,
         },
       });
 
+      // 3. Vertical movement of the right timeline list
       tl.to(
         rightContentRef.current,
         {
@@ -84,6 +81,7 @@ export default function SkillsSection() {
         0
       );
 
+      // 4. Horizontal arrow – moves from left to right
       tl.fromTo(
         arrowRef.current,
         { x: '-20vw' },
@@ -95,7 +93,7 @@ export default function SkillsSection() {
     return () => ctx.revert();
   }, []);
 
-  // GSAP height animation for accordion (power3.inOut ~0.45s)
+  // 5. Accordion height animation (power3.inOut, ~0.45s)
   useEffect(() => {
     detailRefs.current.forEach((el, idx) => {
       if (!el) return;
@@ -109,7 +107,7 @@ export default function SkillsSection() {
       });
     });
 
-    // Refresh ScrollTrigger after height change
+    // Refresh ScrollTrigger after height change so pin/scroll recalculates
     const id = requestAnimationFrame(() => ScrollTrigger.refresh());
     return () => cancelAnimationFrame(id);
   }, [openIndex]);
@@ -124,7 +122,7 @@ export default function SkillsSection() {
       className="relative w-full h-screen bg-[#070707] text-offwhite overflow-hidden select-none"
     >
       <div className="h-full max-w-[90rem] mx-auto w-full px-6 md:px-12 flex flex-col md:flex-row md:gap-x-16 relative z-10">
-        {/* LEFT */}
+        {/* LEFT – static title + link */}
         <div className="md:w-[41.6%] shrink-0 h-auto md:h-full flex flex-col justify-center pt-14 md:pt-0 pb-4 md:pb-0 z-20">
           <div className="pr-0 md:pr-12 flex flex-col gap-6 md:gap-8 lg:gap-10">
             <h2 className="text-3xl sm:text-4xl md:text-[3rem] font-sans font-semibold tracking-tight leading-[1.15]">
@@ -139,7 +137,7 @@ export default function SkillsSection() {
           </div>
         </div>
 
-        {/* RIGHT – accordion */}
+        {/* RIGHT – scrollable accordion */}
         <div
           ref={rightWrapRef}
           className="flex-1 min-h-0 md:w-[58.4%] h-full relative overflow-hidden z-20"
@@ -190,7 +188,7 @@ export default function SkillsSection() {
         </div>
       </div>
 
-      {/* Arrow */}
+      {/* ARROW – moves left → right on scroll */}
       <div
         ref={arrowRef}
         className="absolute bottom-12 md:bottom-20 left-0 z-10 will-change-transform pointer-events-none"
