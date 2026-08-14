@@ -30,7 +30,7 @@ const faqs = [
 
 export default function AwardsSection() {
   const sectionRef = useRef<HTMLDivElement>(null);
-  const textRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const textRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const iconRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const bgRefs = useRef<(HTMLDivElement | null)[]>([]);
   const cursorRef = useRef<HTMLDivElement>(null);
