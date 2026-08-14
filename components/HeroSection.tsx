@@ -7,7 +7,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 export default function HeroSection() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const heroTextContainerRef = useRef<HTMLDivElement>(null); // Added ref to move text on scroll
+  const heroTextContainerRef = useRef<HTMLDivElement>(null); 
   const expandBoxRef = useRef<HTMLDivElement>(null);
   const expandContentRef = useRef<HTMLDivElement>(null);
 
@@ -22,7 +22,6 @@ export default function HeroSection() {
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
-    // Using matchMedia to separate desktop and mobile logic safely
     const mm = gsap.matchMedia();
 
     /*
@@ -39,12 +38,10 @@ export default function HeroSection() {
       if (loader && loaderTitle && wipeRed && wipeBlack) {
         const loaderTl = gsap.timeline();
 
-        // Initial state: Title starts small and invisible
         gsap.set(loader, { opacity: 1, visibility: 'visible', pointerEvents: 'auto' });
         gsap.set(loaderTitle, { scale: 0.5, opacity: 0 });
 
         loaderTl
-          // 1. Text scales from small to big smoothly
           .to(loaderTitle, {
             scale: 1.05,
             opacity: 1,
@@ -56,8 +53,6 @@ export default function HeroSection() {
             duration: 0.4,
             ease: 'power2.inOut',
           })
-          
-          // 2. Color Wipe Transition reveals the page
           .fromTo(wipeRed, 
             { yPercent: -100 }, 
             { yPercent: 0, duration: 0.6, ease: "power3.inOut" }, 
@@ -68,27 +63,20 @@ export default function HeroSection() {
             { yPercent: 0, duration: 0.6, ease: "power3.inOut" }, 
             "-=0.4"
           )
-          
-          // Hide loader background and text while screen is covered in black
           .set(loaderTitle, { opacity: 0 })
           .set(loader, { backgroundColor: 'transparent' })
-          
-          // Wipes slide down out of view
           .to(wipeRed, { yPercent: 100, duration: 0.6, ease: "power3.inOut" })
           .to(wipeBlack, { 
             yPercent: 100, 
             duration: 0.6, 
             ease: "power3.inOut",
             onComplete: () => {
-              // Safety cleanups to prevent page freezing
               gsap.set(loader, { visibility: 'hidden', pointerEvents: 'none' });
-              document.body.style.overflow = ''; // Release standard CSS scroll lock if applied
+              document.body.style.overflow = ''; 
               
-              // Release Lenis scroll lock if you are using it
               if (typeof window !== 'undefined' && (window as any).__unlockLenis) {
                 (window as any).__unlockLenis();
               }
-              // Refresh ScrollTrigger so it knows the new positions after load
               ScrollTrigger.refresh();
             }
           }, "-=0.4");
@@ -101,7 +89,6 @@ export default function HeroSection() {
      * =========================================================
      */
     mm.add("(min-width: 768px)", () => {
-      // Ensure text is zeroed out in case of resize
       gsap.set(heroTextContainerRef.current, { y: 0 });
 
       const tl = gsap.timeline({
@@ -114,7 +101,6 @@ export default function HeroSection() {
         },
       });
 
-      // 1. Reveal initial compact card in center
       tl.to(expandBoxRef.current, {
         width: '350px',
         height: '200px',
@@ -122,8 +108,6 @@ export default function HeroSection() {
         borderRadius: '0px',
         ease: 'power3.out',
       })
-
-        // 2. Expand to 100% full screen overlay
         .to(
           expandBoxRef.current,
           {
@@ -135,16 +119,12 @@ export default function HeroSection() {
           },
           '+=0.1'
         )
-
-        // 2.5 Fade and slide in the new text content VERY smoothly
         .fromTo(
           expandContentRef.current,
           { opacity: 0, y: 60, filter: 'blur(12px)' }, 
           { opacity: 1, y: 0, filter: 'blur(0px)', ease: 'power3.out', duration: 1.5 }, 
           '<0.2' 
         )
-
-        // 3. Smooth exit transition — content dissolves and lifts up
         .to(
           containerRef.current,
           {
@@ -163,37 +143,32 @@ export default function HeroSection() {
      * =========================================================
      */
     mm.add("(max-width: 767px)", () => {
-      // 1. Start the hero text down at the bottom initially
-      gsap.set(heroTextContainerRef.current, { y: '35vh' });
+      // Adjusted from 35vh to 22vh so it doesn't overlap the footer initially
+      gsap.set(heroTextContainerRef.current, { y: '22vh' });
 
       const mobileTl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: '+=300%', // Slightly longer for the extra movement step
+          end: '+=300%', 
           scrub: 1.5,
           pin: true,
         },
       });
 
-      // 2. Scroll the text from bottom to the middle
       mobileTl.to(heroTextContainerRef.current, {
         y: 0,
         duration: 1.2,
         ease: 'power2.out',
       })
-
-      // 3. Reveal initial box in a PORTRAIT size
       .to(expandBoxRef.current, {
-        width: '220px',  // Portrait width
-        height: '350px', // Portrait height
+        width: '220px',  
+        height: '350px', 
         opacity: 1,
         borderRadius: '0px',
         ease: 'power3.out',
         duration: 1
       }, "+=0.2")
-
-      // 4. Expand smoothly to full screen
       .to(expandBoxRef.current, {
         width: '100%',
         height: '100%',
@@ -202,15 +177,11 @@ export default function HeroSection() {
         ease: 'power3.inOut',
         duration: 1.2
       }, '+=0.2')
-
-      // 5. Fade and slide in the text content
       .fromTo(expandContentRef.current,
         { opacity: 0, y: 60, filter: 'blur(12px)' },
         { opacity: 1, y: 0, filter: 'blur(0px)', ease: 'power3.out', duration: 1.5 },
         '<0.2'
       )
-
-      // 6. Smooth exit transition
       .to(containerRef.current, {
         yPercent: -15,
         opacity: 0,
@@ -228,44 +199,39 @@ export default function HeroSection() {
       ref={containerRef}
       className="relative w-screen h-screen bg-black text-offwhite overflow-hidden flex flex-col justify-between p-6 md:p-10"
     >
-      {/* =====================================================
-          ORIGINAL HERO
-          ===================================================== */}
-
       {/* Background Glow */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(143,83,252,0.16),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(251,87,95,0.12),transparent_55%)] pointer-events-none z-0" />
 
       {/* Top Header */}
-      <div className="relative z-10 flex justify-between items-center text-[10px] md:text-xs tracking-widest text-neutral-400 uppercase font-sans">
-        <p className="max-w-sm leading-relaxed">
+      <div className="relative z-10 flex justify-between items-start md:items-center text-[10px] md:text-xs tracking-widest text-neutral-400 uppercase font-sans w-full">
+        <p className="max-w-[65%] md:max-w-sm leading-relaxed">
           Your idea deserves more than a{' '}
           <span className="italic font-serif font-normal text-offwhite">
             classroom pitch.
           </span>
         </p>
 
-        <span className="hidden md:flex items-center gap-2">
+        {/* Removed "hidden md:flex" so the logo shows on all devices */}
+        <span className="flex items-center gap-1.5 md:gap-2 mt-1 md:mt-0 text-right">
           <img
             src="/meraki-logo.png"
             alt="Meraki"
-            className="h-4 w-auto invert opacity-90"
+            className="h-3 md:h-4 w-auto invert opacity-90"
           />
           <span className="font-serif">2026</span>
         </span>
       </div>
 
-      {/* Background Hero Typography (Added wrapper ref for mobile movement) */}
+      {/* Background Hero Typography */}
       <div 
         ref={heroTextContainerRef}
         className="relative z-10 my-auto w-full flex flex-col items-center justify-center px-4 md:px-12 pointer-events-none gap-6"
       >
         <h1 className="text-5xl md:text-[9vw] font-semibold tracking-tight text-offwhite leading-none uppercase text-center flex flex-wrap justify-center gap-x-4 md:gap-x-8 font-sans">
           <span>Pitch.</span>
-
           <span className="font-serif italic font-normal text-gradient-brand">
             Connect.
           </span>
-
           <span>Scale.</span>
         </h1>
 
@@ -298,13 +264,10 @@ export default function HeroSection() {
         </div>
       </div>
 
-      {/* =====================================================
-          FULL-SCREEN EXPANDING OVERLAY
-          ===================================================== */}
-
+      {/* FULL-SCREEN EXPANDING OVERLAY */}
       <div
         ref={expandBoxRef}
-        className="absolute inset-0 m-auto w-0 h-0 opacity-0 z-30 overflow-hidden bg-ink border border-white/20 shadow-2xl flex items-center justify-center text-center pointer-events-none"
+        className="absolute inset-0 m-auto w-0 h-0 opacity-0 z-30 overflow-hidden bg-ink shadow-2xl flex items-center justify-center text-center pointer-events-none"
       >
         <img
           src="/C3675T01.JPG"
@@ -314,7 +277,6 @@ export default function HeroSection() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80 pointer-events-none" />
         <div className="absolute inset-0 bg-gradient-to-br from-coral/10 via-transparent to-purple/20 mix-blend-color pointer-events-none" />
 
-        {/* New Added Content Area */}
         <div 
           ref={expandContentRef} 
           className="relative z-40 flex flex-col items-center justify-center px-6 md:px-12 max-w-4xl space-y-6 md:space-y-8"
@@ -337,10 +299,7 @@ export default function HeroSection() {
         </div>
       </div>
 
-      {/* =====================================================
-          OPENING LOADING ANIMATION
-          ===================================================== */}
-
+      {/* OPENING LOADING ANIMATION */}
       <div
         ref={loaderRef}
         className="
@@ -354,7 +313,6 @@ export default function HeroSection() {
           overflow-hidden
         "
       >
-        {/* Center Loading Title */}
         <div
           ref={loaderTitleRef}
           className="
@@ -403,7 +361,6 @@ export default function HeroSection() {
           </span>
         </div>
         
-        {/* Wipe Transition Layers */}
         <div ref={loaderWipeRedRef} className="absolute inset-0 bg-coral transform -translate-y-full z-20 pointer-events-none" />
         <div ref={loaderWipeBlackRef} className="absolute inset-0 bg-black transform -translate-y-full z-30 pointer-events-none" />
       </div>
