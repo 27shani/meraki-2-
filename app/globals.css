@@ -2,18 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+/* =====================================================
+   BASE — critical for Lenis smooth scroll
+   ===================================================== */
 html {
   background-color: #0a0a0a;
   color: #fffefa;
   overflow-x: hidden;
+  /* Must be auto so Lenis owns the smoothing */
+  scroll-behavior: auto !important;
 }
 
 body {
   overflow-x: hidden;
+  /* Prevent native overscroll bounce fighting pins */
+  overscroll-behavior-y: none;
+  min-height: 100%;
 }
 
 /* =====================================================
-   LENIS RECOMMENDED CSS
+   LENIS — official recommended CSS
    ===================================================== */
 html.lenis,
 html.lenis body {
@@ -29,11 +37,17 @@ html.lenis body {
 }
 
 .lenis.lenis-stopped {
-  overflow: hidden;
+  overflow: hidden !important;
 }
 
 .lenis.lenis-smooth iframe {
   pointer-events: none;
+}
+
+/* While stopped (loader), lock body too */
+html.lenis-stopped,
+html.lenis-stopped body {
+  overflow: hidden !important;
 }
 
 /* =====================================================
@@ -45,7 +59,7 @@ html.lenis body {
 }
 
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 ::-webkit-scrollbar-track {
   background: #0a0a0a;
@@ -74,7 +88,6 @@ html.lenis body {
 
 /* =====================================================
    CHARACTER DUAL-LAYER SYSTEM
-   (lukebaffait-style hover clip-path)
    ===================================================== */
 .split-chars {
   display: inline-flex;
@@ -111,14 +124,13 @@ html.lenis body {
   width: 0.3em;
 }
 
-/* Word split helper */
 .split-words .word {
   display: inline-block;
   will-change: opacity, filter, transform;
 }
 
 /* =====================================================
-   CYLINDRICAL 3D GALLERY (FloatingGallery)
+   CYLINDRICAL 3D GALLERY
    ===================================================== */
 .cylinder-gallery {
   perspective: 1200px;
@@ -145,7 +157,6 @@ html.lenis body {
   will-change: transform;
 }
 
-/* Mobile fallback – hide complex 3D */
 @media (max-width: 767px) {
   .cylinder-gallery-desktop {
     display: none !important;
@@ -162,16 +173,27 @@ html.lenis body {
 }
 
 /* =====================================================
+   SECTION TRANSITIONS — softer handoffs between pins
+   ===================================================== */
+main > section {
+  /* Avoid layout jumps between pinned sections */
+  position: relative;
+}
+
+/* =====================================================
    PREFERS-REDUCED-MOTION
    ===================================================== */
 @media (prefers-reduced-motion: reduce) {
+  html.lenis {
+    scroll-behavior: auto !important;
+  }
+
   *,
   *::before,
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
   }
 
   .char .ch-top {
@@ -228,9 +250,6 @@ html.lenis body {
   font-family: var(--font-urbanist), sans-serif;
 }
 
-/* =====================================================
-   UTILITY
-   ===================================================== */
 .will-change-transform {
   will-change: transform;
 }
