@@ -4,7 +4,6 @@
 import { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { splitIntoWords } from '@/lib/splitText';
 
 interface Investor {
   id: number;
@@ -27,7 +26,6 @@ const STRIP_COUNT = 9;
 
 export default function FloatingGallery() {
   const sectionRef = useRef<HTMLElement>(null);
-  const textRef = useRef<HTMLDivElement>(null);
   const cylinderRef = useRef<HTMLDivElement>(null);
   
   const [mounted, setMounted] = useState(false);
@@ -55,25 +53,25 @@ export default function FloatingGallery() {
 
     const ctx = gsap.context(() => {
       const section = sectionRef.current;
-      const text = textRef.current;
-      const items = gsap.utils.toArray('.cylinder-item');
-      if (!section || !text || !items.length) return;
+      if (!section) return;
 
-      const heading = text.querySelector('h2');
-      let words: HTMLElement[] = [];
-      if (heading) {
-        words = splitIntoWords(heading);
-        gsap.set(words, { opacity: 0, filter: 'blur(12px)' });
-      }
+      // Scope queries specifically to this section to prevent bleed-over
+      const items = gsap.utils.toArray('.cylinder-item', section);
+      const words = gsap.utils.toArray('.word-span', section);
+      
+      if (!items.length) return;
 
-      // 1. Initial State: Hiding items deep in the bottom-left corner
+      // 1. Initial State for words
+      gsap.set(words, { opacity: 0, filter: 'blur(12px)' });
+
+      // 2. Initial State for items: Hiding them deep in the bottom-left corner
       gsap.set(items, {
         xPercent: -50,
         yPercent: -50,
-        x: () => -window.innerWidth / 2 - 300, // Bottom-left off-screen
+        x: () => -window.innerWidth / 2 - 300,
         y: () => window.innerHeight / 2 + 300,
         z: -200,
-        rotateY: -90, // Tilted away
+        rotateY: -90,
         opacity: 0,
         transformOrigin: `50% 50% ${-radius}px`,
       });
@@ -82,14 +80,14 @@ export default function FloatingGallery() {
         scrollTrigger: {
           trigger: section,
           start: 'top top',
-          end: '+=800%', // Increased scroll duration for a very smooth, unhurried animation
+          end: '+=800%',
           pin: true,
-          scrub: 1, // Smooth interpolation
+          scrub: 1,
           invalidateOnRefresh: true,
         },
       });
 
-      // 2. Reveal text word-by-word
+      // 3. Reveal text word-by-word
       if (words.length) {
         tl.to(
           words,
@@ -98,35 +96,20 @@ export default function FloatingGallery() {
         );
       }
 
-      // 3. The "Follow the Leader" Sequence
-      // By using keyframes and an exact stagger ratio, the items seamlessly form a rotating 3D circle
+      // 4. The "Follow the Leader" Sequence
       const staggerTime = 1.2;
-      const orbitDuration = 9.6; // Exactly 8 items * 1.2 stagger = 9.6 (Ensures perfect 360/8 degree spacing)
+      const orbitDuration = 9.6;
 
       tl.to(items, {
         keyframes: [
-          // Step A: Fly in from bottom left to center
-          {
-            x: 0, y: 0, z: 0, rotateY: 0, opacity: 1,
-            ease: 'power2.out', duration: 2.5
-          },
-          // Step B: Lock into orbit and rotate around the text
-          {
-            rotateY: -360,
-            ease: 'none', duration: orbitDuration
-          },
-          // Step C: Break orbit and exit bottom right
-          {
-            x: () => window.innerWidth / 2 + 300, // Bottom-right off-screen
-            y: () => window.innerHeight / 2 + 300,
-            z: -200, rotateY: -450, opacity: 0,
-            ease: 'power2.in', duration: 2.5
-          }
+          { x: 0, y: 0, z: 0, rotateY: 0, opacity: 1, ease: 'power2.out', duration: 2.5 },
+          { rotateY: -360, ease: 'none', duration: orbitDuration },
+          { x: () => window.innerWidth / 2 + 300, y: () => window.innerHeight / 2 + 300, z: -200, rotateY: -450, opacity: 0, ease: 'power2.in', duration: 2.5 }
         ],
-        stagger: staggerTime, // Each item follows the exact same path, perfectly delayed
+        stagger: staggerTime,
       }, 1);
 
-      // 4. Soft exit of center text as the last items are leaving
+      // 5. Soft exit of center text
       if (words.length) {
         tl.to(
           words,
@@ -176,15 +159,16 @@ export default function FloatingGallery() {
         "
         style={{ perspective: '1200px', transformStyle: 'preserve-3d' }}
       >
-        {/* TEXT - Pushed back in Z-space so the items orbit accurately around it */}
+        {/* 
+          TEXT - Splitting words natively in React to avoid GSAP/DOM conflicts 
+        */}
         <div
-          ref={textRef}
-          className="absolute text-center w-full max-w-5xl px-8"
+          className="absolute text-center w-full max-w-5xl px-8 flex justify-center gap-x-4"
           style={{ transform: `translateZ(${-radius}px)` }}
         >
-          <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-sans font-medium tracking-tight leading-[1.05]">
-            PAST{' '}
-            <span className="font-serif italic font-normal text-gradient-brand">
+          <h2 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-sans font-medium tracking-tight leading-[1.05] flex gap-x-4">
+            <span className="word-span inline-block">PAST</span>
+            <span className="word-span inline-block font-serif italic font-normal text-gradient-brand">
               INVESTORS
             </span>
           </h2>
@@ -218,10 +202,6 @@ export default function FloatingGallery() {
                 "
                 style={{ transformStyle: 'preserve-3d' }}
               >
-                {/* 
-                  Rendered natively in React to eliminate freezing. 
-                  This creates the physical curve of each card.
-                */}
                 {Array.from({ length: STRIP_COUNT }).map((_, s) => {
                   const stripWidth = 100 / STRIP_COUNT;
                   const stripAngle = (s - (STRIP_COUNT - 1) / 2) * 2.2;
@@ -253,7 +233,7 @@ export default function FloatingGallery() {
       </div>
 
       {/* =====================================================
-          MOBILE FALLBACK – simple horizontal track
+          MOBILE FALLBACK
           ===================================================== */}
       <div className="cylinder-gallery-mobile absolute left-0 right-0 bottom-10 z-[50] overflow-x-auto px-6 md:hidden">
         <div className="flex w-max items-center gap-4">
