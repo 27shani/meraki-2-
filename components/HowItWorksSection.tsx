@@ -1,3 +1,4 @@
+// components/HowItWorksSection.tsx
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -68,7 +69,6 @@ export default function HowItWorksSection() {
   const listRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const coverRef = useRef<HTMLDivElement>(null);
-  const indicatorRef = useRef<HTMLDivElement>(null); // NEW: red line
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
@@ -95,7 +95,7 @@ export default function HowItWorksSection() {
     const ctx = gsap.context(() => {
       const total = STEPS.length;
 
-      // ---- 1. INTRO: blur fade in (unchanged) ----
+      // Intro blur fade
       gsap.fromTo(
         containerRef.current,
         { opacity: 0.15, filter: 'blur(8px)' },
@@ -112,7 +112,6 @@ export default function HowItWorksSection() {
         }
       );
 
-      // ---- 2. SVG PATH: draw animation (unchanged) ----
       if (pathRef.current && listRef.current && containerRef.current) {
         const pathLength = pathRef.current.getTotalLength();
         gsap.set(pathRef.current, {
@@ -132,12 +131,13 @@ export default function HowItWorksSection() {
             start: 'top top',
             end: `+=${total * 160}%`,
             pin: true,
-            scrub: 0.8,
+            scrub: 1.2, // ← CHANGED: increased from 0.8 for smoother scrolling
             anticipatePin: 1,
+            invalidateOnRefresh: true, // ← ADDED: prevents layout shift issues
           },
         });
 
-        // ---- 3. LIST MOVEMENT: scroll-driven (unchanged) ----
+        // Titles scroll through center smoothly
         tl.to(
           listRef.current,
           {
@@ -153,7 +153,7 @@ export default function HowItWorksSection() {
           0
         );
 
-        // ---- 4. SVG PATH DRAW: (unchanged) ----
+        // Ribbon path draw in lockstep
         tl.to(
           pathRef.current,
           {
@@ -164,10 +164,10 @@ export default function HowItWorksSection() {
           0
         );
 
-        // ---- 5. HOLD on last step (unchanged) ----
+        // Brief hold on last step
         tl.to({}, { duration: 0.15 }, 1);
 
-        // ---- 6. OUTRO: blur fade out (unchanged) ----
+        // Outro
         tl.to(
           containerRef.current,
           {
@@ -180,58 +180,15 @@ export default function HowItWorksSection() {
         );
       }
 
-      // ---- 7. IMAGE CROSS-FADE: on activeIndex change (unchanged) ----
-      if (cardRef.current && !prefersReduced) {
-        // This is handled in the useEffect below
-      }
-
       if (coverRef.current && !prefersReduced) {
         gsap.set(coverRef.current, { y: 0, opacity: 0 });
-      }
-
-      // ---- 8. NEW: RED INDICATOR LINE ----
-      if (indicatorRef.current && listRef.current) {
-        // The indicator moves to match the active item
-        // We use the activeIndex state to position it
-        const updateIndicator = () => {
-          if (!indicatorRef.current) return;
-          const listRect = listRef.current?.getBoundingClientRect();
-          const containerRect = containerRef.current?.getBoundingClientRect();
-          if (!listRect || !containerRect) return;
-
-          // Calculate the y position of the active item relative to the list
-          const itemOffset = activeIndex * ROW_HEIGHT + ROW_HEIGHT / 2;
-          const listY = parseFloat(gsap.getProperty(listRef.current, 'y') as string) || 0;
-          
-          // Position the indicator at the center of the active item
-          const indicatorY = itemOffset + listY;
-          
-          gsap.to(indicatorRef.current, {
-            y: indicatorY,
-            duration: 0.2,
-            ease: 'power2.out',
-          });
-        };
-
-        // Update on activeIndex change
-        updateIndicator();
-
-        // Also update during scroll via ScrollTrigger
-        ScrollTrigger.create({
-          trigger: containerRef.current,
-          start: 'top top',
-          end: `+=${total * 160}%`,
-          onUpdate: () => {
-            updateIndicator();
-          },
-        });
       }
     }, containerRef);
 
     return () => ctx.revert();
   }, []);
 
-  // ---- IMAGE CROSS-FADE: on activeIndex change (unchanged) ----
+  // Smooth active-step opacity/stagger via GSAP when index changes
   useEffect(() => {
     if (!cardRef.current) return;
     const images = cardRef.current.querySelectorAll('[data-step-img]');
@@ -245,7 +202,6 @@ export default function HowItWorksSection() {
     });
   }, [activeIndex]);
 
-  // ---- COVER HOVER (unchanged) ----
   useEffect(() => {
     if (!coverRef.current) return;
     gsap.to(coverRef.current, {
@@ -263,7 +219,7 @@ export default function HowItWorksSection() {
       ref={containerRef}
       className="relative w-full h-screen bg-black text-offwhite overflow-hidden flex items-center justify-between px-5 sm:px-8 md:px-16 select-none"
     >
-      {/* ---- SVG RIBBON (unchanged) ---- */}
+      {/* Background Ribbon Path */}
       <svg
         className="absolute top-0 left-0 w-full h-full pointer-events-none z-10 opacity-30 md:opacity-100"
         viewBox="0 0 1000 1000"
@@ -292,25 +248,26 @@ export default function HowItWorksSection() {
         />
       </svg>
 
-      {/* ---- LEFT COUNTER (unchanged) ---- */}
+      {/* Left counter */}
       <div className="absolute left-4 sm:left-6 md:left-12 top-1/2 -translate-y-1/2 z-30 font-sans text-sm md:text-base text-neutral-300 tabular-nums">
         ({currentStep.stepNum})
       </div>
 
-      {/* ---- LEFT: VERTICAL LIST with curved offsets (unchanged) ---- */}
+      {/* Vertical title list with curved layout offsets on mobile */}
       <div className="relative z-20 w-full md:w-[55%] h-full overflow-hidden flex items-start justify-center md:justify-start px-4 md:pl-8 pt-8">
         <div ref={listRef} className="w-full flex flex-col items-center md:items-start">
           {STEPS.map((step, idx) => {
             const isActive = idx === activeIndex;
             const distance = idx - activeIndex;
 
+            // Curved positional offset mapping matching the reference video style
             let mobileTranslateX = '0px';
             if (distance === 0) {
-              mobileTranslateX = '-18px';
+              mobileTranslateX = '-18px'; // Highlighted item shifts cleanly to the left
             } else if (distance < 0) {
-              mobileTranslateX = `${Math.abs(distance) * 8}px`;
+              mobileTranslateX = `${Math.abs(distance) * 8}px`; // Previous items drift to the right
             } else {
-              mobileTranslateX = `${distance * 8}px`;
+              mobileTranslateX = `${distance * 8}px`; // Next items drift to the right
             }
 
             return (
@@ -338,13 +295,14 @@ export default function HowItWorksSection() {
         </div>
       </div>
 
-      {/* ---- RIGHT: IMAGE CARD + DESCRIPTION (unchanged) ---- */}
+      {/* Right column – image card + desc (Hidden on mobile) */}
       <div className="relative z-20 hidden md:flex w-[40vw] max-w-[500px] flex-col items-end mr-2 sm:mr-4 md:mr-16">
         <div className="w-full flex justify-between text-xs font-sans font-medium tracking-widest uppercase text-coral-light mb-4 px-1">
           <span>STEP {currentStep.stepNum}</span>
           <span />
         </div>
 
+        {/* Image card with floating cover */}
         <div
           ref={cardRef}
           onMouseEnter={() => setIsHovered(true)}
@@ -367,6 +325,7 @@ export default function HowItWorksSection() {
             </div>
           ))}
 
+          {/* Floating cover card on hover */}
           <div
             ref={coverRef}
             className="absolute inset-4 rounded-lg bg-black/40 backdrop-blur-md border border-white/15 flex items-center justify-center pointer-events-none z-20 opacity-0"
@@ -376,6 +335,7 @@ export default function HowItWorksSection() {
             </span>
           </div>
 
+          {/* Cursor badge */}
           {isHovered && (
             <div
               style={{
@@ -392,6 +352,7 @@ export default function HowItWorksSection() {
           )}
         </div>
 
+        {/* Description */}
         <div className="w-full h-[100px] mt-6 relative overflow-hidden">
           {STEPS.map((step, idx) => (
             <p
