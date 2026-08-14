@@ -43,7 +43,11 @@ export default function ContactSection() {
   }, []);
 
   return (
-    <section ref={containerRef} className="relative h-screen bg-black overflow-hidden flex items-center justify-center">
+    <section 
+      ref={containerRef} 
+      // Added rounded-b-[40px] for mobile, rounded-b-[80px] for desktop, and z-10 to sit above the footer
+      className="relative h-screen bg-black overflow-hidden flex items-center justify-center rounded-b-[40px] md:rounded-b-[80px] z-10"
+    >
       {/* Expanding Off-White Mask Circle */}
       <div
         ref={circleRef}
