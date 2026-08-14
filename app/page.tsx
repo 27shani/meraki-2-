@@ -1,5 +1,6 @@
 // app/page.tsx
 import LenisProvider from '@/components/LenisProvider';
+import ScrollProgress from '@/components/ScrollProgress';
 import HeroSection from '@/components/HeroSection';
 import AboutSection from '@/components/AboutSection';
 import HowItWorksSection from '@/components/HowItWorksSection';
@@ -13,6 +14,7 @@ import FooterSection from '@/components/FooterSection';
 export default function Home() {
   return (
     <LenisProvider>
+      <ScrollProgress />
       <main className="bg-black text-offwhite min-h-screen overflow-x-hidden">
         <HeroSection />
         <AboutSection />
@@ -27,3 +29,4 @@ export default function Home() {
     </LenisProvider>
   );
 }
+
