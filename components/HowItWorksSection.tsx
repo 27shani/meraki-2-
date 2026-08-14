@@ -63,13 +63,6 @@ const STEPS: Step[] = [
   },
 ];
 
-/**
- * HowItWorksSection
- * -------------------------------------------------
- * - SVG path draw via strokeDashoffset, fully scrubbed
- * - Smoother active step transitions (stagger + opacity)
- * - Floating cover card on hover/active with fade + slight movement
- */
 export default function HowItWorksSection() {
   const containerRef = useRef<HTMLDivElement>(null);
   const pathRef = useRef<SVGPathElement>(null);
@@ -114,13 +107,12 @@ export default function HowItWorksSection() {
             trigger: containerRef.current,
             start: 'top bottom',
             end: 'top center',
-            scrub: 1.2,
+            scrub: 1.5,
           },
         }
       );
 
       if (pathRef.current && listRef.current && containerRef.current) {
-        // SVG path draw setup
         const pathLength = pathRef.current.getTotalLength();
         gsap.set(pathRef.current, {
           strokeDasharray: pathLength,
@@ -137,18 +129,19 @@ export default function HowItWorksSection() {
           scrollTrigger: {
             trigger: containerRef.current,
             start: 'top top',
-            end: `+=${total * 140}%`,
+            end: `+=${total * 160}%`,
             pin: true,
-            scrub: 1.15,
+            scrub: 1.8, // Enhanced ultra-smooth scrolling lag/scrubbing
+            anticipatePin: 1,
           },
         });
 
-        // Titles scroll through center
+        // Titles scroll through center smoothly
         tl.to(
           listRef.current,
           {
             y: endY,
-            ease: 'none',
+            ease: 'power1.inOut',
             duration: 1,
             onUpdate: function () {
               const rawIndex = this.progress() * (total - 1);
@@ -164,14 +157,14 @@ export default function HowItWorksSection() {
           pathRef.current,
           {
             strokeDashoffset: 0,
-            ease: 'none',
+            ease: 'power1.inOut',
             duration: 1,
           },
           0
         );
 
         // Brief hold on last step
-        tl.to({}, { duration: 0.12 }, 1);
+        tl.to({}, { duration: 0.15 }, 1);
 
         // Outro
         tl.to(
@@ -179,14 +172,13 @@ export default function HowItWorksSection() {
           {
             opacity: 0,
             filter: 'blur(12px)',
-            duration: 0.22,
+            duration: 0.25,
             ease: 'power2.inOut',
           },
-          1.12
+          1.15
         );
       }
 
-      // Floating cover card subtle float on hover
       if (coverRef.current && !prefersReduced) {
         gsap.set(coverRef.current, { y: 0, opacity: 0 });
       }
@@ -209,7 +201,6 @@ export default function HowItWorksSection() {
     });
   }, [activeIndex]);
 
-  // Cover card hover animation
   useEffect(() => {
     if (!coverRef.current) return;
     gsap.to(coverRef.current, {
@@ -261,11 +252,23 @@ export default function HowItWorksSection() {
         ({currentStep.stepNum})
       </div>
 
-      {/* Vertical title list */}
-      <div className="relative z-20 w-full md:w-[55%] h-full overflow-hidden flex items-start justify-center md:justify-start px-2 md:pl-8 pt-8">
+      {/* Vertical title list with curved layout offsets on mobile */}
+      <div className="relative z-20 w-full md:w-[55%] h-full overflow-hidden flex items-start justify-center md:justify-start px-4 md:pl-8 pt-8">
         <div ref={listRef} className="w-full flex flex-col items-center md:items-start">
           {STEPS.map((step, idx) => {
             const isActive = idx === activeIndex;
+            const distance = idx - activeIndex;
+
+            // Curved positional offset mapping matching the reference video style
+            let mobileTranslateX = '0px';
+            if (distance === 0) {
+              mobileTranslateX = '-18px'; // Highlighted item shifts cleanly to the left
+            } else if (distance < 0) {
+              mobileTranslateX = `${Math.abs(distance) * 8}px`; // Previous items drift to the right
+            } else {
+              mobileTranslateX = `${distance * 8}px`; // Next items drift to the right
+            }
+
             return (
               <div
                 key={step.id}
@@ -274,10 +277,13 @@ export default function HowItWorksSection() {
                 className="w-full flex items-center justify-center md:justify-start border-b border-neutral-800/60 cursor-pointer pr-0 md:pr-8"
               >
                 <h2
+                  style={{
+                    transform: `translateX(${mobileTranslateX})`,
+                  }}
                   className={`text-2xl sm:text-4xl md:text-5xl lg:text-[4rem] font-sans tracking-tight whitespace-nowrap transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] leading-tight origin-center md:origin-left ${
                     isActive
-                      ? 'text-white opacity-100 scale-105 translate-x-0 md:-translate-x-8 font-bold'
-                      : 'text-neutral-600 opacity-30 scale-95 translate-x-0 hover:opacity-50 font-medium'
+                      ? 'text-white opacity-100 scale-105 md:-translate-x-8 font-bold'
+                      : 'text-neutral-600 opacity-30 scale-95 hover:opacity-50 font-medium'
                   }`}
                 >
                   {step.title}
