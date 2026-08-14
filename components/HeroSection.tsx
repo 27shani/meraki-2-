@@ -22,6 +22,13 @@ export default function HeroSection() {
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
+    // Safety: always unlock Lenis even if loader timeline fails
+    const safetyUnlock = window.setTimeout(() => {
+      if (typeof window !== 'undefined' && (window as any).__unlockLenis) {
+        (window as any).__unlockLenis();
+      }
+    }, 5000);
+
     const mm = gsap.matchMedia();
 
     /*
@@ -96,7 +103,7 @@ export default function HeroSection() {
           trigger: containerRef.current,
           start: 'top top',
           end: '+=250%', 
-          scrub: 1.5, 
+          scrub: 0.6, 
           pin: true,
         },
       });
@@ -129,8 +136,8 @@ export default function HeroSection() {
           containerRef.current,
           {
             yPercent: -15, 
-            opacity: 0,
-            filter: 'blur(16px)',
+            opacity: 0.2,
+          filter: 'blur(8px)',
             ease: 'power2.inOut',
           },
           '+=0.3'
@@ -151,7 +158,7 @@ export default function HeroSection() {
           trigger: containerRef.current,
           start: 'top top',
           end: '+=300%', 
-          scrub: 1.5,
+          scrub: 0.6,
           pin: true,
         },
       });
@@ -184,14 +191,17 @@ export default function HeroSection() {
       )
       .to(containerRef.current, {
         yPercent: -15,
-        opacity: 0,
-        filter: 'blur(16px)',
+        opacity: 0.2,
+          filter: 'blur(8px)',
         ease: 'power2.inOut',
         duration: 1.2
       }, '+=0.3');
     });
 
-    return () => mm.revert();
+    return () => {
+      window.clearTimeout(safetyUnlock);
+      mm.revert();
+    };
   }, []);
 
   return (
