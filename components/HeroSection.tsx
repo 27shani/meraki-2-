@@ -4,6 +4,9 @@
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { SplitText } from 'gsap/SplitText'; // 👈 Import SplitText
+
+gsap.registerPlugin(ScrollTrigger, SplitText); // 👈 Register
 
 export default function HeroSection() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -19,9 +22,10 @@ export default function HeroSection() {
   const loaderWipeRedRef = useRef<HTMLDivElement>(null);
   const loaderWipeBlackRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    gsap.registerPlugin(ScrollTrigger);
+  // 👇 Ref to the main hero title for SplitText animation
+  const heroTitleRef = useRef<HTMLHeadingElement>(null);
 
+  useEffect(() => {
     // Safety: always unlock Lenis even if loader timeline fails
     const safetyUnlock = window.setTimeout(() => {
       if (typeof window !== 'undefined' && (window as any).__unlockLenis) {
@@ -49,7 +53,7 @@ export default function HeroSection() {
         // Initial states
         gsap.set(loader, { opacity: 1, visibility: 'visible', pointerEvents: 'auto' });
         gsap.set(chars, { scale: 0.5, opacity: 0 });
-        gsap.set([wipeRed, wipeBlack], { yPercent: 100 }); // start at BOTTOM
+        gsap.set([wipeRed, wipeBlack], { yPercent: 100 });
 
         loaderTl
           .to(chars, {
@@ -80,6 +84,19 @@ export default function HeroSection() {
                 (window as any).__unlockLenis();
               }
               ScrollTrigger.refresh();
+
+              // 👇 AFTER LOADER COMPLETE: Character-by-character reveal of hero title
+              if (heroTitleRef.current) {
+                const split = new SplitText(heroTitleRef.current, { type: 'chars' });
+                gsap.from(split.chars, {
+                  opacity: 0,
+                  y: 50,
+                  duration: 0.5,
+                  stagger: 0.03,
+                  ease: 'power3.out',
+                  delay: 0.2, // small delay after loader vanishes
+                });
+              }
             },
           }, '-=0.4');
       }
@@ -127,13 +144,16 @@ export default function HeroSection() {
           { opacity: 1, y: 0, filter: 'blur(0px)', ease: 'power3.out', duration: 1.5 }, 
           '<0.2' 
         )
+        // 👇 Refined closing effect: scale down, blur, fade, and move up
         .to(
           containerRef.current,
           {
-            yPercent: -15, 
-            opacity: 0.2,
-            filter: 'blur(8px)',
+            scale: 0.85,
+            opacity: 0.25,
+            filter: 'blur(6px)',
+            yPercent: -20,
             ease: 'power2.inOut',
+            duration: 1.2,
           },
           '+=0.3'
         );
@@ -145,7 +165,6 @@ export default function HeroSection() {
      * =========================================================
      */
     mm.add("(max-width: 767px)", () => {
-      // Adjusted from 35vh to 22vh so it doesn't overlap the footer initially
       gsap.set(heroTextContainerRef.current, { y: '22vh' });
 
       const mobileTl = gsap.timeline({
@@ -185,11 +204,12 @@ export default function HeroSection() {
         '<0.2'
       )
       .to(containerRef.current, {
-        yPercent: -15,
-        opacity: 0.2,
-        filter: 'blur(8px)',
+        scale: 0.85,
+        opacity: 0.25,
+        filter: 'blur(6px)',
+        yPercent: -20,
         ease: 'power2.inOut',
-        duration: 1.2
+        duration: 1.2,
       }, '+=0.3');
     });
 
@@ -215,8 +235,6 @@ export default function HeroSection() {
             classroom pitch.
           </span>
         </p>
-
-        {/* Removed "hidden md:flex" so the logo shows on all devices */}
         <span className="flex items-center gap-1.5 md:gap-2 mt-1 md:mt-0 text-right">
           <img
             src="/meraki-logo.png"
@@ -232,7 +250,10 @@ export default function HeroSection() {
         ref={heroTextContainerRef}
         className="relative z-10 my-auto w-full flex flex-col items-center justify-center px-4 md:px-12 pointer-events-none gap-6"
       >
-        <h1 className="text-5xl md:text-[9vw] font-semibold tracking-tight text-offwhite leading-none uppercase text-center flex flex-wrap justify-center gap-x-4 md:gap-x-8 font-sans">
+        <h1 
+          ref={heroTitleRef}  // 👈 Attach ref for SplitText
+          className="text-5xl md:text-[9vw] font-semibold tracking-tight text-offwhite leading-none uppercase text-center flex flex-wrap justify-center gap-x-4 md:gap-x-8 font-sans"
+        >
           <span>Pitch.</span>
           <span className="font-serif italic font-normal text-gradient-brand">
             Connect.
