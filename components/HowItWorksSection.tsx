@@ -14,53 +14,12 @@ interface Step {
 }
 
 const STEPS: Step[] = [
-  {
-    id: 1,
-    stepNum: '01',
-    title: 'Apply',
-    description: 'Share your idea, the problem it solves, and your vision.',
-    image: '/Apply.jpg',
-  },
-  {
-    id: 2,
-    stepNum: '02',
-    title: 'Get Evaluated',
-    description:
-      "Experts assess your idea's strength, market potential, and execution readiness.",
-    image: '/Get Evalueted.jpg',
-  },
-  {
-    id: 3,
-    stepNum: '03',
-    title: 'Make the Cut',
-    description:
-      'Strongest submissions advance to the next stage of Meraki competition.',
-    image: '/Make the cut.jpg',
-  },
-  {
-    id: 4,
-    stepNum: '04',
-    title: 'Refine Your Pitch',
-    description:
-      'Refine your idea through expert feedback and focused mentorship sessions.',
-    image: '/refine your pitch.jpg',
-  },
-  {
-    id: 5,
-    stepNum: '05',
-    title: 'Pitch at Meraki',
-    description:
-      'Pitch your idea at FIIB before experts, investors, and innovators.',
-    image: '/pitch at meraki.jpg',
-  },
-  {
-    id: 6,
-    stepNum: '06',
-    title: 'Win',
-    description:
-      'Compete for prizes, build connections, and take your idea forward.',
-    image: '/win.jpg',
-  },
+  { id: 1, stepNum: '01', title: 'Apply', description: 'Share your idea, the problem it solves, and your vision.', image: '/Apply.jpg' },
+  { id: 2, stepNum: '02', title: 'Get Evaluated', description: "Experts assess your idea's strength, market potential, and execution readiness.", image: '/Get Evalueted.jpg' },
+  { id: 3, stepNum: '03', title: 'Make the Cut', description: 'Strongest submissions advance to the next stage of Meraki competition.', image: '/Make the cut.jpg' },
+  { id: 4, stepNum: '04', title: 'Refine Your Pitch', description: 'Refine your idea through expert feedback and focused mentorship sessions.', image: '/refine your pitch.jpg' },
+  { id: 5, stepNum: '05', title: 'Pitch at Meraki', description: 'Pitch your idea at FIIB before experts, investors, and innovators.', image: '/pitch at meraki.jpg' },
+  { id: 6, stepNum: '06', title: 'Win', description: 'Compete for prizes, build connections, and take your idea forward.', image: '/win.jpg' },
 ];
 
 export default function HowItWorksSection() {
@@ -69,6 +28,7 @@ export default function HowItWorksSection() {
   const listRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const coverRef = useRef<HTMLDivElement>(null);
+  const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const [activeIndex, setActiveIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
@@ -95,7 +55,7 @@ export default function HowItWorksSection() {
     const ctx = gsap.context(() => {
       const total = STEPS.length;
 
-      // Intro blur fade
+      // --- Intro blur fade (global) ---
       gsap.fromTo(
         containerRef.current,
         { opacity: 0.15, filter: 'blur(8px)' },
@@ -125,19 +85,45 @@ export default function HowItWorksSection() {
 
         gsap.set(listRef.current, { y: startY });
 
+        // --- Main timeline with pin, now with opening + closing ---
         const tl = gsap.timeline({
           scrollTrigger: {
             trigger: containerRef.current,
             start: 'top top',
-            end: `+=${total * 160}%`,
+            end: `+=400%`, // 🔽 Reduced from 960% to a more reasonable length
             pin: true,
-            scrub: 1.2, // ← CHANGED: increased from 0.8 for smoother scrolling
+            scrub: 1.2,
             anticipatePin: 1,
-            invalidateOnRefresh: true, // ← ADDED: prevents layout shift issues
+            invalidateOnRefresh: true,
           },
         });
 
-        // Titles scroll through center smoothly
+        // 1. OPENING PHASE: steps stagger in from below
+        tl.fromTo(
+          stepRefs.current,
+          { y: 80, opacity: 0 },
+          {
+            y: 0,
+            opacity: 1,
+            stagger: 0.1,
+            duration: 1.2,
+            ease: 'power2.out',
+          },
+          0
+        );
+
+        // 2. Path drawing (in parallel)
+        tl.to(
+          pathRef.current,
+          {
+            strokeDashoffset: 0,
+            ease: 'power1.inOut',
+            duration: 1,
+          },
+          0
+        );
+
+        // 3. List vertical movement (scrubbed)
         tl.to(
           listRef.current,
           {
@@ -153,30 +139,20 @@ export default function HowItWorksSection() {
           0
         );
 
-        // Ribbon path draw in lockstep
-        tl.to(
-          pathRef.current,
-          {
-            strokeDashoffset: 0,
-            ease: 'power1.inOut',
-            duration: 1,
-          },
-          0
-        );
-
-        // Brief hold on last step
+        // 4. Brief hold on last step
         tl.to({}, { duration: 0.15 }, 1);
 
-        // Outro
+        // 5. CLOSING PHASE: whole section scales down, blurs, and fades
         tl.to(
           containerRef.current,
           {
-            opacity: 0.2,
-            filter: 'blur(8px)',
-            duration: 0.25,
+            scale: 0.85,
+            opacity: 0.1,
+            filter: 'blur(10px)',
+            duration: 1.0,
             ease: 'power2.inOut',
           },
-          1.15
+          '+=0.3' // starts shortly after the hold
         );
       }
 
@@ -188,7 +164,8 @@ export default function HowItWorksSection() {
     return () => ctx.revert();
   }, []);
 
-  // Smooth active-step opacity/stagger via GSAP when index changes
+  // (Keep the rest of the hooks and render as is)
+  // --- active step image fade, cover hover, etc. unchanged ---
   useEffect(() => {
     if (!cardRef.current) return;
     const images = cardRef.current.querySelectorAll('[data-step-img]');
@@ -227,13 +204,7 @@ export default function HowItWorksSection() {
         preserveAspectRatio="none"
       >
         <defs>
-          <linearGradient
-            id="ribbonGradient"
-            x1="0%"
-            y1="0%"
-            x2="100%"
-            y2="100%"
-          >
+          <linearGradient id="ribbonGradient" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#FB575F" />
             <stop offset="100%" stopColor="#8F53FC" />
           </linearGradient>
@@ -253,26 +224,25 @@ export default function HowItWorksSection() {
         ({currentStep.stepNum})
       </div>
 
-      {/* Vertical title list with curved layout offsets on mobile */}
+      {/* Vertical title list */}
       <div className="relative z-20 w-full md:w-[55%] h-full overflow-hidden flex items-start justify-center md:justify-start px-4 md:pl-8 pt-8">
         <div ref={listRef} className="w-full flex flex-col items-center md:items-start">
           {STEPS.map((step, idx) => {
             const isActive = idx === activeIndex;
             const distance = idx - activeIndex;
-
-            // Curved positional offset mapping matching the reference video style
             let mobileTranslateX = '0px';
             if (distance === 0) {
-              mobileTranslateX = '-18px'; // Highlighted item shifts cleanly to the left
+              mobileTranslateX = '-18px';
             } else if (distance < 0) {
-              mobileTranslateX = `${Math.abs(distance) * 8}px`; // Previous items drift to the right
+              mobileTranslateX = `${Math.abs(distance) * 8}px`;
             } else {
-              mobileTranslateX = `${distance * 8}px`; // Next items drift to the right
+              mobileTranslateX = `${distance * 8}px`;
             }
 
             return (
               <div
                 key={step.id}
+                ref={(el) => { stepRefs.current[idx] = el; }}
                 onClick={() => setActiveIndex(idx)}
                 style={{ height: `${ROW_HEIGHT}px` }}
                 className="w-full flex items-center justify-center md:justify-start border-b border-neutral-800/60 cursor-pointer pr-0 md:pr-8"
@@ -295,14 +265,13 @@ export default function HowItWorksSection() {
         </div>
       </div>
 
-      {/* Right column – image card + desc (Hidden on mobile) */}
+      {/* Right column – image card + desc (desktop only) */}
       <div className="relative z-20 hidden md:flex w-[40vw] max-w-[500px] flex-col items-end mr-2 sm:mr-4 md:mr-16">
         <div className="w-full flex justify-between text-xs font-sans font-medium tracking-widest uppercase text-coral-light mb-4 px-1">
           <span>STEP {currentStep.stepNum}</span>
           <span />
         </div>
 
-        {/* Image card with floating cover */}
         <div
           ref={cardRef}
           onMouseEnter={() => setIsHovered(true)}
@@ -325,7 +294,6 @@ export default function HowItWorksSection() {
             </div>
           ))}
 
-          {/* Floating cover card on hover */}
           <div
             ref={coverRef}
             className="absolute inset-4 rounded-lg bg-black/40 backdrop-blur-md border border-white/15 flex items-center justify-center pointer-events-none z-20 opacity-0"
@@ -335,7 +303,6 @@ export default function HowItWorksSection() {
             </span>
           </div>
 
-          {/* Cursor badge */}
           {isHovered && (
             <div
               style={{
@@ -352,7 +319,6 @@ export default function HowItWorksSection() {
           )}
         </div>
 
-        {/* Description */}
         <div className="w-full h-[100px] mt-6 relative overflow-hidden">
           {STEPS.map((step, idx) => (
             <p
