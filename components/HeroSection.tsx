@@ -7,6 +7,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 export default function HeroSection() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const heroTextContainerRef = useRef<HTMLDivElement>(null); // Added ref to move text on scroll
   const expandBoxRef = useRef<HTMLDivElement>(null);
   const expandContentRef = useRef<HTMLDivElement>(null);
 
@@ -21,13 +22,15 @@ export default function HeroSection() {
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
-    const ctx = gsap.context(() => {
-      /*
-       * =========================================================
-       * OPENING LOADING ANIMATION (Scale Up + Color Wipe)
-       * =========================================================
-       */
+    // Using matchMedia to separate desktop and mobile logic safely
+    const mm = gsap.matchMedia();
 
+    /*
+     * =========================================================
+     * GLOBAL: OPENING LOADING ANIMATION (Runs on all devices)
+     * =========================================================
+     */
+    mm.add("all", () => {
       const loader = loaderRef.current;
       const loaderTitle = loaderTitleRef.current;
       const wipeRed = loaderWipeRedRef.current;
@@ -90,29 +93,33 @@ export default function HeroSection() {
             }
           }, "-=0.4");
       }
+    });
 
-      /*
-       * =========================================================
-       * EXISTING HERO SCROLL ANIMATION (smooth pinned intro/outro)
-       * =========================================================
-       */
+    /*
+     * =========================================================
+     * DESKTOP: HERO SCROLL ANIMATION (768px and up)
+     * =========================================================
+     */
+    mm.add("(min-width: 768px)", () => {
+      // Ensure text is zeroed out in case of resize
+      gsap.set(heroTextContainerRef.current, { y: 0 });
 
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: '+=250%', // Increased scroll distance
-          scrub: 1.5, // Increased scrub smoothing
+          end: '+=250%', 
+          scrub: 1.5, 
           pin: true,
         },
       });
 
-      // 1. Reveal initial compact card in center (Removed border radius)
+      // 1. Reveal initial compact card in center
       tl.to(expandBoxRef.current, {
         width: '350px',
         height: '200px',
         opacity: 1,
-        borderRadius: '0px', // Removed rounded corners here
+        borderRadius: '0px',
         ease: 'power3.out',
       })
 
@@ -132,25 +139,88 @@ export default function HeroSection() {
         // 2.5 Fade and slide in the new text content VERY smoothly
         .fromTo(
           expandContentRef.current,
-          { opacity: 0, y: 60, filter: 'blur(12px)' }, // Added blur and slightly more Y offset for smoothness
-          { opacity: 1, y: 0, filter: 'blur(0px)', ease: 'power3.out', duration: 1.5 }, // Increased duration and ease
-          '<0.2' // Starts slightly after the image begins expanding
+          { opacity: 0, y: 60, filter: 'blur(12px)' }, 
+          { opacity: 1, y: 0, filter: 'blur(0px)', ease: 'power3.out', duration: 1.5 }, 
+          '<0.2' 
         )
 
         // 3. Smooth exit transition — content dissolves and lifts up
         .to(
           containerRef.current,
           {
-            yPercent: -15, // Lifts the entire container out of the way smoothly
+            yPercent: -15, 
             opacity: 0,
             filter: 'blur(16px)',
             ease: 'power2.inOut',
           },
           '+=0.3'
         );
-    }, containerRef);
+    });
 
-    return () => ctx.revert();
+    /*
+     * =========================================================
+     * MOBILE: HERO SCROLL ANIMATION (Under 768px)
+     * =========================================================
+     */
+    mm.add("(max-width: 767px)", () => {
+      // 1. Start the hero text down at the bottom initially
+      gsap.set(heroTextContainerRef.current, { y: '35vh' });
+
+      const mobileTl = gsap.timeline({
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: 'top top',
+          end: '+=300%', // Slightly longer for the extra movement step
+          scrub: 1.5,
+          pin: true,
+        },
+      });
+
+      // 2. Scroll the text from bottom to the middle
+      mobileTl.to(heroTextContainerRef.current, {
+        y: 0,
+        duration: 1.2,
+        ease: 'power2.out',
+      })
+
+      // 3. Reveal initial box in a PORTRAIT size
+      .to(expandBoxRef.current, {
+        width: '220px',  // Portrait width
+        height: '350px', // Portrait height
+        opacity: 1,
+        borderRadius: '0px',
+        ease: 'power3.out',
+        duration: 1
+      }, "+=0.2")
+
+      // 4. Expand smoothly to full screen
+      .to(expandBoxRef.current, {
+        width: '100%',
+        height: '100%',
+        borderRadius: '0px',
+        borderWidth: '0px',
+        ease: 'power3.inOut',
+        duration: 1.2
+      }, '+=0.2')
+
+      // 5. Fade and slide in the text content
+      .fromTo(expandContentRef.current,
+        { opacity: 0, y: 60, filter: 'blur(12px)' },
+        { opacity: 1, y: 0, filter: 'blur(0px)', ease: 'power3.out', duration: 1.5 },
+        '<0.2'
+      )
+
+      // 6. Smooth exit transition
+      .to(containerRef.current, {
+        yPercent: -15,
+        opacity: 0,
+        filter: 'blur(16px)',
+        ease: 'power2.inOut',
+        duration: 1.2
+      }, '+=0.3');
+    });
+
+    return () => mm.revert();
   }, []);
 
   return (
@@ -184,8 +254,11 @@ export default function HeroSection() {
         </span>
       </div>
 
-      {/* Background Hero Typography */}
-      <div className="relative z-10 my-auto w-full flex flex-col items-center justify-center px-4 md:px-12 pointer-events-none gap-6">
+      {/* Background Hero Typography (Added wrapper ref for mobile movement) */}
+      <div 
+        ref={heroTextContainerRef}
+        className="relative z-10 my-auto w-full flex flex-col items-center justify-center px-4 md:px-12 pointer-events-none gap-6"
+      >
         <h1 className="text-5xl md:text-[9vw] font-semibold tracking-tight text-offwhite leading-none uppercase text-center flex flex-wrap justify-center gap-x-4 md:gap-x-8 font-sans">
           <span>Pitch.</span>
 
