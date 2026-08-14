@@ -7,25 +7,22 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 export default function HeroSection() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const heroTextContainerRef = useRef<HTMLDivElement>(null);
-  
-  // ---- NEW: Split‑text + image reveal refs ----
-  const splitContainerRef = useRef<HTMLDivElement>(null);
-  const textTopRef = useRef<HTMLDivElement>(null);
-  const textBottomRef = useRef<HTMLDivElement>(null);
-  const imageRevealRef = useRef<HTMLDivElement>(null);
-  const imageInnerRef = useRef<HTMLDivElement>(null);
-  const contentOverlayRef = useRef<HTMLDivElement>(null); // your existing content
+  const heroTextContainerRef = useRef<HTMLDivElement>(null); 
+  const expandBoxRef = useRef<HTMLDivElement>(null);
+  const expandContentRef = useRef<HTMLDivElement>(null);
 
-  // ---- Loader refs (unchanged but modified in JSX) ----
+  // Opening loading animation refs
   const loaderRef = useRef<HTMLDivElement>(null);
   const loaderTitleRef = useRef<HTMLDivElement>(null);
+  
+  // Wipe transition refs
   const loaderWipeRedRef = useRef<HTMLDivElement>(null);
   const loaderWipeBlackRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
+    // Safety: always unlock Lenis even if loader timeline fails
     const safetyUnlock = window.setTimeout(() => {
       if (typeof window !== 'undefined' && (window as any).__unlockLenis) {
         (window as any).__unlockLenis();
@@ -35,11 +32,11 @@ export default function HeroSection() {
     const mm = gsap.matchMedia();
 
     /*
-     * ============================================================
-     * 1. LOADING ANIMATION – character stagger + panels from BOTTOM
-     * ============================================================
+     * =========================================================
+     * GLOBAL: OPENING LOADING ANIMATION (Runs on all devices)
+     * =========================================================
      */
-    mm.add('all', () => {
+    mm.add("all", () => {
       const loader = loaderRef.current;
       const loaderTitle = loaderTitleRef.current;
       const wipeRed = loaderWipeRedRef.current;
@@ -89,90 +86,111 @@ export default function HeroSection() {
     });
 
     /*
-     * ============================================================
-     * 2. HERO SCROLL – Text splits, image expands, then content appears
-     * ============================================================
+     * =========================================================
+     * DESKTOP: HERO SCROLL ANIMATION (768px and up)
+     * =========================================================
      */
-    mm.add('all', () => {
-      const container = containerRef.current;
-      const textTop = textTopRef.current;
-      const textBottom = textBottomRef.current;
-      const imageReveal = imageRevealRef.current;
-      const imageInner = imageInnerRef.current;
-      const contentOverlay = contentOverlayRef.current;
-
-      if (!container || !textTop || !textBottom || !imageReveal || !imageInner || !contentOverlay) return;
-
-      // Initial states
-      gsap.set(textTop, { y: 0, opacity: 1 });
-      gsap.set(textBottom, { y: 0, opacity: 1 });
-      gsap.set(imageReveal, {
-        scale: 0.3,
-        opacity: 0,
-        borderRadius: '50%',
-      });
-      gsap.set(imageInner, {
-        scale: 1.2,
-        filter: 'blur(8px)',
-      });
-      gsap.set(contentOverlay, { opacity: 0, y: 30 });
+    mm.add("(min-width: 768px)", () => {
+      gsap.set(heroTextContainerRef.current, { y: 0 });
 
       const tl = gsap.timeline({
         scrollTrigger: {
-          trigger: container,
+          trigger: containerRef.current,
           start: 'top top',
-          end: '+=200%',        // adjust scroll distance as needed
-          scrub: 0.8,
+          end: '+=250%', 
+          scrub: 0.6, 
           pin: true,
         },
       });
 
-      tl
-        // 1) Text splits: top half moves up, bottom half moves down
-        .to(textTop, {
-          y: '-50%',
-          opacity: 0.3,
-          duration: 1.5,
-          ease: 'power2.inOut',
-        })
-        .to(textBottom, {
-          y: '50%',
-          opacity: 0.3,
-          duration: 1.5,
-          ease: 'power2.inOut',
-        }, '<')
+      tl.to(expandBoxRef.current, {
+        width: '350px',
+        height: '200px',
+        opacity: 1,
+        borderRadius: '0px',
+        ease: 'power3.out',
+      })
+        .to(
+          expandBoxRef.current,
+          {
+            width: '100%',
+            height: '100%',
+            borderRadius: '0px',
+            borderWidth: '0px',
+            ease: 'power3.inOut',
+          },
+          '+=0.1'
+        )
+        .fromTo(
+          expandContentRef.current,
+          { opacity: 0, y: 60, filter: 'blur(12px)' }, 
+          { opacity: 1, y: 0, filter: 'blur(0px)', ease: 'power3.out', duration: 1.5 }, 
+          '<0.2' 
+        )
+        .to(
+          containerRef.current,
+          {
+            yPercent: -15, 
+            opacity: 0.2,
+            filter: 'blur(8px)',
+            ease: 'power2.inOut',
+          },
+          '+=0.3'
+        );
+    });
 
-        // 2) Image expands from centre
-        .to(imageReveal, {
-          scale: 1,
-          opacity: 1,
-          borderRadius: '0%',
-          duration: 1.8,
-          ease: 'power3.inOut',
-        }, '-=0.4')
+    /*
+     * =========================================================
+     * MOBILE: HERO SCROLL ANIMATION (Under 768px)
+     * =========================================================
+     */
+    mm.add("(max-width: 767px)", () => {
+      // Adjusted from 35vh to 22vh so it doesn't overlap the footer initially
+      gsap.set(heroTextContainerRef.current, { y: '22vh' });
 
-        // 3) Image sharpens (zoom settles, blur goes away)
-        .to(imageInner, {
-          scale: 1,
-          filter: 'blur(0px)',
-          duration: 1.5,
-          ease: 'power2.out',
-        }, '-=0.8')
+      const mobileTl = gsap.timeline({
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: 'top top',
+          end: '+=300%', 
+          scrub: 0.6,
+          pin: true,
+        },
+      });
 
-        // 4) Content fades in on top of the image
-        .to(contentOverlay, {
-          opacity: 1,
-          y: 0,
-          duration: 1.2,
-          ease: 'power2.out',
-        }, '+=0.2')
-
-        // 5) Finally, fade out the whole hero (optional)
-        .to(container, {
-          opacity: 0,
-          duration: 0.8,
-          ease: 'power2.inOut',
-        }, '+=0.5');
+      mobileTl.to(heroTextContainerRef.current, {
+        y: 0,
+        duration: 1.2,
+        ease: 'power2.out',
+      })
+      .to(expandBoxRef.current, {
+        width: '220px',  
+        height: '350px', 
+        opacity: 1,
+        borderRadius: '0px',
+        ease: 'power3.out',
+        duration: 1
+      }, "+=0.2")
+      .to(expandBoxRef.current, {
+        width: '100%',
+        height: '100%',
+        borderRadius: '0px',
+        borderWidth: '0px',
+        ease: 'power3.inOut',
+        duration: 1.2
+      }, '+=0.2')
+      .fromTo(expandContentRef.current,
+        { opacity: 0, y: 60, filter: 'blur(12px)' },
+        { opacity: 1, y: 0, filter: 'blur(0px)', ease: 'power3.out', duration: 1.5 },
+        '<0.2'
+      )
+      .to(containerRef.current, {
+        yPercent: -15,
+        opacity: 0.2,
+        filter: 'blur(8px)',
+        ease: 'power2.inOut',
+        duration: 1.2
+      }, '+=0.3');
     });
 
     return () => {
@@ -186,10 +204,10 @@ export default function HeroSection() {
       ref={containerRef}
       className="relative w-screen h-screen bg-black text-offwhite overflow-hidden flex flex-col justify-between p-6 md:p-10"
     >
-      {/* ===== BACKGROUND GLOW (unchanged) ===== */}
+      {/* Background Glow */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(143,83,252,0.16),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(251,87,95,0.12),transparent_55%)] pointer-events-none z-0" />
 
-      {/* ===== TOP HEADER (unchanged) ===== */}
+      {/* Top Header */}
       <div className="relative z-10 flex justify-between items-start md:items-center text-[10px] md:text-xs tracking-widest text-neutral-400 uppercase font-sans w-full">
         <p className="max-w-[65%] md:max-w-sm leading-relaxed">
           Your idea deserves more than a{' '}
@@ -197,6 +215,8 @@ export default function HeroSection() {
             classroom pitch.
           </span>
         </p>
+
+        {/* Removed "hidden md:flex" so the logo shows on all devices */}
         <span className="flex items-center gap-1.5 md:gap-2 mt-1 md:mt-0 text-right">
           <img
             src="/meraki-logo.png"
@@ -207,63 +227,70 @@ export default function HeroSection() {
         </span>
       </div>
 
-      {/* ===== CENTER AREA (now contains split text + image + content) ===== */}
-      <div
+      {/* Background Hero Typography */}
+      <div 
         ref={heroTextContainerRef}
-        className="relative z-10 my-auto w-full flex flex-col items-center justify-center px-4 md:px-12 pointer-events-none"
+        className="relative z-10 my-auto w-full flex flex-col items-center justify-center px-4 md:px-12 pointer-events-none gap-6"
       >
-        {/* --- Split text (overlaid on top) --- */}
-        <div ref={splitContainerRef} className="absolute inset-0 flex items-center justify-center overflow-hidden pointer-events-none">
-          {/* Top half of the text */}
-          <div
-            ref={textTopRef}
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full text-center overflow-hidden"
-            style={{ clipPath: 'inset(0 0 50% 0)' }}
-          >
-            <h1 className="text-5xl md:text-[9vw] font-semibold tracking-tight text-offwhite leading-none uppercase font-sans">
-              Pitch. Connect. Scale.
-            </h1>
-          </div>
-          {/* Bottom half of the text */}
-          <div
-            ref={textBottomRef}
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full text-center overflow-hidden"
-            style={{ clipPath: 'inset(50% 0 0 0)' }}
-          >
-            <h1 className="text-5xl md:text-[9vw] font-semibold tracking-tight text-offwhite leading-none uppercase font-sans">
-              Pitch. Connect. Scale.
-            </h1>
-          </div>
+        <h1 className="text-5xl md:text-[9vw] font-semibold tracking-tight text-offwhite leading-none uppercase text-center flex flex-wrap justify-center gap-x-4 md:gap-x-8 font-sans">
+          <span>Pitch.</span>
+          <span className="font-serif italic font-normal text-gradient-brand">
+            Connect.
+          </span>
+          <span>Scale.</span>
+        </h1>
+
+        <p className="text-lg md:text-2xl text-neutral-300 font-light tracking-widest uppercase font-sans">
+          23rd{' '}
+          <span className="text-coral-light/70">
+            —
+          </span>{' '}
+          25th October 2026
+        </p>
+      </div>
+
+      {/* Bottom Footer */}
+      <div className="relative z-10 flex flex-col-reverse md:flex-row justify-between items-center gap-6 text-[10px] md:text-xs tracking-widest text-neutral-400 uppercase border-t border-white/10 pt-4 md:pt-6 font-sans">
+        <div className="flex gap-4 md:gap-6">
+          <span>Ideate</span>
+          <span>/</span>
+          <span>Build</span>
+          <span>/</span>
+          <span>Launch</span>
         </div>
 
-        {/* --- Image that expands --- */}
-        <div
-          ref={imageRevealRef}
-          className="absolute inset-0 m-auto w-[80%] md:w-[60%] aspect-[4/3] overflow-hidden shadow-2xl pointer-events-none"
-          style={{ scale: 0.3, opacity: 0, borderRadius: '50%' }}
-        >
-          <div
-            ref={imageInnerRef}
-            className="w-full h-full bg-cover bg-center"
-            style={{
-              backgroundImage: 'url(/C3675T01.JPG)', // change to your image path
-              scale: 1.2,
-              filter: 'blur(8px)',
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20 pointer-events-none" />
+        <div className="pointer-events-auto">
+          <a
+            href="#register"
+            className="inline-block bg-coral text-offwhite px-8 py-3 rounded-full font-serif font-semibold normal-case tracking-normal text-sm hover:bg-purple transition-colors duration-300"
+          >
+            Register for Meraki
+          </a>
         </div>
+      </div>
 
-        {/* --- Content overlay (your existing "Your idea. Your stage..." text) --- */}
-        <div
-          ref={contentOverlayRef}
-          className="absolute inset-0 flex flex-col items-center justify-center px-6 md:px-12 max-w-4xl mx-auto text-center pointer-events-none"
-          style={{ opacity: 0, y: 30 }}
+      {/* FULL-SCREEN EXPANDING OVERLAY */}
+      <div
+        ref={expandBoxRef}
+        className="absolute inset-0 m-auto w-0 h-0 opacity-0 z-30 overflow-hidden bg-ink shadow-2xl flex items-center justify-center text-center pointer-events-none"
+      >
+        <img
+          src="/C3675T01.JPG"
+          alt="Meraki Hackathon Background"
+          className="absolute inset-0 w-full h-full object-cover opacity-30 filter grayscale contrast-125"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-br from-coral/10 via-transparent to-purple/20 mix-blend-color pointer-events-none" />
+
+        <div 
+          ref={expandContentRef} 
+          className="relative z-40 flex flex-col items-center justify-center px-6 md:px-12 max-w-4xl space-y-6 md:space-y-8"
         >
           <h3 className="text-4xl md:text-6xl lg:text-7xl font-serif italic font-normal text-offwhite leading-tight">
             Your idea. Your stage. <span className="text-gradient-brand">Your shot.</span>
           </h3>
-          <div className="space-y-4 text-sm md:text-lg lg:text-xl text-neutral-300 font-sans font-light leading-relaxed max-w-3xl mt-6">
+          
+          <div className="space-y-4 text-sm md:text-lg lg:text-xl text-neutral-300 font-sans font-light leading-relaxed max-w-3xl">
             <p>
               <strong className="font-medium text-offwhite">Meraki</strong> is FIIB's flagship international business plan competition for the next generation of entrepreneurs.
             </p>
@@ -275,35 +302,9 @@ export default function HeroSection() {
             </p>
           </div>
         </div>
-
-        {/* --- Original date (keep it visible on top of everything) --- */}
-        <p className="relative z-20 text-lg md:text-2xl text-neutral-300 font-light tracking-widest uppercase font-sans mt-8">
-          23rd{' '}
-          <span className="text-coral-light/70">—</span>{' '}
-          25th October 2026
-        </p>
       </div>
 
-      {/* ===== BOTTOM FOOTER (unchanged) ===== */}
-      <div className="relative z-10 flex flex-col-reverse md:flex-row justify-between items-center gap-6 text-[10px] md:text-xs tracking-widest text-neutral-400 uppercase border-t border-white/10 pt-4 md:pt-6 font-sans">
-        <div className="flex gap-4 md:gap-6">
-          <span>Ideate</span>
-          <span>/</span>
-          <span>Build</span>
-          <span>/</span>
-          <span>Launch</span>
-        </div>
-        <div className="pointer-events-auto">
-          <a
-            href="#register"
-            className="inline-block bg-coral text-offwhite px-8 py-3 rounded-full font-serif font-semibold normal-case tracking-normal text-sm hover:bg-purple transition-colors duration-300"
-          >
-            Register for Meraki
-          </a>
-        </div>
-      </div>
-
-      {/* ===== LOADER OVERLAY (updated with character spans & bottom panels) ===== */}
+      {/* OPENING LOADING ANIMATION */}
       <div
         ref={loaderRef}
         className="fixed inset-0 z-[999] bg-black flex items-center justify-center overflow-hidden"
@@ -330,7 +331,7 @@ export default function HeroSection() {
           <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">.</span>
         </div>
 
-        {/* Panels start from the BOTTOM (yPercent: 100) – see animation */}
+        {/* Panels start from the BOTTOM (yPercent: 100) */}
         <div ref={loaderWipeRedRef} className="absolute inset-0 bg-coral z-20 pointer-events-none" />
         <div ref={loaderWipeBlackRef} className="absolute inset-0 bg-black z-30 pointer-events-none" />
       </div>
