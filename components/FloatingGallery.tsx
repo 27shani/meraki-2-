@@ -11,17 +11,6 @@ interface Investor {
   logo: string;
 }
 
-/*
- * Investor / Partner logos
- *
- * These files are directly inside /public/
- *
- * Example:
- * /public/Image-26.png
- *
- * Therefore the browser path is:
- * /Image-26.png
- */
 const PAST_INVESTORS: Investor[] = [
   {
     id: 1,
@@ -80,24 +69,12 @@ export default function FloatingGallery() {
 
       if (!section || !text || !track) return;
 
-      /*
-       * ---------------------------------------------------------
-       * INITIAL STATE
-       * ---------------------------------------------------------
-       */
-
       gsap.set(text, {
         opacity: 0,
         scale: 0.92,
         filter: 'blur(14px)',
       });
 
-      /*
-       * Start the complete logo track outside the left side.
-       *
-       * This means the first logo begins from the left and
-       * gradually enters the screen as the user scrolls.
-       */
       const getStartX = () => {
         return -(track.scrollWidth - window.innerWidth + 48);
       };
@@ -106,31 +83,10 @@ export default function FloatingGallery() {
         x: getStartX(),
       });
 
-      /*
-       * ---------------------------------------------------------
-       * MAIN SCROLL TIMELINE
-       * ---------------------------------------------------------
-       *
-       * Section pins to viewport.
-       *
-       * While scrolling:
-       *
-       * 1. PAST INVESTORS appears in center.
-       * 2. Logo cards move from left → right.
-       * 3. All cards stay exactly the same size.
-       * 4. After the final logo reaches the right side,
-       *    the section releases.
-       */
-
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: section,
           start: 'top top',
-
-          /*
-           * Scroll distance is based on how far the logo track
-           * actually has to travel.
-           */
           end: () => {
             const travelDistance =
               track.scrollWidth - window.innerWidth;
@@ -140,19 +96,12 @@ export default function FloatingGallery() {
               travelDistance * 1.15
             )}`;
           },
-
           pin: true,
           scrub: 1.1,
           anticipatePin: 1,
           invalidateOnRefresh: true,
         },
       });
-
-      /*
-       * ---------------------------------------------------------
-       * CENTER TEXT REVEAL
-       * ---------------------------------------------------------
-       */
 
       tl.to(
         text,
@@ -166,15 +115,6 @@ export default function FloatingGallery() {
         0
       );
 
-      /*
-       * ---------------------------------------------------------
-       * LOGO MOVEMENT
-       * ---------------------------------------------------------
-       *
-       * The track starts from the left and travels all the way
-       * to the right.
-       */
-
       tl.to(
         track,
         {
@@ -184,15 +124,6 @@ export default function FloatingGallery() {
         },
         0.45
       );
-
-      /*
-       * ---------------------------------------------------------
-       * TEXT EXIT
-       * ---------------------------------------------------------
-       *
-       * Near the end, the center heading subtly fades away while
-       * the final cards complete their movement.
-       */
 
       tl.to(
         text,
@@ -205,12 +136,6 @@ export default function FloatingGallery() {
         },
         6.3
       );
-
-      /*
-       * ---------------------------------------------------------
-       * RESIZE
-       * ---------------------------------------------------------
-       */
 
       const handleResize = () => {
         ScrollTrigger.refresh();
@@ -243,13 +168,18 @@ export default function FloatingGallery() {
       "
     >
       {/* =====================================================
-          CENTER TEXT
+          CENTER TEXT (Shifted slightly upward on mobile via -translate-y-6 or top positioning)
           ===================================================== */}
 
       <div
         ref={textRef}
         className="
-          relative
+          absolute
+          top-[38%]
+          sm:top-1/2
+          -translate-y-1/2
+          left-1/2
+          -translate-x-1/2
           z-[150]
           w-full
           max-w-5xl
@@ -278,7 +208,7 @@ export default function FloatingGallery() {
       </div>
 
       {/* =====================================================
-          BOTTOM INVESTOR LOGO TRACK
+          INVESTOR LOGO TRACK (Centered vertically on mobile via absolute top-1/2 -translate-y-1/2)
           ===================================================== */}
 
       <div
@@ -286,9 +216,12 @@ export default function FloatingGallery() {
           absolute
           left-0
           right-0
-          bottom-8
+          top-[62%]
+          sm:top-auto
           sm:bottom-10
           md:bottom-14
+          -translate-y-1/2
+          sm:translate-y-0
           z-[50]
           overflow-visible
         "
