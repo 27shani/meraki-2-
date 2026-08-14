@@ -6,38 +6,29 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { splitIntoWords } from '@/lib/splitText';
 
-interface Investor {
+interface Project {
   id: number;
   name: string;
-  logo: string;
+  image: string;
 }
 
 /*
- * Investor / Partner logos
- * These files live directly in /public/
+ * Placeholder images - replace with your actual portfolio screenshots
  */
-const PAST_INVESTORS: Investor[] = [
-  { id: 1, name: 'Partner 01', logo: '/Image-26.png' },
-  { id: 2, name: 'Partner 02', logo: '/Image-29.png' },
-  { id: 3, name: 'Partner 03', logo: '/Image-32.png' },
-  { id: 4, name: 'Partner 04', logo: '/Image-33.png' },
-  { id: 5, name: 'Partner 05', logo: '/Image-34.png' },
-  { id: 6, name: 'Partner 06', logo: '/Image-35.png' },
-  { id: 7, name: 'Partner 07', logo: '/Image-36.png' },
-  { id: 8, name: 'Partner 08', logo: '/Image-38-1.png' },
+const PROJECTS: Project[] = [
+  { id: 1, name: 'Project 01', image: '/Screenshot-1.jpg' },
+  { id: 2, name: 'Project 02', image: '/Screenshot-2.jpg' },
+  { id: 3, name: 'Project 03', image: '/Screenshot-3.jpg' },
+  { id: 4, name: 'Project 04', image: '/Screenshot-4.jpg' },
+  { id: 5, name: 'Project 05', image: '/Screenshot-5.jpg' },
+  { id: 6, name: 'Project 06', image: '/Screenshot-6.jpg' },
+  { id: 7, name: 'Project 07', image: '/Screenshot-7.jpg' },
+  { id: 8, name: 'Project 08', image: '/Screenshot-8.jpg' },
+  { id: 9, name: 'Project 09', image: '/Screenshot-9.jpg' },
 ];
 
-const STRIP_COUNT = 9; // vertical slices per logo (8–10 range)
+const STRIP_COUNT = 12; // Increased for a smoother curve
 
-/**
- * FloatingGallery – Cylindrical 3D gallery
- * -------------------------------------------------
- * Pure CSS 3D + GSAP (no Three.js).
- * Each logo is sliced into vertical strips.
- * Strips receive individual rotateY + transform-origin
- * to form a cylindrical surface that rotates with scroll.
- * Desktop only; simplified horizontal track on mobile.
- */
 export default function FloatingGallery() {
   const sectionRef = useRef<HTMLElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
@@ -59,7 +50,6 @@ export default function FloatingGallery() {
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     if (prefersReduced || !isDesktop) {
-      // Simple fade-in for reduced motion / mobile handled by CSS fallback
       return;
     }
 
@@ -70,35 +60,40 @@ export default function FloatingGallery() {
       if (!section || !text || !cylinder) return;
 
       // -------------------------------------------------
-      // Word-by-word reveal for center phrase
+      // Text Reveal Setup
       // -------------------------------------------------
       const heading = text.querySelector('h2');
       let words: HTMLElement[] = [];
       if (heading) {
         words = splitIntoWords(heading);
-        gsap.set(words, { opacity: 0, filter: 'blur(12px)' });
+        gsap.set(words, { opacity: 0.1, filter: 'blur(8px)' }); // Starts slightly visible
       }
 
       // -------------------------------------------------
-      // Build cylindrical items
+      // Build Scattered Cylindrical Items
       // -------------------------------------------------
       const items = cylinder.querySelectorAll<HTMLElement>('.cylinder-item');
-      const radius = Math.min(window.innerWidth * 0.38, 480);
+      // Wider radius to wrap around the central text
+      const radius = Math.min(window.innerWidth * 0.45, 600); 
       const total = items.length;
       const angleStep = 360 / total;
 
       items.forEach((item, i) => {
         const angle = i * angleStep;
-        // Position around the cylinder
+        
+        // Stagger the vertical positions to match the scattered look
+        // We alternate high/low and add a bit of randomness
+        const yOffset = (i % 2 === 0 ? 1 : -1) * (Math.random() * 150 + 50);
+
         gsap.set(item, {
           rotateY: angle,
+          y: yOffset + 300, // Start lower for the entry effect
           transformOrigin: `50% 50% ${-radius}px`,
           z: 0,
           opacity: 0,
-          scale: 0.85,
+          scale: 0.9,
         });
 
-        // Slice each logo into vertical strips
         const imgUrl = item.dataset.logo || '';
         const stripContainer = item.querySelector('.strip-container') as HTMLElement;
         if (!stripContainer) return;
@@ -108,14 +103,15 @@ export default function FloatingGallery() {
 
         for (let s = 0; s < STRIP_COUNT; s++) {
           const strip = document.createElement('div');
-          strip.className = 'cylinder-strip';
-          strip.style.width = `${stripWidth}%`;
+          strip.className = 'cylinder-strip absolute h-full';
+          strip.style.width = `${stripWidth + 0.5}%`; // +0.5 to overlap and prevent seams
           strip.style.left = `${s * stripWidth}%`;
           strip.style.backgroundImage = `url(${imgUrl})`;
           strip.style.backgroundPosition = `${(s / (STRIP_COUNT - 1)) * 100}% 50%`;
           strip.style.backgroundSize = `${STRIP_COUNT * 100}% 100%`;
-          // Each strip: transform-origin on the cylinder radius for true 3D curve
-          const stripAngle = (s - (STRIP_COUNT - 1) / 2) * 2.2;
+          
+          // Curve calculation
+          const stripAngle = (s - (STRIP_COUNT - 1) / 2) * 3; // Adjust angle multiplier for curve intensity
           strip.style.transformOrigin = `50% 50% ${-radius}px`;
           strip.style.transform = `rotateY(${stripAngle}deg) translateZ(0)`;
           stripContainer.appendChild(strip);
@@ -123,78 +119,75 @@ export default function FloatingGallery() {
       });
 
       // -------------------------------------------------
-      // MAIN PINNED SCROLL TIMELINE
+      // MAIN SCROLL TIMELINE
       // -------------------------------------------------
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: section,
           start: 'top top',
-          end: '+=320%',
+          end: '+=400%', // Longer scroll for the full rotation
           pin: true,
-          scrub: 1.2,
+          scrub: 1, // Smoother scrub
           anticipatePin: 1,
           invalidateOnRefresh: true,
         },
       });
 
-      // 1. Center phrase word-by-word opacity + blur reveal
+      // 1. Text fades in sharply
       if (words.length) {
         tl.to(
           words,
           {
             opacity: 1,
             filter: 'blur(0px)',
-            duration: 1.4,
-            stagger: 0.08,
-            ease: 'power3.out',
+            duration: 0.8,
+            stagger: 0.05,
+            ease: 'power2.out',
           },
           0
         );
       }
 
-      // 2. Staggered appearance of logos while pinned
+      // 2. Images float up and fade in
       tl.to(
         items,
         {
           opacity: 1,
-          scale: 1,
-          duration: 1.6,
-          stagger: {
-            each: 0.12,
-            from: 'center',
+          y: (i) => {
+             const baseOffset = (i % 2 === 0 ? 1 : -1) * (Math.random() * 150 + 50);
+             return baseOffset; // Rise to their resting vertical offset
           },
-          ease: 'power3.out',
+          scale: 1,
+          duration: 2,
+          ease: 'power2.out',
         },
-        0.3
+        0.2
       );
 
-      // 3. Continuous cylindrical rotation driven by scroll progress
+      // 3. Continuous rotation and slight upward floating
       tl.to(
         cylinder,
         {
-          rotateY: -angleStep * (total + 0.5),
-          duration: 6,
+          rotateY: -angleStep * (total + 1.5), // Full 360+ rotation
+          y: -200, // The whole cylinder floats up slightly during the scroll
+          duration: 8,
           ease: 'none',
         },
-        0.6
+        0 // Start rotation immediately
       );
 
-      // 4. Soft exit of center text near the end
-      if (words.length) {
-        tl.to(
-          words,
-          {
-            opacity: 0,
-            filter: 'blur(10px)',
-            duration: 1,
-            stagger: 0.04,
-            ease: 'power2.in',
-          },
-          5.2
-        );
-      }
+      // 4. Fade out everything at the end of the pin
+      tl.to(
+        [words, cylinder],
+        {
+          opacity: 0,
+          filter: 'blur(10px)',
+          duration: 1,
+          ease: 'power2.inOut',
+        },
+        7 // Trigger near the end of the timeline duration
+      );
 
-      // Resize handler
       const handleResize = () => ScrollTrigger.refresh();
       window.addEventListener('resize', handleResize);
 
@@ -213,8 +206,8 @@ export default function FloatingGallery() {
         relative
         w-full
         h-screen
-        bg-[#070707]
-        text-offwhite
+        bg-black
+        text-white
         overflow-hidden
         flex
         items-center
@@ -223,7 +216,7 @@ export default function FloatingGallery() {
       "
     >
       {/* =====================================================
-          CENTER TEXT – word-by-word reveal driven by pin progress
+          CENTER TEXT
           ===================================================== */}
       <div
         ref={textRef}
@@ -231,7 +224,7 @@ export default function FloatingGallery() {
           relative
           z-[150]
           w-full
-          max-w-5xl
+          max-w-4xl
           px-8
           text-center
           pointer-events-none
@@ -242,17 +235,17 @@ export default function FloatingGallery() {
             text-4xl
             sm:text-5xl
             md:text-6xl
-            lg:text-7xl
+            lg:text-[80px]
             font-sans
-            font-medium
+            font-semibold
             tracking-tight
-            leading-[1.05]
+            leading-[1.1]
+            text-[#e0e0e0]
           "
         >
-          PAST{' '}
-          <span className="font-serif italic font-normal text-gradient-brand">
-            INVESTORS
-          </span>
+          Each project is a chance <br />
+          to <span className="font-serif italic font-normal text-white">learn, experiment</span> and <br />
+          push my limits.
         </h2>
       </div>
 
@@ -270,6 +263,7 @@ export default function FloatingGallery() {
           justify-center
           pointer-events-none
         "
+        style={{ perspective: '1200px' }} // Added perspective to the wrapper for better 3D depth
       >
         <div
           ref={cylinderRef}
@@ -277,22 +271,21 @@ export default function FloatingGallery() {
             cylinder-gallery
             relative
             w-full
-            h-[280px]
-            md:h-[340px]
-            lg:h-[400px]
+            h-full
           "
           style={{ transformStyle: 'preserve-3d' }}
         >
-          {PAST_INVESTORS.map((investor) => (
+          {PROJECTS.map((project) => (
             <div
-              key={investor.id}
-              className="cylinder-item"
-              data-logo={investor.logo}
+              key={project.id}
+              className="cylinder-item absolute top-1/2 left-1/2"
+              data-logo={project.image}
               style={{
-                width: 'clamp(160px, 18vw, 280px)',
-                height: 'clamp(100px, 12vw, 170px)',
-                marginLeft: 'calc(clamp(160px, 18vw, 280px) / -2)',
-                marginTop: 'calc(clamp(100px, 12vw, 170px) / -2)',
+                width: 'clamp(200px, 22vw, 320px)',
+                height: 'clamp(140px, 16vw, 220px)',
+                marginLeft: 'calc(clamp(200px, 22vw, 320px) / -2)',
+                marginTop: 'calc(clamp(140px, 16vw, 220px) / -2)',
+                transformStyle: 'preserve-3d'
               }}
             >
               <div
@@ -301,19 +294,14 @@ export default function FloatingGallery() {
                   relative
                   w-full
                   h-full
-                  rounded-xl
                   overflow-hidden
-                  border
-                  border-white/10
-                  bg-offwhite
-                  shadow-[0_20px_60px_rgba(0,0,0,0.35)]
+                  shadow-[0_20px_60px_rgba(0,0,0,0.8)]
                 "
                 style={{ transformStyle: 'preserve-3d' }}
               />
-              {/* Fallback img for accessibility / loading */}
               <img
-                src={investor.logo}
-                alt={investor.name}
+                src={project.image}
+                alt={project.name}
                 className="sr-only"
               />
             </div>
@@ -322,7 +310,7 @@ export default function FloatingGallery() {
       </div>
 
       {/* =====================================================
-          MOBILE FALLBACK – simple horizontal track
+          MOBILE FALLBACK
           ===================================================== */}
       <div
         className="
@@ -334,31 +322,29 @@ export default function FloatingGallery() {
           z-[50]
           overflow-x-auto
           px-6
+          md:hidden
         "
       >
         <div className="flex w-max items-center gap-4">
-          {PAST_INVESTORS.map((investor) => (
+          {PROJECTS.map((project) => (
             <div
-              key={investor.id}
+              key={project.id}
               className="
                 relative
                 shrink-0
-                w-[160px]
-                h-[100px]
-                rounded-xl
+                w-[200px]
+                h-[140px]
                 overflow-hidden
-                border
-                border-white/10
-                bg-offwhite
+                bg-[#111]
                 flex
                 items-center
                 justify-center
               "
             >
               <img
-                src={investor.logo}
-                alt={investor.name}
-                className="max-w-[75%] max-h-[65%] object-contain"
+                src={project.image}
+                alt={project.name}
+                className="w-full h-full object-cover"
               />
             </div>
           ))}
