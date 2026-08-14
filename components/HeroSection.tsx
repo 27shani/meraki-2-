@@ -8,6 +8,7 @@ import { splitIntoChars, initCharHover } from '@/lib/splitText';
 
 export default function HeroSection() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const heroContentRef = useRef<HTMLDivElement>(null);
   const expandBoxRef = useRef<HTMLDivElement>(null);
   const expandContentRef = useRef<HTMLDivElement>(null);
   const topHeaderRef = useRef<HTMLDivElement>(null);
@@ -30,7 +31,6 @@ export default function HeroSection() {
       typeof window !== 'undefined' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    // Skip long intro on return visits if desired
     const skipIntro =
       typeof window !== 'undefined' &&
       sessionStorage.getItem('meraki-intro-seen') === '1';
@@ -38,7 +38,7 @@ export default function HeroSection() {
     const ctx = gsap.context(() => {
       /*
        * =========================================================
-       * OPENING LOADING ANIMATION: TEXT SCRAMBLE + WIPE REVEAL
+       * OPENING LOADING ANIMATION: SCALE UP + WIPE REVEAL
        * =========================================================
        */
       const loader = loaderRef.current;
@@ -47,41 +47,25 @@ export default function HeroSection() {
       const wipeBlack = loaderWipeBlackRef.current;
 
       if (loader && loaderTitle && wipeRed && wipeBlack && !prefersReduced && !skipIntro) {
-        const pitchSpan = loaderTitle.querySelector('[data-word="pitch"]') as HTMLElement;
-        const connectSpan = loaderTitle.querySelector('[data-word="connect"]') as HTMLElement;
-
-        // Custom text scramble function
-        const scrambleWord = (element: HTMLElement, finalStr: string) => {
-          const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$&*';
-          let iterations = 0;
-          const interval = setInterval(() => {
-            element.innerText = finalStr
-              .split('')
-              .map((letter, index) => {
-                if (letter === ' ') return ' ';
-                if (index < iterations) return finalStr[index];
-                return chars[Math.floor(Math.random() * chars.length)];
-              })
-              .join('');
-
-            if (iterations >= finalStr.length) {
-              clearInterval(interval);
-              element.innerText = finalStr;
-            }
-            iterations += 1 / 3;
-          }, 35);
-        };
-
-        // Trigger scramble
-        if (pitchSpan) scrambleWord(pitchSpan, "Pitch.");
-        if (connectSpan) scrambleWord(connectSpan, "Connect.");
+        
+        // 1. Text scales from small to big
+        gsap.set(loaderTitle, { scale: 0.5, opacity: 0 });
 
         const loaderTl = gsap.timeline();
 
         loaderTl
-          // Wait for the scramble effect to finish
-          .to({}, { duration: 1.4 }) 
-          // Wipes slide down from top to cover the screen
+          .to(loaderTitle, { 
+            scale: 1.05, 
+            opacity: 1, 
+            duration: 1.2, 
+            ease: 'power3.out' 
+          })
+          .to(loaderTitle, {
+            scale: 1,
+            duration: 0.4,
+            ease: 'power2.inOut'
+          })
+          // 2. Transaction effect (Wipes slide down to cover screen)
           .fromTo(wipeRed, 
             { yPercent: -100 }, 
             { yPercent: 0, duration: 0.6, ease: "power3.inOut" }
@@ -122,7 +106,7 @@ export default function HeroSection() {
 
       /*
        * =========================================================
-       * MAIN TITLE CHARACTER SPLIT (visible hero)
+       * MAIN TITLE CHARACTER SPLIT LOGIC
        * =========================================================
        */
       const mainTitle = mainTitleRef.current;
@@ -136,7 +120,7 @@ export default function HeroSection() {
         spans.forEach((span, idx) => {
           const chars = splitIntoChars(span as HTMLElement);
           const wrappers = chars.map((c) => c.wrapper);
-          // First half of words go left, second half go right on exit
+          // Split logic: first half goes left, second half goes right
           if (idx < spans.length / 2) {
             titleChars.left.push(...wrappers);
           } else {
@@ -147,54 +131,65 @@ export default function HeroSection() {
 
       /*
        * =========================================================
-       * HERO SCROLL TIMELINE (Pinned Text Split & Reveal)
+       * HERO SCROLL TIMELINE (Position, Split, Expand & Exit)
        * =========================================================
        */
+      // Set initial position of the hero text to the bottom
+      gsap.set(heroContentRef.current, { y: '32vh' });
+
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: '+=260%',
-          scrub: 1.4,
+          end: '+=350%', // Extended duration to fit all sequence steps smoothly
+          scrub: 1.2,
           pin: true,
         },
       });
 
-      // 1. UI elements fade out & Text splits open
-      tl.to(
+      // 1. Scroll texts to middle of section
+      tl.to(heroContentRef.current, { 
+        y: 0, 
+        duration: 1.5, 
+        ease: 'power2.out' 
+      })
+      // Pause briefly in the middle
+      .to({}, { duration: 0.3 })
+      // 2. Fade out UI headers/footers
+      .to(
         [topHeaderRef.current, taglineRef.current, bottomBarRef.current],
-        { opacity: 0, y: -20, filter: 'blur(10px)', duration: 0.8, ease: 'power2.inOut' },
-        0
+        { opacity: 0, y: -20, filter: 'blur(10px)', duration: 0.8, ease: 'power2.inOut' }
       )
+      // 3. Text split ("Pitch" left side, "Connect" right side)
       .to(
         titleChars.left,
         { xPercent: -200, opacity: 0, ease: 'power3.inOut', stagger: 0.02, duration: 1.2 },
-        0
+        "<" // Sync with UI fade out
       )
       .to(
         titleChars.right,
         { xPercent: 200, opacity: 0, ease: 'power3.inOut', stagger: 0.02, duration: 1.2 },
-        0
+        "<"
       )
-      // 2. Image emerges from middle and expands to full screen
+      // 4. Image expands slowly & smoothly to full from between the text
       .fromTo(
         expandBoxRef.current,
         { width: '15vw', height: '15vh', opacity: 0, borderRadius: '24px', scale: 0.8 },
-        { width: '100%', height: '100%', opacity: 1, borderRadius: '0px', scale: 1, duration: 1.6, ease: 'power3.inOut' },
-        0.2 // Starts slightly after the text begins splitting
+        { width: '100%', height: '100%', opacity: 1, borderRadius: '0px', scale: 1, duration: 1.8, ease: 'power3.inOut' },
+        "-=0.8" // Start expanding while text is actively splitting
       )
-      // 3. Text inside image smoothly fades in
+      // 5. Text on image shows
       .fromTo(
         expandContentRef.current,
         { opacity: 0, y: 40, filter: 'blur(8px)' },
         { opacity: 1, y: 0, filter: 'blur(0px)', duration: 1, ease: 'power2.out' },
-        "-=0.6" // overlaps with the end of the image expansion
+        "-=0.6" // Fade in before image fully finishes expanding
       )
-      // 4. Final transition to next section (scrolls up and dissolves)
+      // 6. Moves smoothly to next section (scrolls up and dissolves)
       .to(
         containerRef.current,
         { opacity: 0, filter: 'blur(15px)', yPercent: -15, duration: 1.2, ease: 'power2.inOut' },
-        "+=0.4"
+        "+=0.6"
       );
 
     }, containerRef);
@@ -229,8 +224,11 @@ export default function HeroSection() {
         </span>
       </div>
 
-      {/* Background Hero Typography */}
-      <div className="relative z-10 my-auto w-full flex flex-col items-center justify-center px-4 md:px-12 pointer-events-none gap-6">
+      {/* Background Hero Typography (Wrapped to control starting position) */}
+      <div 
+        ref={heroContentRef} 
+        className="absolute inset-0 z-10 flex flex-col items-center justify-center px-4 md:px-12 pointer-events-none gap-6"
+      >
         <h1
           ref={mainTitleRef}
           className="text-5xl md:text-[9vw] font-semibold tracking-tight text-offwhite leading-none uppercase text-center flex flex-wrap justify-center gap-x-4 md:gap-x-8 font-sans"
@@ -258,7 +256,7 @@ export default function HeroSection() {
       {/* Bottom Footer */}
       <div
         ref={bottomBarRef}
-        className="relative z-10 flex flex-col-reverse md:flex-row justify-between items-center gap-6 text-[10px] md:text-xs tracking-widest text-neutral-400 uppercase border-t border-white/10 pt-4 md:pt-6 font-sans"
+        className="relative z-10 flex flex-col-reverse md:flex-row justify-between items-center gap-6 text-[10px] md:text-xs tracking-widest text-neutral-400 uppercase border-t border-white/10 pt-4 md:pt-6 font-sans mt-auto"
       >
         <div className="flex gap-4 md:gap-6">
           <span>Ideate</span>
