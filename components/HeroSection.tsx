@@ -4,29 +4,28 @@
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { SplitText } from 'gsap/SplitText'; // 👈 Import SplitText
+import { SplitText } from 'gsap/SplitText';
 
-gsap.registerPlugin(ScrollTrigger, SplitText); // 👈 Register
+gsap.registerPlugin(ScrollTrigger, SplitText);
 
 export default function HeroSection() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const heroTextContainerRef = useRef<HTMLDivElement>(null); 
+  const heroTextContainerRef = useRef<HTMLDivElement>(null);
   const expandBoxRef = useRef<HTMLDivElement>(null);
   const expandContentRef = useRef<HTMLDivElement>(null);
 
   // Opening loading animation refs
   const loaderRef = useRef<HTMLDivElement>(null);
   const loaderTitleRef = useRef<HTMLDivElement>(null);
-  
+
   // Wipe transition refs
   const loaderWipeRedRef = useRef<HTMLDivElement>(null);
   const loaderWipeBlackRef = useRef<HTMLDivElement>(null);
 
-  // 👇 Ref to the main hero title for SplitText animation
+  // Main hero title ref for SplitText
   const heroTitleRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
-    // Safety: always unlock Lenis even if loader timeline fails
     const safetyUnlock = window.setTimeout(() => {
       if (typeof window !== 'undefined' && (window as any).__unlockLenis) {
         (window as any).__unlockLenis();
@@ -50,7 +49,6 @@ export default function HeroSection() {
         const loaderTl = gsap.timeline();
         const chars = loaderTitle.querySelectorAll('span');
 
-        // Initial states
         gsap.set(loader, { opacity: 1, visibility: 'visible', pointerEvents: 'auto' });
         gsap.set(chars, { scale: 0.5, opacity: 0 });
         gsap.set([wipeRed, wipeBlack], { yPercent: 100 });
@@ -85,7 +83,7 @@ export default function HeroSection() {
               }
               ScrollTrigger.refresh();
 
-              // 👇 AFTER LOADER COMPLETE: Character-by-character reveal of hero title
+              // === CHARACTER-BY-CHARACTER REVEAL OF MAIN TAGLINE ===
               if (heroTitleRef.current) {
                 const split = new SplitText(heroTitleRef.current, { type: 'chars' });
                 gsap.from(split.chars, {
@@ -94,7 +92,7 @@ export default function HeroSection() {
                   duration: 0.5,
                   stagger: 0.03,
                   ease: 'power3.out',
-                  delay: 0.2, // small delay after loader vanishes
+                  delay: 0.2,
                 });
               }
             },
@@ -110,12 +108,13 @@ export default function HeroSection() {
     mm.add("(min-width: 768px)", () => {
       gsap.set(heroTextContainerRef.current, { y: 0 });
 
+      // 🔽 REDUCED PIN DURATION from 250% to 160% so About appears sooner
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: '+=250%', 
-          scrub: 0.6, 
+          end: '+=160%',
+          scrub: 0.6,
           pin: true,
         },
       });
@@ -140,16 +139,16 @@ export default function HeroSection() {
         )
         .fromTo(
           expandContentRef.current,
-          { opacity: 0, y: 60, filter: 'blur(12px)' }, 
-          { opacity: 1, y: 0, filter: 'blur(0px)', ease: 'power3.out', duration: 1.5 }, 
-          '<0.2' 
+          { opacity: 0, y: 60, filter: 'blur(12px)' },
+          { opacity: 1, y: 0, filter: 'blur(0px)', ease: 'power3.out', duration: 1.5 },
+          '<0.2'
         )
-        // 👇 Refined closing effect: scale down, blur, fade, and move up
+        // 🔽 CLOSING EFFECT: final scale/opacity reached exactly at the end of the pin
         .to(
           containerRef.current,
           {
             scale: 0.85,
-            opacity: 0.25,
+            opacity: 0.15,
             filter: 'blur(6px)',
             yPercent: -20,
             ease: 'power2.inOut',
@@ -167,11 +166,12 @@ export default function HeroSection() {
     mm.add("(max-width: 767px)", () => {
       gsap.set(heroTextContainerRef.current, { y: '22vh' });
 
+      // 🔽 Also reduce mobile pin duration for consistency
       const mobileTl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: '+=300%', 
+          end: '+=180%',
           scrub: 0.6,
           pin: true,
         },
@@ -183,8 +183,8 @@ export default function HeroSection() {
         ease: 'power2.out',
       })
       .to(expandBoxRef.current, {
-        width: '220px',  
-        height: '350px', 
+        width: '220px',
+        height: '350px',
         opacity: 1,
         borderRadius: '0px',
         ease: 'power3.out',
@@ -205,7 +205,7 @@ export default function HeroSection() {
       )
       .to(containerRef.current, {
         scale: 0.85,
-        opacity: 0.25,
+        opacity: 0.15,
         filter: 'blur(6px)',
         yPercent: -20,
         ease: 'power2.inOut',
@@ -246,12 +246,12 @@ export default function HeroSection() {
       </div>
 
       {/* Background Hero Typography */}
-      <div 
+      <div
         ref={heroTextContainerRef}
         className="relative z-10 my-auto w-full flex flex-col items-center justify-center px-4 md:px-12 pointer-events-none gap-6"
       >
-        <h1 
-          ref={heroTitleRef}  // 👈 Attach ref for SplitText
+        <h1
+          ref={heroTitleRef}
           className="text-5xl md:text-[9vw] font-semibold tracking-tight text-offwhite leading-none uppercase text-center flex flex-wrap justify-center gap-x-4 md:gap-x-8 font-sans"
         >
           <span>Pitch.</span>
@@ -303,14 +303,14 @@ export default function HeroSection() {
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-black/80 pointer-events-none" />
         <div className="absolute inset-0 bg-gradient-to-br from-coral/10 via-transparent to-purple/20 mix-blend-color pointer-events-none" />
 
-        <div 
-          ref={expandContentRef} 
+        <div
+          ref={expandContentRef}
           className="relative z-40 flex flex-col items-center justify-center px-6 md:px-12 max-w-4xl space-y-6 md:space-y-8"
         >
           <h3 className="text-4xl md:text-6xl lg:text-7xl font-serif italic font-normal text-offwhite leading-tight">
             Your idea. Your stage. <span className="text-gradient-brand">Your shot.</span>
           </h3>
-          
+
           <div className="space-y-4 text-sm md:text-lg lg:text-xl text-neutral-300 font-sans font-light leading-relaxed max-w-3xl">
             <p>
               <strong className="font-medium text-offwhite">Meraki</strong> is FIIB's flagship international business plan competition for the next generation of entrepreneurs.
@@ -334,7 +334,7 @@ export default function HeroSection() {
           ref={loaderTitleRef}
           className="relative z-10 flex items-baseline justify-center gap-1 md:gap-2 whitespace-nowrap origin-center"
         >
-          {/* Each character as a separate span for stagger */}
+          {/* ⬇️ Updated loader text to match full tagline (optional) */}
           <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">P</span>
           <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">i</span>
           <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">t</span>
@@ -350,9 +350,15 @@ export default function HeroSection() {
           <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">c</span>
           <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">t</span>
           <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">.</span>
+          <span className="w-3 md:w-6" />
+          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">S</span>
+          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">c</span>
+          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">a</span>
+          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">l</span>
+          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">e</span>
+          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">.</span>
         </div>
 
-        {/* Panels start from the BOTTOM (yPercent: 100) */}
         <div ref={loaderWipeRedRef} className="absolute inset-0 bg-coral z-20 pointer-events-none" />
         <div ref={loaderWipeBlackRef} className="absolute inset-0 bg-black z-30 pointer-events-none" />
       </div>
