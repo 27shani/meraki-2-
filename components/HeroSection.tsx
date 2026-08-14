@@ -14,11 +14,9 @@ export default function HeroSection() {
   const expandBoxRef = useRef<HTMLDivElement>(null);
   const expandContentRef = useRef<HTMLDivElement>(null);
 
-  // Opening loading animation refs
+  // Opening loader refs
   const loaderRef = useRef<HTMLDivElement>(null);
   const loaderTitleRef = useRef<HTMLDivElement>(null);
-
-  // Wipe transition refs
   const loaderWipeRedRef = useRef<HTMLDivElement>(null);
   const loaderWipeBlackRef = useRef<HTMLDivElement>(null);
 
@@ -36,7 +34,7 @@ export default function HeroSection() {
 
     /*
      * =========================================================
-     * GLOBAL: OPENING LOADING ANIMATION (Runs on all devices)
+     * GLOBAL: OPENING LOADING ANIMATION (all devices)
      * =========================================================
      */
     mm.add("all", () => {
@@ -83,7 +81,7 @@ export default function HeroSection() {
               }
               ScrollTrigger.refresh();
 
-              // === CHARACTER-BY-CHARACTER REVEAL OF MAIN TAGLINE ===
+              // --- CHARACTER-BY-CHARACTER REVEAL FOR HERO TITLE ---
               if (heroTitleRef.current) {
                 const split = new SplitText(heroTitleRef.current, { type: 'chars' });
                 gsap.from(split.chars, {
@@ -102,18 +100,17 @@ export default function HeroSection() {
 
     /*
      * =========================================================
-     * DESKTOP: HERO SCROLL ANIMATION (768px and up)
+     * DESKTOP: HERO SCROLL ANIMATION (≥ 768px)
      * =========================================================
      */
     mm.add("(min-width: 768px)", () => {
       gsap.set(heroTextContainerRef.current, { y: 0 });
 
-      // 🔽 REDUCED PIN DURATION from 250% to 160% so About appears sooner
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: '+=160%',
+          end: '+=160%',   // 🔽 shortened so About appears sooner
           scrub: 0.6,
           pin: true,
         },
@@ -143,7 +140,7 @@ export default function HeroSection() {
           { opacity: 1, y: 0, filter: 'blur(0px)', ease: 'power3.out', duration: 1.5 },
           '<0.2'
         )
-        // 🔽 CLOSING EFFECT: final scale/opacity reached exactly at the end of the pin
+        // Closing effect: hero scales down and fades out
         .to(
           containerRef.current,
           {
@@ -160,18 +157,17 @@ export default function HeroSection() {
 
     /*
      * =========================================================
-     * MOBILE: HERO SCROLL ANIMATION (Under 768px)
+     * MOBILE: HERO SCROLL ANIMATION (< 768px)
      * =========================================================
      */
     mm.add("(max-width: 767px)", () => {
       gsap.set(heroTextContainerRef.current, { y: '22vh' });
 
-      // 🔽 Also reduce mobile pin duration for consistency
       const mobileTl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: '+=180%',
+          end: '+=180%',   // 🔽 shortened for mobile as well
           scrub: 0.6,
           pin: true,
         },
@@ -224,10 +220,10 @@ export default function HeroSection() {
       ref={containerRef}
       className="relative w-screen h-screen bg-black text-offwhite overflow-hidden flex flex-col justify-between p-6 md:p-10"
     >
-      {/* Background Glow */}
+      {/* Background Glow (unchanged) */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(143,83,252,0.16),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(251,87,95,0.12),transparent_55%)] pointer-events-none z-0" />
 
-      {/* Top Header */}
+      {/* Top Header (unchanged) */}
       <div className="relative z-10 flex justify-between items-start md:items-center text-[10px] md:text-xs tracking-widest text-neutral-400 uppercase font-sans w-full">
         <p className="max-w-[65%] md:max-w-sm leading-relaxed">
           Your idea deserves more than a{' '}
@@ -245,7 +241,7 @@ export default function HeroSection() {
         </span>
       </div>
 
-      {/* Background Hero Typography */}
+      {/* MAIN HERO TYPOGRAPHY – full "Pitch. Connect. Scale." with original styles */}
       <div
         ref={heroTextContainerRef}
         className="relative z-10 my-auto w-full flex flex-col items-center justify-center px-4 md:px-12 pointer-events-none gap-6"
@@ -270,7 +266,7 @@ export default function HeroSection() {
         </p>
       </div>
 
-      {/* Bottom Footer */}
+      {/* Bottom Footer (unchanged) */}
       <div className="relative z-10 flex flex-col-reverse md:flex-row justify-between items-center gap-6 text-[10px] md:text-xs tracking-widest text-neutral-400 uppercase border-t border-white/10 pt-4 md:pt-6 font-sans">
         <div className="flex gap-4 md:gap-6">
           <span>Ideate</span>
@@ -279,7 +275,6 @@ export default function HeroSection() {
           <span>/</span>
           <span>Launch</span>
         </div>
-
         <div className="pointer-events-auto">
           <a
             href="#register"
@@ -290,7 +285,7 @@ export default function HeroSection() {
         </div>
       </div>
 
-      {/* FULL-SCREEN EXPANDING OVERLAY */}
+      {/* FULL-SCREEN EXPANDING OVERLAY (unchanged) */}
       <div
         ref={expandBoxRef}
         className="absolute inset-0 m-auto w-0 h-0 opacity-0 z-30 overflow-hidden bg-ink shadow-2xl flex items-center justify-center text-center pointer-events-none"
@@ -310,7 +305,6 @@ export default function HeroSection() {
           <h3 className="text-4xl md:text-6xl lg:text-7xl font-serif italic font-normal text-offwhite leading-tight">
             Your idea. Your stage. <span className="text-gradient-brand">Your shot.</span>
           </h3>
-
           <div className="space-y-4 text-sm md:text-lg lg:text-xl text-neutral-300 font-sans font-light leading-relaxed max-w-3xl">
             <p>
               <strong className="font-medium text-offwhite">Meraki</strong> is FIIB's flagship international business plan competition for the next generation of entrepreneurs.
@@ -325,7 +319,7 @@ export default function HeroSection() {
         </div>
       </div>
 
-      {/* OPENING LOADING ANIMATION */}
+      {/* LOADER – now displays full "Pitch. Connect. Scale." */}
       <div
         ref={loaderRef}
         className="fixed inset-0 z-[999] bg-black flex items-center justify-center overflow-hidden"
@@ -334,7 +328,7 @@ export default function HeroSection() {
           ref={loaderTitleRef}
           className="relative z-10 flex items-baseline justify-center gap-1 md:gap-2 whitespace-nowrap origin-center"
         >
-          {/* ⬇️ Updated loader text to match full tagline (optional) */}
+          {/* "Pitch." */}
           <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">P</span>
           <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">i</span>
           <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">t</span>
@@ -342,6 +336,7 @@ export default function HeroSection() {
           <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">h</span>
           <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">.</span>
           <span className="w-3 md:w-6" />
+          {/* "Connect." (italic, gradient) */}
           <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">C</span>
           <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">o</span>
           <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">n</span>
@@ -351,6 +346,7 @@ export default function HeroSection() {
           <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">t</span>
           <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">.</span>
           <span className="w-3 md:w-6" />
+          {/* "Scale." */}
           <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">S</span>
           <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">c</span>
           <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">a</span>
@@ -359,6 +355,7 @@ export default function HeroSection() {
           <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">.</span>
         </div>
 
+        {/* Wipe overlays */}
         <div ref={loaderWipeRedRef} className="absolute inset-0 bg-coral z-20 pointer-events-none" />
         <div ref={loaderWipeBlackRef} className="absolute inset-0 bg-black z-30 pointer-events-none" />
       </div>
