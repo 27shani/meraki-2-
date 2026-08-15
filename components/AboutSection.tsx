@@ -4,13 +4,20 @@ import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
+// IMPORTANT: Import your Lenis instance from wherever you initialize it.
+// For this example, we assume you have a global `lenis` object.
+// If not, you can pass it via a prop or Context.
+import { lenis } from '@/lib/lenis'; // <-- CHANGE THIS PATH TO YOUR LENIS FILE
+
 export default function AboutSection() {
   const containerRef = useRef<HTMLElement>(null);
   const textContainerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLDivElement>(null);
   const boxesWrapperRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLDivElement>(null);
-  const boxRefs = useRef<(HTMLDivElement | null)[]>([]);
+  
+  // Use a Map or stable array for refs to avoid null issues
+  const boxRefs = useRef<HTMLDivElement[]>([]);
 
   const benefits = [
     { step: '/ BUILD_01', title: 'Sharpen Your Pitch', desc: 'Turn your idea into a clear, compelling business case with expert feedback and real-world perspective.' },
@@ -27,169 +34,210 @@ export default function AboutSection() {
   };
 
   useEffect(() => {
+    // 1. Register plugin
     gsap.registerPlugin(ScrollTrigger);
 
-    // Initial heading text animation (Blur removed for performance)
-    const lineDivs = headingRef.current?.querySelectorAll('div') || [];
-    lineDivs.forEach((div, index) => {
-      wrapLineWords(div as HTMLElement);
-      const words = div.querySelectorAll('.word');
-      gsap.fromTo(
-        words,
-        { opacity: 0, y: 10 },
-        {
-          opacity: 1,
-          y: 0,
-          stagger: 0.04,
-          ease: 'power2.out',
-          scrollTrigger: {
-            trigger: headingRef.current,
-            start: 'top 85%',
-            toggleActions: 'play none none reverse',
-          },
-          delay: index * 0.2,
-        }
-      );
-    });
+    // 2. CRITICAL: Sync Lenis with ScrollTrigger (Fixes the "not opening" on phone)
+    if (lenis) {
+      lenis.on('scroll', ScrollTrigger.update);
+      // Add Lenis' raf to GSAP's ticker
+      gsap.ticker.add((time) => {
+        lenis.raf(time * 1000);
+      });
+      gsap.ticker.lagSmoothing(0);
+    }
 
-    const mm = gsap.matchMedia();
+    // 3. Use gsap.context() for proper React cleanup and re-render handling
+    const ctx = gsap.context(() => {
+      // --- Heading Word Animations ---
+      const lineDivs = headingRef.current?.querySelectorAll('div') || [];
+      lineDivs.forEach((div, index) => {
+        wrapLineWords(div as HTMLElement);
+        const words = div.querySelectorAll('.word');
+        gsap.fromTo(
+          words,
+          { opacity: 0, y: 10 },
+          {
+            opacity: 1,
+            y: 0,
+            stagger: 0.04,
+            ease: 'power2.out',
+            scrollTrigger: {
+              trigger: headingRef.current,
+              start: 'top 85%',
+              toggleActions: 'play none none reverse',
+            },
+            delay: index * 0.2,
+          }
+        );
+      });
 
-    // Base container fade-in
-    mm.add("all", () => {
-      gsap.fromTo(
-        containerRef.current,
-        { opacity: 0.15 },
-        {
-          opacity: 1,
-          duration: 1,
-          ease: 'power2.out',
+      // --- Main Timeline Logic using matchMedia ---
+      const mm = gsap.matchMedia();
+
+      // Base container fade-in (for all screens)
+      mm.add("all", () => {
+        gsap.fromTo(
+          containerRef.current,
+          { opacity: 0.15 },
+          {
+            opacity: 1,
+            duration: 1,
+            ease: 'power2.out',
+            scrollTrigger: {
+              trigger: containerRef.current,
+              start: 'top bottom',
+              end: 'top center',
+              scrub: 0.6,
+            },
+          }
+        );
+      });
+
+      // --- DESKTOP (≥ 768px) ---
+      mm.add("(min-width: 768px)", () => {
+        const wrapper = boxesWrapperRef.current;
+        const container = containerRef.current;
+        if (!wrapper || !container) return;
+
+        // Cache widths to prevent layout thrashing
+        const containerWidth = container.clientWidth;
+        const wrapperWidth = wrapper.scrollWidth;
+        const startOffset = containerWidth * 0.6;
+        const finalX = -(wrapperWidth - containerWidth + 200);
+
+        gsap.set(wrapper, { x: startOffset });
+
+        const tl = gsap.timeline({
           scrollTrigger: {
             trigger: containerRef.current,
-            start: 'top bottom',
-            end: 'top center',
-            scrub: 0.6,
+            start: 'top top',
+            end: '+=250%',
+            pin: true,
+            scrub: 1,
+            invalidateOnRefresh: true, // Re-calculates on resize
           },
-        }
-      );
-    });
+        });
 
-    // ---- DESKTOP (≥ 768px) ----
-    mm.add("(min-width: 768px)", () => {
-      const wrapper = boxesWrapperRef.current;
-      const container = containerRef.current;
-      if (!wrapper || !container) return;
-
-      const containerWidth = container.clientWidth;
-      const wrapperWidth = wrapper.scrollWidth;
-      const startOffset = containerWidth * 0.6;
-      
-      const finalX = -(wrapperWidth - containerWidth + 200); 
-
-      gsap.set(wrapper, { x: startOffset });
-
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: containerRef.current,
-          start: 'top top',
-          end: '+=250%', // Increased for much smoother, slower scrolling
-          pin: true,
-          scrub: 1, // Smoother scrub value
-        },
+        tl.fromTo(
+          imageRef.current,
+          { opacity: 0.3, scale: 1.05 },
+          { opacity: 1, scale: 1, duration: 1.0, ease: 'power2.out' },
+          0
+        )
+        .fromTo(
+          textContainerRef.current,
+          { y: 30, opacity: 0.2 },
+          { y: -20, opacity: 1, duration: 1.0, ease: 'power2.out' },
+          0
+        )
+        .to(wrapper, {
+          x: finalX,
+          duration: 2.0,
+          ease: 'none',
+        }, 0.1)
+        .fromTo(
+          boxRefs.current,
+          { y: 80, scale: 0.92 },
+          {
+            y: 0,
+            scale: 1,
+            stagger: 0.35,
+            duration: 1.2,
+            ease: 'power2.out',
+          },
+          0.2
+        );
       });
 
-      tl.fromTo(
-        imageRef.current,
-        // Removed heavy filters, using hardware-accelerated opacity & scale
-        { opacity: 0.3, scale: 1.05 },
-        { opacity: 1, scale: 1, duration: 1.0, ease: 'power2.out' },
-        0
-      )
-      .fromTo(
-        textContainerRef.current,
-        { y: 30, opacity: 0.2 },
-        { y: -20, opacity: 1, duration: 1.0, ease: 'power2.out' },
-        0
-      )
-      .to(wrapper, {
-        x: finalX,
-        duration: 2.0,
-        ease: 'none', // Linear ease creates a smoother 1:1 scroll tracking
-      }, 0.1)
-      .fromTo(
-        boxRefs.current,
-        { y: 80, scale: 0.92 },
-        {
-          y: 0,
-          scale: 1,
-          stagger: 0.35,
-          duration: 1.2,
-          ease: 'power2.out',
-        },
-        0.2
-      );
-    });
+      // --- MOBILE (< 768px) ---
+      mm.add("(max-width: 767px)", () => {
+        // Ensure boxes are visible initially
+        gsap.set(boxRefs.current, { y: 0, scale: 1, opacity: 1 });
 
-    // ---- MOBILE (< 768px) ----
-    mm.add("(max-width: 767px)", () => {
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: containerRef.current,
-          start: 'top top',
-          end: '+=250%', // Increased scroll distance for better mobile control
-          pin: true,
-          scrub: 1,
-          invalidateOnRefresh: true,
-        },
+        const tl = gsap.timeline({
+          scrollTrigger: {
+            trigger: containerRef.current,
+            start: 'top top',
+            end: '+=250%',
+            pin: true,
+            scrub: 1,
+            invalidateOnRefresh: true,
+          },
+        });
+
+        tl.fromTo(
+          imageRef.current,
+          { opacity: 0.3, scale: 1.05 },
+          { opacity: 1, scale: 1, duration: 0.8, ease: 'power2.out' },
+          0
+        )
+        .fromTo(
+          textContainerRef.current,
+          { y: 20, opacity: 0.2 },
+          { y: -10, opacity: 1, duration: 0.8, ease: 'power2.out' },
+          0
+        )
+        .fromTo(
+          boxRefs.current,
+          { y: 40, scale: 0.92 },
+          {
+            y: 0,
+            scale: 1,
+            stagger: 0.2,
+            duration: 0.9,
+            ease: 'power2.out',
+          },
+          0.1
+        )
+        .to(
+          boxesWrapperRef.current,
+          {
+            x: () => {
+              if (!boxesWrapperRef.current) return 0;
+              const wrapperWidth = boxesWrapperRef.current.scrollWidth || 0;
+              const viewportWidth = window.innerWidth;
+              const moveX = -(wrapperWidth - viewportWidth + 60);
+              // Clamp to 0 if wrapper is smaller than viewport (prevents positive X pushing boxes right)
+              return Math.min(moveX, 0);
+            },
+            duration: 1.8,
+            ease: 'none',
+          },
+          0.1
+        );
       });
 
-      tl.fromTo(
-        imageRef.current,
-        // Removed heavy filters for mobile GPU safety
-        { opacity: 0.3, scale: 1.05 },
-        { opacity: 1, scale: 1, duration: 0.8, ease: 'power2.out' },
-        0
-      )
-      .fromTo(
-        textContainerRef.current,
-        { y: 20, opacity: 0.2 },
-        { y: -10, opacity: 1, duration: 0.8, ease: 'power2.out' },
-        0
-      )
-      .fromTo(
-        boxRefs.current,
-        { y: 40, scale: 0.92 },
-        {
-          y: 0,
-          scale: 1,
-          stagger: 0.2,
-          duration: 0.9,
-          ease: 'power2.out',
-        },
-        0.1
-      )
-      .to(
-        boxesWrapperRef.current,
-        {
-          x: () => {
-            if (!boxesWrapperRef.current) return 0;
-            const wrapperWidth = boxesWrapperRef.current.scrollWidth || 0;
-            const viewportWidth = window.innerWidth;
-            return -(wrapperWidth - viewportWidth + 60); 
-          },
-          duration: 1.8,
-          ease: 'none', // Removed ease for predictable touch scrolling
-        },
-        0.1
-      );
+      // Cleanup matchMedia
+      return () => mm.revert();
+    }, containerRef); // GSAP Context binds to this container
+
+    // 4. Force a refresh after fonts/images load (crucial for mobile heights)
+    const refreshOnLoad = () => {
+      ScrollTrigger.refresh();
+    };
+
+    window.addEventListener('load', refreshOnLoad);
+    // Also refresh on orientation change
+    window.addEventListener('orientationchange', () => {
+      setTimeout(ScrollTrigger.refresh, 300);
     });
 
-    return () => mm.revert();
+    // 5. Cleanup everything on unmount
+    return () => {
+      window.removeEventListener('load', refreshOnLoad);
+      window.removeEventListener('orientationchange', refreshOnLoad);
+      ctx.revert(); // Kills all GSAP animations and ScrollTriggers inside this component
+      if (lenis) {
+        lenis.off('scroll', ScrollTrigger.update);
+        gsap.ticker.remove(lenis.raf);
+      }
+    };
   }, []);
 
   return (
     <section
       ref={containerRef}
-      // Changed h-screen to h-[100svh] to fix mobile address bar jumps
       className="relative w-full h-[100svh] bg-black text-offwhite overflow-hidden flex flex-col justify-center px-6 md:px-16"
     >
       {/* Heading */}
@@ -218,9 +266,10 @@ export default function AboutSection() {
           {benefits.map((benefit, index) => (
             <div
               key={index}
-              ref={(el) => { boxRefs.current[index] = el; }}
+              ref={(el) => {
+                if (el) boxRefs.current[index] = el;
+              }}
               className="pointer-events-auto shrink-0 w-[280px] sm:w-[320px] md:w-[300px] lg:w-[320px] will-change-transform"
-              style={{ transform: 'translateY(40px)', opacity: 1 }}
             >
               <div className="h-[260px] sm:h-[280px] md:h-[300px] flex flex-col justify-between p-5 sm:p-6 md:p-8 rounded-[20px] sm:rounded-[24px] md:rounded-[32px] bg-white/[0.08] backdrop-blur-2xl border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] transition-transform duration-500 hover:-translate-y-2 relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-coral/10 via-transparent to-purple/10 pointer-events-none rounded-[20px] sm:rounded-[24px] md:rounded-[32px]" />
