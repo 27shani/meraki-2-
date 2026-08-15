@@ -28,12 +28,6 @@ const faqs = [
   },
 ];
 
-/**
- * AwardsSection (FAQs)
- * -------------------------------------------------
- * - List items with custom cursor (scale + opacity on hover)
- * - Clean staggered reveal on scroll
- */
 export default function AwardsSection() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const textRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -49,11 +43,14 @@ export default function AwardsSection() {
       typeof window !== 'undefined' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+    // Detect mobile
+    const isMobile = window.innerWidth < 768;
+
     const ctx = gsap.context(() => {
       gsap.set(bgRefs.current, { scaleX: 0, transformOrigin: 'left center' });
       gsap.set(textRefs.current, { color: '#737373' });
 
-      // Intro
+      // Intro blur
       gsap.fromTo(
         sectionRef.current,
         { opacity: 0, filter: 'blur(14px)' },
@@ -70,13 +67,14 @@ export default function AwardsSection() {
         }
       );
 
-      // Staggered row reveal
+      // Staggered row reveal (faster on mobile)
       if (!prefersReduced) {
+        const staggerDuration = isMobile ? 0.3 : 0.8;
         textRefs.current.forEach((row, i) => {
           if (!row) return;
           gsap.fromTo(
             row,
-            { opacity: 0, y: 30, filter: 'blur(8px)' },
+            { opacity: 0, y: 20, filter: 'blur(6px)' },
             {
               opacity: 1,
               y: 0,
@@ -86,30 +84,35 @@ export default function AwardsSection() {
                 trigger: row,
                 start: 'top 85%',
                 end: 'top 60%',
-                scrub: 0.8,
+                scrub: staggerDuration,
               },
-              delay: i * 0.05,
+              delay: i * 0.03,
             }
           );
         });
       }
 
-      // Main pin timeline (wipe highlights)
+      // ---- MAIN PIN TIMELINE (white strip highlight) ----
+      // Shorter pin duration on mobile so the strip moves faster
+      const pinDuration = isMobile ? faqs.length * 80 : faqs.length * 150;
+      const scrubValue = isMobile ? 0.6 : 1.0;
+      const enterDuration = isMobile ? 0.5 : 1.0;
+      const staggerDelay = isMobile ? 0.3 : 0.6;
+
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: sectionRef.current,
           start: 'top top',
-          end: `+=${faqs.length * 150}%`,
+          end: `+=${pinDuration}%`,
           pin: true,
-          scrub: 1,
+          scrub: scrubValue,
         },
       });
 
       let time = 0;
-      const enterDuration = 1;
-      const staggerDelay = 0.6;
       const activeCount = 2;
 
+      // First two rows highlight
       for (let i = 0; i < activeCount; i++) {
         if (bgRefs.current[i] && textRefs.current[i]) {
           tl.to(
@@ -126,8 +129,9 @@ export default function AwardsSection() {
         }
       }
 
-      time += 0.5;
+      time += 0.3;
 
+      // Slide highlight: one row leaves, next row enters
       for (let i = 0; i < faqs.length - activeCount; i++) {
         const rowOut = i;
         const rowIn = i + activeCount;
@@ -171,8 +175,9 @@ export default function AwardsSection() {
         }
       }
 
-      time += 0.5;
+      time += 0.3;
 
+      // Last rows fade out
       for (let i = faqs.length - activeCount; i < faqs.length; i++) {
         if (bgRefs.current[i] && textRefs.current[i]) {
           tl.to(
@@ -194,13 +199,13 @@ export default function AwardsSection() {
         }
       }
 
-      tl.to({}, { duration: 1 }, time);
+      tl.to({}, { duration: 0.5 }, time);
     }, sectionRef);
 
     return () => ctx.revert();
   }, []);
 
-  // Custom cursor
+  // Custom cursor (unchanged)
   useEffect(() => {
     const cursor = cursorRef.current;
     if (!cursor) return;
