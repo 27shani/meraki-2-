@@ -81,10 +81,19 @@ export default function ContactSection() {
       ref={containerRef}
       className="relative h-screen bg-black overflow-hidden flex items-center justify-center rounded-b-[40px] md:rounded-b-[80px] z-10"
     >
-      {/* Expanding Abstract Gradient Circle (Background Art) */}
+      {/* Expanding Abstract Art Background */}
       <div
         ref={circleRef}
-        className="absolute w-24 h-24 rounded-full z-0 transform scale-1 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-rose-100 via-teal-50 to-violet-200"
+        className="absolute w-24 h-24 rounded-full z-0 transform scale-1"
+        style={{
+          // Pure CSS radial gradients guarantee the abstract art renders correctly on all browsers
+          background: `
+            radial-gradient(circle at 20% 30%, rgba(244,114,182,0.15) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, rgba(45,212,191,0.15) 0%, transparent 50%),
+            radial-gradient(circle at 50% 80%, rgba(129,140,248,0.15) 0%, transparent 50%),
+            #f8fafc
+          `
+        }}
       />
 
       {/* Contact Content revealed inside light background */}
@@ -93,19 +102,48 @@ export default function ContactSection() {
         className="relative z-10 text-ink max-w-7xl w-full px-6 md:px-12 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"
       >
         {/* Text & CTA Left Side */}
-        <div className="space-y-6">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-[4.5rem] font-sans font-semibold tracking-tight uppercase leading-[1.1]">
-            Shape the Future with Your Vision
-          </h1>
+        <div className="space-y-8 mt-8 md:mt-0">
           
-          <p className="text-lg md:text-xl font-serif text-neutral-800 leading-relaxed max-w-lg italic">
+          {/* Complex Font-Mixed Heading */}
+          <div className="relative inline-block w-full">
+            {/* Floating decorative words */}
+            <span className="absolute -top-6 left-[45%] text-[10px] md:text-xs font-serif italic text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-pink-500">
+              Leadership
+            </span>
+            <span className="absolute top-[20%] -left-4 md:-left-8 text-[10px] md:text-xs font-serif italic text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-500">
+              Ideas
+            </span>
+            <span className="absolute top-[10%] -right-2 md:-right-8 text-[10px] md:text-xs font-serif italic text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-500">
+              Startups
+            </span>
+            <span className="absolute -bottom-4 md:-bottom-6 left-[15%] text-[10px] md:text-xs font-serif italic text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-pink-500">
+              Startups
+            </span>
+            <span className="absolute -bottom-8 right-[25%] text-[10px] md:text-xs font-serif italic text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-500">
+              Innovation
+            </span>
+            <span className="absolute bottom-[20%] right-[35%] text-[10px] md:text-xs font-serif italic text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-rose-400">
+              Leadership
+            </span>
+
+            {/* Main Title */}
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-[4.2rem] font-sans font-normal tracking-tight leading-[1.15] text-ink relative z-10 text-center md:text-left">
+              Early-stage <span className="font-serif italic font-light text-neutral-800">ideas</span> to<br />
+              young ventures seeking<br />
+              <span className="font-serif italic font-light text-neutral-800">validation or growth</span>
+            </h1>
+          </div>
+          
+          {/* Subtext */}
+          <p className="text-base md:text-lg font-serif text-neutral-600 leading-relaxed max-w-lg italic text-center md:text-left mx-auto md:mx-0">
             Join innovators worldwide to transform your groundbreaking ideas into reality. Seize this opportunity to showcase your talent.
           </p>
           
-          <div className="pt-4">
+          {/* CTA Button */}
+          <div className="pt-2 text-center md:text-left">
             <a
               href="#register"
-              className="inline-block bg-coral text-offwhite px-10 py-4 rounded-full font-sans font-semibold uppercase tracking-wider text-sm hover:bg-purple transition-all duration-300 hover:shadow-[0_10px_30px_rgba(251,87,95,0.3)] hover:-translate-y-1"
+              className="inline-block bg-[#ff4d4d] text-offwhite px-10 py-4 rounded-full font-sans font-semibold uppercase tracking-wider text-sm hover:bg-purple transition-all duration-300 hover:shadow-[0_10px_30px_rgba(255,77,77,0.3)] hover:-translate-y-1"
             >
               Apply Now
             </a>
@@ -113,38 +151,38 @@ export default function ContactSection() {
         </div>
 
         {/* Timer Blocks Right Side */}
-        <div className="flex flex-col items-start lg:items-end w-full">
-          <p className="text-xs uppercase tracking-widest text-neutral-600 mb-6 font-sans font-semibold">
+        <div className="flex flex-col items-center lg:items-end w-full pt-8 lg:pt-0">
+          <p className="text-xs uppercase tracking-widest text-neutral-500 mb-6 font-sans font-semibold">
             Time remaining to apply
           </p>
           
-          <div className="flex gap-3 sm:gap-4 md:gap-6 w-full lg:w-auto overflow-x-auto pb-4 lg:pb-0 hide-scrollbar">
+          <div className="flex gap-3 sm:gap-4 md:gap-6 w-full justify-center lg:justify-end overflow-visible pb-4">
             {/* Days */}
-            <div className="flex flex-col items-center justify-center bg-white/30 backdrop-blur-xl border border-white/50 rounded-[24px] p-5 sm:p-6 md:p-8 shadow-xl min-w-[90px] sm:min-w-[110px] md:min-w-[130px]">
-              <span className="text-4xl sm:text-5xl md:text-7xl font-serif italic font-medium text-ink">
+            <div className="flex flex-col items-center justify-center bg-white border border-gray-100 rounded-[24px] p-5 sm:p-6 md:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.06)] min-w-[90px] sm:min-w-[110px] md:min-w-[120px]">
+              <span className="text-4xl sm:text-5xl md:text-6xl font-serif italic font-medium text-ink">
                 {mounted ? String(timeLeft.days).padStart(2, '0') : '00'}
               </span>
-              <span className="text-[10px] sm:text-xs md:text-sm font-sans uppercase tracking-widest text-neutral-600 mt-2 md:mt-3">
+              <span className="text-[10px] sm:text-xs md:text-sm font-sans uppercase tracking-widest text-neutral-500 mt-2 md:mt-3">
                 Days
               </span>
             </div>
 
             {/* Hours */}
-            <div className="flex flex-col items-center justify-center bg-white/30 backdrop-blur-xl border border-white/50 rounded-[24px] p-5 sm:p-6 md:p-8 shadow-xl min-w-[90px] sm:min-w-[110px] md:min-w-[130px]">
-              <span className="text-4xl sm:text-5xl md:text-7xl font-serif italic font-medium text-ink">
+            <div className="flex flex-col items-center justify-center bg-white border border-gray-100 rounded-[24px] p-5 sm:p-6 md:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.06)] min-w-[90px] sm:min-w-[110px] md:min-w-[120px]">
+              <span className="text-4xl sm:text-5xl md:text-6xl font-serif italic font-medium text-ink">
                 {mounted ? String(timeLeft.hours).padStart(2, '0') : '00'}
               </span>
-              <span className="text-[10px] sm:text-xs md:text-sm font-sans uppercase tracking-widest text-neutral-600 mt-2 md:mt-3">
+              <span className="text-[10px] sm:text-xs md:text-sm font-sans uppercase tracking-widest text-neutral-500 mt-2 md:mt-3">
                 Hours
               </span>
             </div>
 
             {/* Minutes */}
-            <div className="flex flex-col items-center justify-center bg-white/30 backdrop-blur-xl border border-white/50 rounded-[24px] p-5 sm:p-6 md:p-8 shadow-xl min-w-[90px] sm:min-w-[110px] md:min-w-[130px]">
-              <span className="text-4xl sm:text-5xl md:text-7xl font-serif italic font-medium text-ink">
+            <div className="flex flex-col items-center justify-center bg-white border border-gray-100 rounded-[24px] p-5 sm:p-6 md:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.06)] min-w-[90px] sm:min-w-[110px] md:min-w-[120px]">
+              <span className="text-4xl sm:text-5xl md:text-6xl font-serif italic font-medium text-ink">
                 {mounted ? String(timeLeft.minutes).padStart(2, '0') : '00'}
               </span>
-              <span className="text-[10px] sm:text-xs md:text-sm font-sans uppercase tracking-widest text-neutral-600 mt-2 md:mt-3">
+              <span className="text-[10px] sm:text-xs md:text-sm font-sans uppercase tracking-widest text-neutral-500 mt-2 md:mt-3">
                 Minutes
               </span>
             </div>
