@@ -10,16 +10,22 @@ export default function LenisProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
-    // 🔥 REAL FIX: do not run Lenis on mobile / touch devices
+    // Never run Lenis on mobile / touch devices
     const isMobile =
       window.matchMedia('(max-width: 767px)').matches ||
       window.matchMedia('(pointer: coarse)').matches;
 
     if (isMobile) {
-      // Ensure scroll is never locked on mobile
       document.documentElement.style.overflow = '';
       document.body.style.overflow = '';
-      document.documentElement.classList.remove('lenis', 'lenis-smooth', 'lenis-stopped');
+      document.documentElement.classList.remove(
+        'lenis',
+        'lenis-smooth',
+        'lenis-stopped'
+      );
+
+      // Helps pin stability on real phones
+      ScrollTrigger.config({ ignoreMobileResize: true });
       return;
     }
 
@@ -29,6 +35,8 @@ export default function LenisProvider({ children }: { children: ReactNode }) {
     const lenis = new Lenis({
       duration: 1.2,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      orientation: 'vertical',
+      gestureOrientation: 'vertical',
       smoothWheel: true,
       wheelMultiplier: 1,
     });
@@ -36,12 +44,14 @@ export default function LenisProvider({ children }: { children: ReactNode }) {
     (window as any).__lenis = lenis;
 
     lenis.on('scroll', ScrollTrigger.update);
-    gsap.ticker.add((time) => {
+
+    const tickerFn = (time: number) => {
       lenis.raf(time * 1000);
-    });
+    };
+    gsap.ticker.add(tickerFn);
     gsap.ticker.lagSmoothing(0);
 
-    // Lock only during loader (desktop only)
+    // Lock only during loader (desktop)
     lenis.stop();
     html.classList.add('lenis-stopped');
     html.style.overflow = 'hidden';
@@ -60,8 +70,13 @@ export default function LenisProvider({ children }: { children: ReactNode }) {
       if (html.classList.contains('lenis-stopped')) unlock();
     }, 4000);
 
+    const onLoad = () => ScrollTrigger.refresh();
+    window.addEventListener('load', onLoad);
+
     return () => {
       window.clearTimeout(safety);
+      window.removeEventListener('load', onLoad);
+      gsap.ticker.remove(tickerFn);
       lenis.destroy();
       html.classList.remove('lenis', 'lenis-smooth', 'lenis-stopped');
       html.style.overflow = '';
