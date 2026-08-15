@@ -1,4 +1,3 @@
-// components/AboutSection.tsx
 'use client';
 
 import { useEffect, useRef } from 'react';
@@ -83,7 +82,9 @@ export default function AboutSection() {
       const containerWidth = container.clientWidth;
       const wrapperWidth = wrapper.scrollWidth;
       const startOffset = containerWidth * 0.6; // start off-screen right
-      const finalX = -(wrapperWidth - containerWidth + 48); // end with last card fully visible
+      
+      // INCREASED offset from 48 to 200 so the 3rd card slides fully into view
+      const finalX = -(wrapperWidth - containerWidth + 200); 
 
       // Set initial position
       gsap.set(wrapper, { x: startOffset });
@@ -92,7 +93,8 @@ export default function AboutSection() {
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: '+=180%',
+          // REDUCED end to minimize black space after scroll
+          end: '+=120%', 
           pin: true,
           scrub: 0.6,
         },
@@ -133,13 +135,14 @@ export default function AboutSection() {
       );
     });
 
-    // ---- MOBILE (< 768px) – already had the slider; keep as is ----
+    // ---- MOBILE (< 768px) ----
     mm.add("(max-width: 767px)", () => {
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: '+=200%',
+          // REDUCED end to minimize black space after scroll
+          end: '+=130%', 
           pin: true,
           scrub: 0.5,
           invalidateOnRefresh: true,
@@ -177,7 +180,8 @@ export default function AboutSection() {
             if (!boxesWrapperRef.current) return 0;
             const wrapperWidth = boxesWrapperRef.current.scrollWidth || 0;
             const viewportWidth = window.innerWidth;
-            return -(wrapperWidth - viewportWidth + 48);
+            // INCREASED offset from 48 to 120 so the 3rd card shows fully
+            return -(wrapperWidth - viewportWidth + 120); 
           },
           duration: 1.8,
           ease: 'power2.inOut',
@@ -194,7 +198,7 @@ export default function AboutSection() {
       ref={containerRef}
       className="relative w-full h-screen bg-black text-offwhite overflow-hidden flex flex-col justify-center px-6 md:px-16 will-change-transform"
     >
-      {/* Heading (unchanged) */}
+      {/* Heading */}
       <div
         ref={textContainerRef}
         className="relative z-10 w-full max-w-xl md:max-w-3xl ml-0 md:ml-20 flex flex-col"
@@ -209,7 +213,7 @@ export default function AboutSection() {
         </div>
       </div>
 
-      {/* Boxes – wrapper modified to allow horizontal slide */}
+      {/* Boxes Wrapper */}
       <div className="relative z-30 pointer-events-none px-6 md:px-16 mt-4 md:mt-8 w-full overflow-hidden">
         <div
           ref={boxesWrapperRef}
@@ -242,7 +246,7 @@ export default function AboutSection() {
         </div>
       </div>
 
-      {/* Arch Image (unchanged) */}
+      {/* Arch Image */}
       <div
         ref={imageRef}
         className="absolute right-0 top-0 h-full w-[65vw] md:w-[55vw] min-w-[320px] rounded-l-[120px] md:rounded-l-[220px] overflow-hidden bg-neutral-900 z-0 pointer-events-none"
