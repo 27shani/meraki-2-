@@ -5,7 +5,6 @@ import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-// SplitText no longer needed
 gsap.registerPlugin(ScrollTrigger);
 
 export default function HeroSection() {
@@ -14,13 +13,11 @@ export default function HeroSection() {
   const expandBoxRef = useRef<HTMLDivElement>(null);
   const expandContentRef = useRef<HTMLDivElement>(null);
 
-  // Opening loader refs
   const loaderRef = useRef<HTMLDivElement>(null);
   const loaderTitleRef = useRef<HTMLDivElement>(null);
   const loaderWipeRedRef = useRef<HTMLDivElement>(null);
   const loaderWipeBlackRef = useRef<HTMLDivElement>(null);
 
-  // Ref to the container of the three word spans (the H1)
   const heroTitleRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
@@ -32,11 +29,6 @@ export default function HeroSection() {
 
     const mm = gsap.matchMedia();
 
-    /*
-     * =========================================================
-     * GLOBAL: OPENING LOADING ANIMATION (all devices)
-     * =========================================================
-     */
     mm.add("all", () => {
       const loader = loaderRef.current;
       const loaderTitle = loaderTitleRef.current;
@@ -81,15 +73,13 @@ export default function HeroSection() {
               }
               ScrollTrigger.refresh();
 
-              // --- ANIMATE THE THREE WORDS INDIVIDUALLY (no SplitText) ---
               if (heroTitleRef.current) {
-                // Get the three direct child spans (Pitch., Connect., Scale.)
                 const words = heroTitleRef.current.querySelectorAll('span');
                 gsap.from(words, {
                   opacity: 0,
                   y: 50,
                   duration: 0.6,
-                  stagger: 0.12,       // slight stagger between words
+                  stagger: 0.12,
                   ease: 'power3.out',
                   delay: 0.2,
                 });
@@ -99,11 +89,7 @@ export default function HeroSection() {
       }
     });
 
-    /*
-     * =========================================================
-     * DESKTOP: HERO SCROLL ANIMATION (≥ 768px)
-     * =========================================================
-     */
+    // Desktop scroll animation (unchanged)
     mm.add("(min-width: 768px)", () => {
       gsap.set(heroTextContainerRef.current, { y: 0 });
 
@@ -124,42 +110,29 @@ export default function HeroSection() {
         borderRadius: '0px',
         ease: 'power3.out',
       })
-        .to(
-          expandBoxRef.current,
-          {
-            width: '100%',
-            height: '100%',
-            borderRadius: '0px',
-            borderWidth: '0px',
-            ease: 'power3.inOut',
-          },
-          '+=0.1'
-        )
-        .fromTo(
-          expandContentRef.current,
+        .to(expandBoxRef.current, {
+          width: '100%',
+          height: '100%',
+          borderRadius: '0px',
+          borderWidth: '0px',
+          ease: 'power3.inOut',
+        }, '+=0.1')
+        .fromTo(expandContentRef.current,
           { opacity: 0, y: 60, filter: 'blur(12px)' },
           { opacity: 1, y: 0, filter: 'blur(0px)', ease: 'power3.out', duration: 1.5 },
           '<0.2'
         )
-        .to(
-          containerRef.current,
-          {
-            scale: 0.85,
-            opacity: 0.15,
-            filter: 'blur(6px)',
-            yPercent: -20,
-            ease: 'power2.inOut',
-            duration: 1.2,
-          },
-          '+=0.3'
-        );
+        .to(containerRef.current, {
+          scale: 0.85,
+          opacity: 0.15,
+          filter: 'blur(6px)',
+          yPercent: -20,
+          ease: 'power2.inOut',
+          duration: 1.2,
+        }, '+=0.3');
     });
 
-    /*
-     * =========================================================
-     * MOBILE: HERO SCROLL ANIMATION (< 768px)
-     * =========================================================
-     */
+    // Mobile scroll animation (unchanged)
     mm.add("(max-width: 767px)", () => {
       gsap.set(heroTextContainerRef.current, { y: '22vh' });
 
@@ -173,40 +146,36 @@ export default function HeroSection() {
         },
       });
 
-      mobileTl.to(heroTextContainerRef.current, {
-        y: 0,
-        duration: 1.2,
-        ease: 'power2.out',
-      })
-      .to(expandBoxRef.current, {
-        width: '220px',
-        height: '350px',
-        opacity: 1,
-        borderRadius: '0px',
-        ease: 'power3.out',
-        duration: 1
-      }, "+=0.2")
-      .to(expandBoxRef.current, {
-        width: '100%',
-        height: '100%',
-        borderRadius: '0px',
-        borderWidth: '0px',
-        ease: 'power3.inOut',
-        duration: 1.2
-      }, '+=0.2')
-      .fromTo(expandContentRef.current,
-        { opacity: 0, y: 60, filter: 'blur(12px)' },
-        { opacity: 1, y: 0, filter: 'blur(0px)', ease: 'power3.out', duration: 1.5 },
-        '<0.2'
-      )
-      .to(containerRef.current, {
-        scale: 0.85,
-        opacity: 0.15,
-        filter: 'blur(6px)',
-        yPercent: -20,
-        ease: 'power2.inOut',
-        duration: 1.2,
-      }, '+=0.3');
+      mobileTl.to(heroTextContainerRef.current, { y: 0, duration: 1.2, ease: 'power2.out' })
+        .to(expandBoxRef.current, {
+          width: '220px',
+          height: '350px',
+          opacity: 1,
+          borderRadius: '0px',
+          ease: 'power3.out',
+          duration: 1
+        }, "+=0.2")
+        .to(expandBoxRef.current, {
+          width: '100%',
+          height: '100%',
+          borderRadius: '0px',
+          borderWidth: '0px',
+          ease: 'power3.inOut',
+          duration: 1.2
+        }, '+=0.2')
+        .fromTo(expandContentRef.current,
+          { opacity: 0, y: 60, filter: 'blur(12px)' },
+          { opacity: 1, y: 0, filter: 'blur(0px)', ease: 'power3.out', duration: 1.5 },
+          '<0.2'
+        )
+        .to(containerRef.current, {
+          scale: 0.85,
+          opacity: 0.15,
+          filter: 'blur(6px)',
+          yPercent: -20,
+          ease: 'power2.inOut',
+          duration: 1.2,
+        }, '+=0.3');
     });
 
     return () => {
@@ -241,7 +210,7 @@ export default function HeroSection() {
         </span>
       </div>
 
-      {/* MAIN HERO TYPOGRAPHY */}
+      {/* MAIN HERO TYPOGRAPHY – this is the container that should center vertically */}
       <div
         ref={heroTextContainerRef}
         className="relative z-10 my-auto w-full flex flex-col items-center justify-center px-4 md:px-12 pointer-events-none gap-6"
@@ -319,40 +288,40 @@ export default function HeroSection() {
         </div>
       </div>
 
-      {/* LOADER – full "Pitch. Connect. Scale." */}
+      {/* LOADER – mobile-friendly */}
       <div
         ref={loaderRef}
         className="fixed inset-0 z-[999] bg-black flex items-center justify-center overflow-hidden"
       >
         <div
           ref={loaderTitleRef}
-          className="relative z-10 flex items-baseline justify-center gap-1 md:gap-2 whitespace-nowrap origin-center"
+          className="relative z-10 flex flex-wrap md:flex-nowrap items-baseline justify-center gap-1 md:gap-2 whitespace-normal md:whitespace-nowrap origin-center max-w-[90vw] md:max-w-none"
         >
           {/* Pitch. */}
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">P</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">i</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">t</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">c</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">h</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">.</span>
-          <span className="w-3 md:w-6" />
+          <span className="text-3xl sm:text-5xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">P</span>
+          <span className="text-3xl sm:text-5xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">i</span>
+          <span className="text-3xl sm:text-5xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">t</span>
+          <span className="text-3xl sm:text-5xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">c</span>
+          <span className="text-3xl sm:text-5xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">h</span>
+          <span className="text-3xl sm:text-5xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">.</span>
+          <span className="w-1 md:w-3" />
           {/* Connect. */}
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">C</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">o</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">n</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">n</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">e</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">c</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">t</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">.</span>
-          <span className="w-3 md:w-6" />
+          <span className="text-3xl sm:text-5xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">C</span>
+          <span className="text-3xl sm:text-5xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">o</span>
+          <span className="text-3xl sm:text-5xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">n</span>
+          <span className="text-3xl sm:text-5xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">n</span>
+          <span className="text-3xl sm:text-5xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">e</span>
+          <span className="text-3xl sm:text-5xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">c</span>
+          <span className="text-3xl sm:text-5xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">t</span>
+          <span className="text-3xl sm:text-5xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">.</span>
+          <span className="w-1 md:w-3" />
           {/* Scale. */}
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">S</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">c</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">a</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">l</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">e</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">.</span>
+          <span className="text-3xl sm:text-5xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">S</span>
+          <span className="text-3xl sm:text-5xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">c</span>
+          <span className="text-3xl sm:text-5xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">a</span>
+          <span className="text-3xl sm:text-5xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">l</span>
+          <span className="text-3xl sm:text-5xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">e</span>
+          <span className="text-3xl sm:text-5xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">.</span>
         </div>
 
         {/* Wipe overlays */}
