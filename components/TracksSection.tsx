@@ -47,13 +47,12 @@ export default function TracksSection() {
     gsap.registerPlugin(ScrollTrigger);
 
     const ctx = gsap.context(() => {
-      // ---- Intro blur ----
+      // ---- Intro Fade (Blur removed for drastic performance boost) ----
       gsap.fromTo(
         containerRef.current,
-        { opacity: 0.15, filter: 'blur(8px)' },
+        { opacity: 0.15 },
         {
           opacity: 1,
-          filter: 'blur(0px)',
           ease: 'power2.out',
           scrollTrigger: {
             trigger: containerRef.current,
@@ -71,16 +70,15 @@ export default function TracksSection() {
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: isMobile ? '+=600%' : '+=450%',
+          end: isMobile ? '+=500%' : '+=450%',
           pin: true,
-          scrub: 1.2,
+          scrub: 1, // Reduced scrub delay for tighter sync
           anticipatePin: 1,
-          invalidateOnRefresh: true,
+          invalidateOnRefresh: true, // Recalculates functions on resize
         },
       });
 
       // ---- TITLE ----
-      // Adjusted clipPath to allow descenders (like 'g') to render fully without being sliced
       gsap.set(titleRef.current, {
         opacity: 0,
         y: 40,
@@ -101,26 +99,20 @@ export default function TracksSection() {
       // ---- TRACK CARDS: slide from RIGHT to LEFT ----
       const wrapper = tracksWrapperRef.current;
       if (wrapper) {
-        const wrapperRect = wrapper.getBoundingClientRect();
-        const wrapperWidth = wrapperRect.width;
-        const viewportWidth = window.innerWidth;
-
-        const startOffset = viewportWidth * 0.8;
-
-        let finalX = 0;
-        if (wrapperWidth > viewportWidth) {
-          finalX = -(wrapperWidth - viewportWidth);
-          finalX -= 20;
-        }
-
-        gsap.set(wrapper, { x: startOffset });
-
-        tl.to(
+        // Wrap coordinates in functions so they update on mobile resize/load
+        tl.fromTo(
           wrapper,
+          { x: () => window.innerWidth * 0.8 },
           {
-            x: finalX,
+            x: () => {
+              const wrapperWidth = wrapper.scrollWidth;
+              const viewportWidth = window.innerWidth;
+              return wrapperWidth > viewportWidth
+                ? -(wrapperWidth - viewportWidth + 32)
+                : 0;
+            },
             duration: 3.0,
-            ease: 'power2.inOut',
+            ease: 'none', // 'none' is much smoother for scrubbed translations
           },
           0.15
         );
@@ -137,24 +129,23 @@ export default function TracksSection() {
             duration: 0.8,
             ease: 'power2.out',
           },
-          0.4 + i * 0.2
+          0.4 + i * 0.3
         );
       });
 
       // ---- PRIZE BOXES ----
       prizeBoxRefs.current.forEach((pBox, i) => {
         if (!pBox) return;
+        // Blur removed here as well to fix scroll stuttering
         gsap.set(pBox, {
-          y: 70,
+          y: 60,
           opacity: 0,
-          filter: 'blur(6px)',
         });
         tl.to(
           pBox,
           {
             y: 0,
             opacity: 1,
-            filter: 'blur(0px)',
             duration: 0.9,
             ease: 'power2.out',
           },
@@ -185,10 +176,10 @@ export default function TracksSection() {
               contentRef.current.scrollHeight - window.innerHeight;
             return overflow > 0 ? -(overflow + 100) : 0;
           },
-          ease: 'none',
+          ease: 'none', // Linear ease matches user scroll speed perfectly
           duration: 2.5,
         },
-        isMobile ? 4.5 : 4.0
+        isMobile ? 4.2 : 4.0
       );
 
       // ---- OUTRO ----
@@ -196,7 +187,6 @@ export default function TracksSection() {
         containerRef.current,
         {
           opacity: 0.12,
-          filter: 'blur(10px)',
           duration: 1.0,
           ease: 'power2.inOut',
         },
@@ -212,8 +202,9 @@ export default function TracksSection() {
       ref={containerRef}
       className="relative w-full h-screen bg-black text-offwhite overflow-hidden flex flex-col justify-start pt-10 sm:pt-16 md:pt-20 px-4 sm:px-6 md:px-12"
     >
-      <div ref={contentRef} className="w-full flex flex-col will-change-transform">
-        {/* Title - changed py-2 to py-4 to accommodate descenders */}
+      {/* Removed static will-change-transform classes to let GSAP handle it natively */}
+      <div ref={contentRef} className="w-full flex flex-col">
+        {/* Title */}
         <div
           ref={titleRef}
           className="max-w-7xl mx-auto w-full mb-4 sm:mb-6 md:mb-8 overflow-visible py-4"
@@ -226,11 +217,11 @@ export default function TracksSection() {
           </h2>
         </div>
 
-        {/* Track cards wrapper – horizontal slider */}
+        {/* Track cards wrapper */}
         <div className="max-w-7xl mx-auto w-full overflow-visible z-20 mb-6 sm:mb-8 md:mb-12">
           <div
             ref={tracksWrapperRef}
-            className="flex flex-row items-stretch gap-4 sm:gap-6 will-change-transform"
+            className="flex flex-row items-stretch gap-4 sm:gap-6"
             style={{ width: 'max-content' }}
           >
             {tracks.map((track, index) => (
@@ -297,7 +288,7 @@ export default function TracksSection() {
         {/* Prize Money */}
         <div
           ref={prizeRef}
-          className="max-w-7xl mx-auto w-full opacity-0 will-change-transform pb-20 sm:pb-28 md:pb-40"
+          className="max-w-7xl mx-auto w-full opacity-0 pb-20 sm:pb-28 md:pb-40"
         >
           <h3 className="text-2xl sm:text-3xl md:text-4xl font-serif italic font-normal text-center text-offwhite mb-6 sm:mb-8">
             Prize Money
@@ -309,7 +300,7 @@ export default function TracksSection() {
                 ref={(el) => {
                   prizeBoxRefs.current[index] = el;
                 }}
-                className="bg-white/[0.04] backdrop-blur-xl border border-white/10 rounded-2xl p-5 sm:p-6 md:p-8 flex flex-col items-center justify-center text-center shadow-xl group hover:border-[#FB575F]/30 hover:-translate-y-1 transition-all duration-400 will-change-transform"
+                className="bg-white/[0.04] backdrop-blur-xl border border-white/10 rounded-2xl p-5 sm:p-6 md:p-8 flex flex-col items-center justify-center text-center shadow-xl group hover:border-[#FB575F]/30 hover:-translate-y-1 transition-all duration-400"
               >
                 <h4 className="text-xl sm:text-2xl md:text-3xl font-serif italic font-normal text-offwhite mb-1 sm:mb-2">
                   {p.title}
