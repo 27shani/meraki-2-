@@ -14,8 +14,9 @@ export default function HeroSection() {
   const expandBoxRef = useRef<HTMLDivElement>(null);
   const expandContentRef = useRef<HTMLDivElement>(null);
 
+  // UPDATED REFS
   const loaderRef = useRef<HTMLDivElement>(null);
-  const loaderTitleRef = useRef<HTMLDivElement>(null);
+  const loaderLogoRef = useRef<HTMLImageElement>(null); // was loaderTitleRef
   const loaderWipeRedRef = useRef<HTMLDivElement>(null);
   const loaderWipeBlackRef = useRef<HTMLDivElement>(null);
   const heroTitleRef = useRef<HTMLHeadingElement>(null);
@@ -29,20 +30,17 @@ export default function HeroSection() {
 
     const mm = gsap.matchMedia();
 
-    // ---------- LOADER ----------
+    // ---------- LOADER (UPDATED) ----------
     mm.add('all', () => {
       const loader = loaderRef.current;
-      const loaderTitle = loaderTitleRef.current;
+      const logo = loaderLogoRef.current;
       const wipeRed = loaderWipeRedRef.current;
       const wipeBlack = loaderWipeBlackRef.current;
 
-      if (!loader || !loaderTitle || !wipeRed || !wipeBlack) return;
-
-      const logoImg = loaderTitle.querySelector('img');
-      const yearText = loaderTitle.querySelector('.year-text');
+      if (!loader || !logo || !wipeRed || !wipeBlack) return;
 
       gsap.set(loader, { opacity: 1, visibility: 'visible', pointerEvents: 'auto' });
-      gsap.set([logoImg, yearText], { scale: 0.8, opacity: 0 });
+      gsap.set(logo, { scale: 0.75, opacity: 0 });
       gsap.set([wipeRed, wipeBlack], { yPercent: 100 });
 
       const loaderTl = gsap.timeline({
@@ -71,16 +69,15 @@ export default function HeroSection() {
       });
 
       loaderTl
-        .to([logoImg, yearText], {
+        .to(logo, {
           scale: 1,
           opacity: 1,
           duration: 0.7,
-          stagger: 0.08,
           ease: 'expo.out',
         })
         .fromTo(wipeRed, { yPercent: 100 }, { yPercent: 0, duration: 0.5, ease: 'power3.inOut' }, '+=0.15')
         .fromTo(wipeBlack, { yPercent: 100 }, { yPercent: 0, duration: 0.5, ease: 'power3.inOut' }, '-=0.35')
-        .set([logoImg, yearText], { opacity: 0 })
+        .set(logo, { opacity: 0 })
         .set(loader, { backgroundColor: 'transparent' })
         .to(wipeRed, { yPercent: 100, duration: 0.5, ease: 'power3.inOut' })
         .to(wipeBlack, { yPercent: 100, duration: 0.5, ease: 'power3.inOut' }, '-=0.35');
@@ -301,24 +298,17 @@ export default function HeroSection() {
         </div>
       </div>
 
-      {/* LOADER */}
+      {/* LOADER – big logo only (UPDATED) */}
       <div
         ref={loaderRef}
         className="fixed inset-0 z-[999] bg-black flex items-center justify-center overflow-hidden"
       >
-        <div
-          ref={loaderTitleRef}
-          className="relative z-10 flex items-center justify-center gap-4 md:gap-6"
-        >
-          <img
-            src="/Meraki full logo png-02.png"
-            alt="Meraki"
-            className="h-12 sm:h-16 md:h-24 lg:h-32 w-auto object-contain"
-          />
-          <span className="year-text text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-serif font-light text-offwhite">
-            2026
-          </span>
-        </div>
+        <img
+          ref={loaderLogoRef}
+          src="/Meraki full logo png-02.png"
+          alt="Meraki"
+          className="h-20 sm:h-28 md:h-36 lg:h-44 w-auto object-contain relative z-10"
+        />
         <div
           ref={loaderWipeRedRef}
           className="absolute inset-0 bg-coral z-20 pointer-events-none"
