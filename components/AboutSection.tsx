@@ -54,6 +54,7 @@ export default function AboutSection() {
 
     const mm = gsap.matchMedia();
 
+    // Global intro blur
     mm.add("all", () => {
       gsap.fromTo(
         containerRef.current,
@@ -73,7 +74,7 @@ export default function AboutSection() {
       );
     });
 
-    // Desktop – now with horizontal sliding
+    // Desktop – now with horizontal slider (same as mobile)
     mm.add("(min-width: 768px)", () => {
       const tl = gsap.timeline({
         scrollTrigger: {
@@ -85,32 +86,21 @@ export default function AboutSection() {
         },
       });
 
+      // Image animation
       tl.fromTo(
         imageRef.current,
         { filter: 'blur(12px) brightness(0.6)', opacity: 0.3 },
         { filter: 'blur(2px) brightness(1)', opacity: 1, duration: 1.0, ease: 'power2.out' },
         0
       )
+      // Text moves up
       .fromTo(
         textContainerRef.current,
         { y: '30px', opacity: 0.2 },
         { y: '-20px', opacity: 1, duration: 1.0, ease: 'power2.out' },
         0
       )
-      // Boxes: stagger in from below (same as before)
-      .fromTo(
-        boxRefs.current,
-        { y: '80px', scale: 0.92 },
-        {
-          y: 0,
-          scale: 1,
-          stagger: 0.35,
-          duration: 1.2,
-          ease: 'power2.out',
-        },
-        0.2
-      )
-      // Horizontal slide (like mobile) – added for desktop
+      // ---- Horizontal slider for boxes (like mobile) ----
       .to(
         boxesWrapperRef.current,
         {
@@ -118,17 +108,29 @@ export default function AboutSection() {
             if (!boxesWrapperRef.current) return 0;
             const wrapperWidth = boxesWrapperRef.current.scrollWidth || 0;
             const viewportWidth = window.innerWidth;
-            // Slide left so the right edge of the wrapper aligns with the right edge of the viewport
             return -(wrapperWidth - viewportWidth + 48);
           },
-          duration: 2.5,
+          duration: 2.0,
           ease: 'power2.inOut',
         },
-        0.4 // starts after boxes have appeared
+        0.1
+      )
+      // Individual box animations (scale up and fade) – they slide with the wrapper
+      .fromTo(
+        boxRefs.current,
+        { scale: 0.92, opacity: 0 },
+        {
+          scale: 1,
+          opacity: 1,
+          stagger: 0.25,
+          duration: 1.0,
+          ease: 'power2.out',
+        },
+        0.2
       );
     });
 
-    // Mobile – unchanged
+    // Mobile – unchanged (already a slider)
     mm.add("(max-width: 767px)", () => {
       const tl = gsap.timeline({
         scrollTrigger: {
@@ -155,10 +157,11 @@ export default function AboutSection() {
       )
       .fromTo(
         boxRefs.current,
-        { y: '40px', scale: 0.92 },
+        { y: '40px', scale: 0.92, opacity: 0 },
         {
           y: 0,
           scale: 1,
+          opacity: 1,
           stagger: 0.2,
           duration: 0.9,
           ease: 'power2.out',
@@ -204,18 +207,18 @@ export default function AboutSection() {
         </div>
       </div>
 
-      {/* Boxes – now in normal flow (not absolute) */}
-      <div className="relative z-30 pointer-events-none px-6 md:px-16 mt-4 md:mt-8 w-full overflow-visible">
+      {/* Boxes Wrapper – horizontal scroll container */}
+      <div className="relative z-30 pointer-events-none px-6 md:px-16 mt-4 md:mt-8 w-full overflow-hidden">
         <div
           ref={boxesWrapperRef}
-          className="flex flex-row justify-start md:justify-end items-end gap-4 sm:gap-6 lg:gap-8 pb-1 md:pb-0 w-max md:w-full max-w-7xl mx-auto md:pl-32"
+          className="flex flex-row justify-start md:justify-start items-end gap-4 sm:gap-6 lg:gap-8 pb-1 md:pb-0 w-max md:w-max max-w-7xl mx-auto"
         >
           {benefits.map((benefit, index) => (
             <div
               key={index}
               ref={(el) => { boxRefs.current[index] = el; }}
-              className="pointer-events-auto shrink-0 w-[280px] sm:w-[320px] md:w-[280px] lg:w-[300px] will-change-transform"
-              style={{ transform: 'translateY(40px)', opacity: 1 }}
+              className="pointer-events-auto shrink-0 w-[280px] sm:w-[320px] md:w-[300px] lg:w-[320px] will-change-transform"
+              style={{ opacity: 0, transform: 'translateY(40px) scale(0.92)' }}
             >
               <div className="h-[260px] sm:h-[280px] md:h-[300px] flex flex-col justify-between p-5 sm:p-6 md:p-8 rounded-[20px] sm:rounded-[24px] md:rounded-[32px] bg-white/[0.08] backdrop-blur-2xl border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] transition-transform duration-500 hover:-translate-y-2 relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-coral/10 via-transparent to-purple/10 pointer-events-none rounded-[20px] sm:rounded-[24px] md:rounded-[32px]" />
