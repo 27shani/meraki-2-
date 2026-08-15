@@ -3,10 +3,14 @@ import Lenis from '@studio-freight/lenis';
 
 let lenisInstance: Lenis | null = null;
 
-export const getLenis = () => {
+/**
+ * Returns the Lenis instance (desktop only).
+ * Returns null on mobile / touch devices.
+ */
+export const getLenis = (): Lenis | null => {
   if (typeof window === 'undefined') return null;
 
-  // 🔥 Critical: never create Lenis on real mobile
+  // Never create Lenis on mobile
   const isMobile =
     window.matchMedia('(max-width: 767px)').matches ||
     window.matchMedia('(pointer: coarse)').matches;
@@ -21,22 +25,16 @@ export const getLenis = () => {
       gestureOrientation: 'vertical',
       smoothWheel: true,
       wheelMultiplier: 1,
-      // touchMultiplier removed – we don't run on touch devices
     });
 
-    // Start the RAF loop
-    function raf(time: number) {
-      lenisInstance?.raf(time);
-      requestAnimationFrame(raf);
-    }
-    requestAnimationFrame(raf);
+    // Expose helpers globally
+    (window as any).__lenis = lenisInstance;
 
-    // Global helpers
     (window as any).__unlockLenis = () => {
       lenisInstance?.start();
       document.documentElement.classList.remove('lenis-stopped');
-      document.body.style.overflow = '';
       document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
     };
 
     (window as any).__lockLenis = () => {
@@ -46,4 +44,17 @@ export const getLenis = () => {
   }
 
   return lenisInstance;
+};
+
+/**
+ * Optional helper – call this if you ever need to destroy Lenis
+ */
+export const destroyLenis = () => {
+  if (lenisInstance) {
+    lenisInstance.destroy();
+    lenisInstance = null;
+    (window as any).__lenis = null;
+    (window as any).__unlockLenis = undefined;
+    (window as any).__lockLenis = undefined;
+  }
 };
