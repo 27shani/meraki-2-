@@ -1,7 +1,6 @@
-// components/HowItWorksSection.tsx
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -29,10 +28,10 @@ export default function HowItWorksSection() {
   const cardRef = useRef<HTMLDivElement>(null);
   const coverRef = useRef<HTMLDivElement>(null);
   
-  // Element Refs for manual, high-performance DOM manipulation
+  // High-performance Refs
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
   const h2Refs = useRef<(HTMLHeadingElement | null)[]>([]);
-  const imgRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const imgRefs = useRef<(HTMLImageElement | null)[]>([]);
   const descRefs = useRef<(HTMLParagraphElement | null)[]>([]);
   const counterRef = useRef<HTMLDivElement>(null);
   const stepLabelRef = useRef<HTMLSpanElement>(null);
@@ -53,160 +52,170 @@ export default function HowItWorksSection() {
     });
   };
 
-  useEffect(() => {
+  // useLayoutEffect prevents visual flickering before the initial paint
+  useLayoutEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
     const prefersReduced =
       typeof window !== 'undefined' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    const mm = gsap.matchMedia();
+    // Wrap everything in a context for strict cleanup
+    const ctx = gsap.context(() => {
+      const mm = gsap.matchMedia();
 
-    mm.add({
-      isDesktop: "(min-width: 768px)",
-      isMobile: "(max-width: 767px)"
-    }, (context) => {
-      const { isMobile, isDesktop } = context.conditions as { isMobile: boolean, isDesktop: boolean };
-      const total = STEPS.length;
-      let lastIndex = 0; // Track index purely in memory, not in React state
+      mm.add({
+        isDesktop: "(min-width: 768px)",
+        isMobile: "(max-width: 767px)"
+      }, (context) => {
+        const { isMobile, isDesktop } = context.conditions as { isMobile: boolean, isDesktop: boolean };
+        const total = STEPS.length;
+        let lastIndex = 0;
 
-      if (pathRef.current && listRef.current && containerRef.current) {
-        const pathLength = pathRef.current.getTotalLength();
-        gsap.set(pathRef.current, {
-          strokeDasharray: pathLength,
-          strokeDashoffset: pathLength,
-        });
+        if (pathRef.current && listRef.current && containerRef.current) {
+          const pathLength = pathRef.current.getTotalLength();
+          gsap.set(pathRef.current, {
+            strokeDasharray: pathLength,
+            strokeDashoffset: pathLength,
+          });
 
-        const vh = window.innerHeight;
-        const startY = vh / 2 - ROW_HEIGHT / 2;
-        const endY = vh / 2 - ((total - 1) * ROW_HEIGHT + ROW_HEIGHT / 2);
+          // Adjust starting positions dynamically to fix the mobile blank space
+          const vh = window.innerHeight;
+          const mobileOffset = isMobile ? ROW_HEIGHT : ROW_HEIGHT / 2;
+          const startY = vh / 2 - mobileOffset;
+          const endY = vh / 2 - ((total - 1) * ROW_HEIGHT + mobileOffset);
 
-        gsap.set(listRef.current, { y: startY });
+          gsap.set(listRef.current, { y: startY });
 
-        const tl = gsap.timeline({
-          scrollTrigger: {
-            trigger: containerRef.current,
-            start: 'top top',
-            end: isMobile ? '+=70%' : '+=180%',
-            pin: true,
-            scrub: isMobile ? 0.3 : 0.5,
-            anticipatePin: 1,
-            invalidateOnRefresh: true,
-          },
-        });
-        
-        scrollTriggerRef.current = tl.scrollTrigger || null;
+          const tl = gsap.timeline({
+            scrollTrigger: {
+              trigger: containerRef.current,
+              start: 'top top',
+              // Drastically reduced mobile scrub end distance to kill empty space
+              end: isMobile ? '+=30%' : '+=150%',
+              pin: true,
+              scrub: 1.5, // CPU smoothing rule applied
+              anticipatePin: 1,
+              invalidateOnRefresh: true,
+            },
+          });
+          
+          scrollTriggerRef.current = tl.scrollTrigger || null;
 
-        tl.fromTo(
-          stepRefs.current,
-          { y: 80, opacity: 0 },
-          {
-            y: 0,
-            opacity: 1,
-            stagger: 0.08,
-            duration: 1.0,
-            ease: 'power2.out',
-          },
-          0
-        );
-
-        if (isDesktop) {
-          tl.to(
-            pathRef.current,
-            { strokeDashoffset: 0, ease: 'power1.inOut', duration: 0.8 },
+          tl.fromTo(
+            stepRefs.current,
+            { y: 80, opacity: 0 },
+            {
+              y: 0,
+              opacity: 1,
+              stagger: 0.08,
+              duration: 1.0,
+              ease: 'power2.out',
+            },
             0
           );
+
+          if (isDesktop) {
+            tl.to(
+              pathRef.current,
+              { strokeDashoffset: 0, ease: 'power1.inOut', duration: 0.8 },
+              0
+            );
+          }
+
+          // Optimized Scroll Updates - Using GSAP to update styles instead of raw DOM/Class manipulation
+          tl.to(
+            listRef.current,
+            {
+              y: endY,
+              ease: 'none',
+              duration: 1,
+              onUpdate: function () {
+                const rawIndex = this.progress() * (total - 1);
+                const idx = Math.min(Math.round(rawIndex), total - 1);
+
+                if (idx !== lastIndex) {
+                  lastIndex = idx;
+
+                  // Fast text updates
+                  if (counterRef.current) counterRef.current.innerText = `(${STEPS[idx].stepNum})`;
+                  if (stepLabelRef.current) stepLabelRef.current.innerText = `STEP ${STEPS[idx].stepNum}`;
+                  if (coverTitleRef.current) coverTitleRef.current.innerText = STEPS[idx].title;
+
+                  // Hardware Accelerated Heading Transitions
+                  h2Refs.current.forEach((h2, i) => {
+                    if (!h2) return;
+                    const distance = i - idx;
+                    let tx = distance === 0 ? -18 : Math.abs(distance) * 8;
+                    if (distance > 0) tx = distance * 8;
+
+                    gsap.to(h2, {
+                      x: tx,
+                      opacity: i === idx ? 1 : 0.3,
+                      scale: i === idx ? 1.05 : 0.95,
+                      color: i === idx ? '#ffffff' : '#525252',
+                      duration: 0.4,
+                      ease: 'power2.out',
+                      overwrite: 'auto'
+                    });
+                  });
+
+                  // Hardware Accelerated Image Fades
+                  imgRefs.current.forEach((img, i) => {
+                    if (!img) return;
+                    gsap.to(img, {
+                      opacity: i === idx ? 1 : 0,
+                      scale: i === idx ? 1 : 1.04,
+                      duration: 0.6,
+                      ease: 'power2.out',
+                      overwrite: 'auto'
+                    });
+                    img.style.zIndex = i === idx ? '10' : '0';
+                  });
+
+                  // Hardware Accelerated Description Updates
+                  descRefs.current.forEach((desc, i) => {
+                    if (!desc) return;
+                    gsap.to(desc, {
+                      y: i === idx ? 0 : 16,
+                      opacity: i === idx ? 1 : 0,
+                      duration: 0.4,
+                      ease: 'power2.out',
+                      overwrite: 'auto'
+                    });
+                    desc.style.pointerEvents = i === idx ? 'auto' : 'none';
+                  });
+                }
+              },
+            },
+            0
+          );
+
+          tl.to({}, { duration: 0.1 }, 0.9);
         }
 
-        // List vertical movement + Manual High-Performance DOM Updates
-        tl.to(
-          listRef.current,
-          {
-            y: endY,
-            ease: 'none',
-            duration: 1,
-            onUpdate: function () {
-              const rawIndex = this.progress() * (total - 1);
-              const idx = Math.min(Math.round(rawIndex), total - 1);
+        if (coverRef.current && !prefersReduced) {
+          gsap.set(coverRef.current, { y: 0, opacity: 0 });
+        }
+      });
+    }, containerRef); // Scope GSAP context to the container
 
-              // ONLY update the DOM if the active item has changed
-              if (idx !== lastIndex) {
-                lastIndex = idx;
-
-                // 1. Update text fields directly
-                if (counterRef.current) counterRef.current.innerText = `(${STEPS[idx].stepNum})`;
-                if (stepLabelRef.current) stepLabelRef.current.innerText = `STEP ${STEPS[idx].stepNum}`;
-                if (coverTitleRef.current) coverTitleRef.current.innerText = STEPS[idx].title;
-
-                // 2. Update Headings
-                h2Refs.current.forEach((h2, i) => {
-                  if (!h2) return;
-                  const distance = i - idx;
-                  let tx = '0px';
-                  if (distance === 0) tx = '-18px';
-                  else if (distance < 0) tx = `${Math.abs(distance) * 8}px`;
-                  else tx = `${distance * 8}px`;
-
-                  h2.style.transform = `translateX(${tx})`;
-                  if (i === idx) {
-                    h2.className = "text-2xl sm:text-4xl md:text-5xl lg:text-[4rem] font-sans tracking-tight whitespace-nowrap transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] leading-tight origin-center md:origin-left text-white opacity-100 scale-105 md:-translate-x-8 font-bold";
-                  } else {
-                    h2.className = "text-2xl sm:text-4xl md:text-5xl lg:text-[4rem] font-sans tracking-tight whitespace-nowrap transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] leading-tight origin-center md:origin-left text-neutral-600 opacity-30 scale-95 hover:opacity-50 font-medium";
-                  }
-                });
-
-                // 3. Update Images
-                imgRefs.current.forEach((imgDiv, i) => {
-                  if (!imgDiv) return;
-                  const img = imgDiv.querySelector('img');
-                  if (i === idx) {
-                    imgDiv.style.opacity = '1';
-                    imgDiv.style.zIndex = '10';
-                    if (img) img.style.transform = 'scale(1)';
-                  } else {
-                    imgDiv.style.opacity = '0';
-                    imgDiv.style.zIndex = '0';
-                    if (img) img.style.transform = 'scale(1.04)';
-                  }
-                });
-
-                // 4. Update Descriptions
-                descRefs.current.forEach((desc, i) => {
-                  if (!desc) return;
-                  if (i === idx) {
-                    desc.style.opacity = '1';
-                    desc.style.transform = 'translateY(0)';
-                    desc.style.pointerEvents = 'auto';
-                  } else {
-                    desc.style.opacity = '0';
-                    desc.style.transform = 'translateY(16px)';
-                    desc.style.pointerEvents = 'none';
-                  }
-                });
-              }
-            },
-          },
-          0
-        );
-
-        tl.to({}, { duration: 0.1 }, 0.9);
-      }
-
-      if (coverRef.current && !prefersReduced) {
-        gsap.set(coverRef.current, { y: 0, opacity: 0 });
-      }
-    });
-
-    return () => mm.revert();
+    // Strict Cleanup Rule applied
+    return () => {
+      ctx.revert(); // Reverts all GSAP animations in context
+      ScrollTrigger.getAll().forEach(t => t.kill()); // Nuke all triggers just in case
+    };
   }, []);
 
-  useEffect(() => {
+  // Hover effect using standard GSAP
+  useLayoutEffect(() => {
     if (!coverRef.current) return;
     gsap.to(coverRef.current, {
       opacity: isHovered ? 1 : 0,
       y: isHovered ? -8 : 0,
       duration: 0.45,
       ease: 'power3.out',
+      overwrite: 'auto'
     });
   }, [isHovered]);
 
@@ -224,8 +233,9 @@ export default function HowItWorksSection() {
       ref={containerRef}
       className="relative w-full h-screen bg-black text-offwhite overflow-hidden flex items-center justify-between px-5 sm:px-8 md:px-16 select-none"
     >
+      {/* Background SVG Path */}
       <svg
-        className="absolute top-0 left-0 w-full h-full pointer-events-none z-10 hidden md:block opacity-100"
+        className="absolute top-0 left-0 w-full h-full pointer-events-none z-10 hidden md:block opacity-100 will-change-transform"
         viewBox="0 0 1000 1000"
         fill="none"
         preserveAspectRatio="none"
@@ -256,31 +266,29 @@ export default function HowItWorksSection() {
 
       {/* Vertical title list */}
       <div className="relative z-20 w-full md:w-[55%] h-full overflow-hidden flex items-start justify-center md:justify-start px-4 md:pl-8 pt-8">
-        <div ref={listRef} className="w-full flex flex-col items-center md:items-start">
-          {STEPS.map((step, idx) => {
-            const isInitialActive = idx === 0;
-            return (
-              <div
-                key={step.id}
-                ref={(el) => { stepRefs.current[idx] = el; }}
-                onClick={() => handleStepClick(idx)}
-                style={{ height: `${ROW_HEIGHT}px` }}
-                className="w-full flex items-center justify-center md:justify-start border-b border-neutral-800/60 cursor-pointer pr-0 md:pr-8"
+        <div ref={listRef} className="w-full flex flex-col items-center md:items-start will-change-transform">
+          {STEPS.map((step, idx) => (
+            <div
+              key={step.id}
+              ref={(el) => { stepRefs.current[idx] = el; }}
+              onClick={() => handleStepClick(idx)}
+              style={{ height: `${ROW_HEIGHT}px` }}
+              className="w-full flex items-center justify-center md:justify-start border-b border-neutral-800/60 cursor-pointer pr-0 md:pr-8"
+            >
+              <h2
+                ref={(el) => { h2Refs.current[idx] = el; }}
+                style={{ 
+                  transform: idx === 0 ? 'translateX(-18px) scale(1.05)' : `translateX(${idx * 8}px) scale(0.95)`,
+                  opacity: idx === 0 ? 1 : 0.3,
+                  color: idx === 0 ? '#ffffff' : '#525252',
+                  fontWeight: idx === 0 ? 700 : 500,
+                }}
+                className="text-2xl sm:text-4xl md:text-5xl lg:text-[4rem] font-sans tracking-tight whitespace-nowrap leading-tight origin-center md:origin-left will-change-transform"
               >
-                <h2
-                  ref={(el) => { h2Refs.current[idx] = el; }}
-                  style={{ transform: isInitialActive ? 'translateX(-18px)' : `translateX(${idx * 8}px)` }}
-                  className={`text-2xl sm:text-4xl md:text-5xl lg:text-[4rem] font-sans tracking-tight whitespace-nowrap transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] leading-tight origin-center md:origin-left ${
-                    isInitialActive
-                      ? 'text-white opacity-100 scale-105 md:-translate-x-8 font-bold'
-                      : 'text-neutral-600 opacity-30 scale-95 hover:opacity-50 font-medium'
-                  }`}
-                >
-                  {step.title}
-                </h2>
-              </div>
-            );
-          })}
+                {step.title}
+              </h2>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -296,30 +304,28 @@ export default function HowItWorksSection() {
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           onMouseMove={handleMouseMove}
-          className="relative w-full aspect-[16/10] rounded-2xl overflow-hidden border border-white/10 bg-[#0d0d0d] shadow-2xl cursor-none group"
+          className="relative w-full aspect-[16/10] rounded-2xl overflow-hidden border border-white/10 bg-[#0d0d0d] shadow-2xl cursor-none group will-change-transform"
         >
           {STEPS.map((step, idx) => (
-            <div
+            <img
               key={step.id}
               ref={(el) => { imgRefs.current[idx] = el; }}
-              className="absolute inset-0 transition-opacity duration-700 ease-out"
+              src={step.image}
+              alt={step.title}
+              width="800"
+              height="500"
               style={{ 
                 opacity: idx === 0 ? 1 : 0, 
-                zIndex: idx === 0 ? 10 : 0 
+                zIndex: idx === 0 ? 10 : 0,
+                transform: idx === 0 ? 'scale(1)' : 'scale(1.04)'
               }}
-            >
-              <img
-                src={step.image}
-                alt={step.title}
-                style={{ transform: idx === 0 ? 'scale(1)' : 'scale(1.04)' }}
-                className="w-full h-full object-cover filter grayscale opacity-70 contrast-125 transition-transform duration-[1.5s] ease-out group-hover:scale-105 group-hover:grayscale-0 group-hover:opacity-100"
-              />
-            </div>
+              className="absolute inset-0 w-full h-full object-cover filter grayscale contrast-125 group-hover:scale-105 group-hover:grayscale-0 group-hover:opacity-100 will-change-transform transition-all duration-[1.5s]"
+            />
           ))}
 
           <div
             ref={coverRef}
-            className="absolute inset-4 rounded-lg bg-black/40 backdrop-blur-md border border-white/15 flex items-center justify-center pointer-events-none z-20 opacity-0"
+            className="absolute inset-4 rounded-lg bg-black/40 backdrop-blur-md border border-white/15 flex items-center justify-center pointer-events-none z-20 opacity-0 will-change-transform"
           >
             <span ref={coverTitleRef} className="text-offwhite text-sm font-sans font-medium tracking-widest uppercase">
               {STEPS[0].title}
@@ -333,7 +339,7 @@ export default function HowItWorksSection() {
                 top: `${cursorPos.y}px`,
                 transform: 'translate(-50%, -50%)',
               }}
-              className="absolute pointer-events-none z-30 transition-transform duration-75 ease-out hidden md:block"
+              className="absolute pointer-events-none z-30 hidden md:block will-change-transform"
             >
               <span className="bg-offwhite text-black px-5 py-2.5 rounded-full text-xs font-sans font-bold uppercase tracking-wider shadow-2xl whitespace-nowrap">
                 Next Stage
@@ -352,7 +358,7 @@ export default function HowItWorksSection() {
                 transform: idx === 0 ? 'translateY(0)' : 'translateY(16px)',
                 pointerEvents: idx === 0 ? 'auto' : 'none' 
               }}
-              className="absolute top-0 left-0 w-full text-lg text-neutral-300 font-sans font-light leading-relaxed transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]"
+              className="absolute top-0 left-0 w-full text-lg text-neutral-300 font-sans font-light leading-relaxed will-change-transform"
             >
               {step.description}
             </p>
