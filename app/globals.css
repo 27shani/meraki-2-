@@ -36,20 +36,22 @@ html.lenis body {
   overscroll-behavior: contain;
 }
 
-.lenis.lenis-stopped {
-  overflow: hidden !important;
-}
-
 .lenis.lenis-smooth iframe {
   pointer-events: none;
 }
 
-/* While stopped (loader), lock body too */
-html.lenis-stopped,
-html.lenis-stopped body {
-  overflow: hidden !important;
-}
+/* 👇 Only lock on desktop – mobile uses native scroll */
+@media (min-width: 768px) {
+  .lenis.lenis-stopped {
+    overflow: hidden !important;
+  }
 
+  /* While stopped (loader), lock body too */
+  html.lenis-stopped,
+  html.lenis-stopped body {
+    overflow: hidden !important;
+  }
+}
 /* =====================================================
    BRAND SELECTION + SCROLLBAR
    ===================================================== */
