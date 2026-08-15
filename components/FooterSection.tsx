@@ -12,6 +12,8 @@ export default function FooterSection() {
   const navRef = useRef<HTMLDivElement>(null);
   const maskRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLHeadingElement>(null);
+  const logoImgRef = useRef<HTMLImageElement>(null);
+  const instaRef = useRef<HTMLAnchorElement>(null);
   const linkRefs = useRef<(HTMLElement | null)[]>([]);
 
   const addLinkRef = (el: HTMLElement | null) => {
@@ -30,6 +32,8 @@ export default function FooterSection() {
     const ctx = gsap.context(() => {
       gsap.set(footerRef.current, { opacity: 0, y: 60 });
       gsap.set(navRef.current, { opacity: 0, y: 30 });
+      if (instaRef.current) gsap.set(instaRef.current, { opacity: 0, scale: 0.5 });
+      if (logoImgRef.current) gsap.set(logoImgRef.current, { yPercent: 100, opacity: 0 });
 
       let titleChars: HTMLElement[] = [];
       if (titleRef.current && !prefersReduced) {
@@ -87,6 +91,21 @@ export default function FooterSection() {
         0.15
       );
 
+      // Logo slide up
+      if (logoImgRef.current) {
+        tl.to(
+          logoImgRef.current,
+          {
+            yPercent: 0,
+            opacity: 1,
+            ease: 'power3.out',
+            duration: 1.2,
+          },
+          0.25
+        );
+      }
+
+      // 2026 Text slide up
       if (titleChars.length) {
         tl.to(
           titleChars,
@@ -107,35 +126,19 @@ export default function FooterSection() {
         );
       }
 
-      const asciiLeft = footerRef.current?.querySelector('.ascii-left');
-      const asciiRight = footerRef.current?.querySelector('.ascii-right');
-      if (asciiLeft) gsap.set(asciiLeft, { scale: 0.8, opacity: 0 });
-      if (asciiRight) gsap.set(asciiRight, { scale: 0.8, opacity: 0 });
+      // Instagram icon pop-in
+      if (instaRef.current) {
+        tl.to(
+          instaRef.current,
+          { opacity: 1, scale: 1, ease: 'back.out(1.5)', duration: 0.8 },
+          0.4
+        );
+      }
 
-      tl.to(
-        [asciiLeft, asciiRight],
-        {
-          scale: 1,
-          opacity: 1,
-          stagger: 0.1,
-          duration: 1,
-          ease: 'power3.out',
-        },
-        0.3
-      );
     }, footerRef);
 
     return () => ctx.revert();
   }, []);
-
-  const asciiArt = `
-    ███╗   ███╗███████╗██████╗  █████╗ ██╗  ██╗██╗
-    ████╗ ████║██╔════╝██╔══██╗██╔══██╗██║ ██╔╝██║
-    ██╔████╔██║█████╗  ██████╔╝███████║█████╔╝ ██║
-    ██║╚██╔╝██║██╔══╝  ██╔══██╗██╔══██║██╔═██╗ ██║
-    ██║ ╚═╝ ██║███████╗██║  ██║██║  ██║██║  ██╗██║
-    ╚═╝     ╚═╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝
-  `;
 
   return (
     <>
@@ -153,119 +156,105 @@ export default function FooterSection() {
         {/* Ambient glow */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(251,87,95,0.10),transparent_55%),radial-gradient(ellipse_at_top_right,rgba(143,83,252,0.12),transparent_55%)] pointer-events-none z-0" />
 
-        {/* ASCII art – hidden on mobile */}
-        <div className="ascii-left absolute left-4 md:left-10 top-1/2 -translate-y-1/2 z-0 pointer-events-none hidden lg:block opacity-0">
-          <pre className="text-[5px] md:text-[7px] leading-[1.1] text-coral/20 font-mono whitespace-pre">
-            {asciiArt}
-          </pre>
-        </div>
-        <div className="ascii-right absolute right-4 md:right-10 top-1/2 -translate-y-1/2 z-0 pointer-events-none hidden lg:block opacity-0">
-          <pre className="text-[5px] md:text-[7px] leading-[1.1] text-purple/20 font-mono whitespace-pre text-right">
-            {asciiArt}
-          </pre>
-        </div>
-
-        {/* ---- TOP NAVIGATION – mobile layout fixed ---- */}
+        {/* ---- TOP NAVIGATION ---- */}
         <div
           ref={navRef}
-          className="relative max-w-6xl w-full mx-auto flex flex-col md:flex-row justify-between items-start gap-8 z-10"
+          className="relative max-w-7xl w-full mx-auto flex flex-col md:flex-row justify-between items-start gap-12 z-10"
           style={{ opacity: 0, y: 30 }}
         >
-          {/* Left column – logo, email, powered by */}
-          <div className="w-full md:w-auto">
-            <img
-              src="/meraki-logo.png"
-              alt="Meraki"
-              className="h-5 w-auto invert opacity-90 mb-6"
-            />
+          {/* Left column – Contact Info */}
+          <div className="w-full md:w-auto flex flex-col">
             <p className="text-xs uppercase tracking-widest text-coral-light mb-2 font-sans">
               <span ref={addLinkRef}>Get in Touch</span>
             </p>
             <a
               href="mailto:meraki2026@fiib.edu.in"
-              className="text-lg hover:underline text-neutral-300 font-sans break-all"
+              className="text-lg hover:underline text-neutral-300 font-sans break-all mb-4"
             >
               <span ref={addLinkRef} data-char-hover>
                 meraki2026@fiib.edu.in
               </span>
             </a>
-            <p className="text-xs text-neutral-500 mt-2 font-sans">
-              <span ref={addLinkRef}>Powered by FIIB</span>
-            </p>
-          </div>
-
-          {/* Right column – Meraki Team + contact (stacked on mobile) */}
-          <div className="w-full md:w-auto flex flex-col md:flex-row gap-8 md:gap-12">
-            {/* Meraki Team & Address */}
-            <div className="space-y-2 flex flex-col">
-              <span className="text-neutral-200 font-semibold">
-                <span ref={addLinkRef}>Meraki Team</span>
-              </span>
-              <span className="text-neutral-500 max-w-xs normal-case tracking-normal text-sm leading-relaxed">
-                <span ref={addLinkRef}>
-                  Fortune Institute of International Business
-                </span>
-                <br />
-                <span ref={addLinkRef}>
-                  Plot No. 5, Rao Tula Ram Marg, Opp. Army R&R Hospital, Vasant
-                  Vihar, New Delhi 110057
-                </span>
-              </span>
-            </div>
-
-            {/* Phone numbers & Instagram */}
-            <div className="space-y-2 flex flex-col">
-              <a
-                href="tel:+917060366392"
-                className="hover:text-offwhite transition-colors"
-              >
+            
+            <div className="flex flex-col space-y-1 mt-1">
+              <a href="tel:+917060366392" className="hover:text-offwhite transition-colors text-neutral-400">
                 <span ref={addLinkRef}>+91 7060366392</span>
               </a>
-              <a
-                href="tel:+919958617024"
-                className="hover:text-offwhite transition-colors"
-              >
+              <a href="tel:+919958617024" className="hover:text-offwhite transition-colors text-neutral-400">
                 <span ref={addLinkRef}>+91 9958617024</span>
               </a>
-              <a
-                href="tel:+919910470427"
-                className="hover:text-offwhite transition-colors"
-              >
+              <a href="tel:+919910470427" className="hover:text-offwhite transition-colors text-neutral-400">
                 <span ref={addLinkRef}>+91 9910470427</span>
               </a>
-              <a
-                href="#"
-                className="hover:text-offwhite transition-colors mt-4 block"
-              >
-                <span ref={addLinkRef} data-char-hover>
-                  Instagram
-                </span>
-              </a>
             </div>
+          </div>
+
+          {/* Right column – Address Details */}
+          <div className="w-full md:w-auto flex flex-col md:items-end md:text-right">
+            <p className="text-xs uppercase tracking-widest text-neutral-500 mb-2 font-sans">
+              <span ref={addLinkRef}>Powered by FIIB</span>
+            </p>
+            <span className="text-neutral-400 normal-case tracking-normal text-sm md:text-base leading-relaxed max-w-sm">
+              <span ref={addLinkRef} className="block mb-1">
+                Fortune Institute of International Business
+              </span>
+              <span ref={addLinkRef}>
+                Plot No. 5, Rao Tula Ram Marg, Opp. Army R&R Hospital, Vasant Vihar, New Delhi 110057
+              </span>
+            </span>
           </div>
         </div>
 
-        {/* Bottom closing title */}
-        <div className="relative max-w-6xl w-full mx-auto z-10">
-          <div ref={maskRef} className="overflow-hidden pb-4">
+        {/* ---- BOTTOM CLOSING SECTION ---- */}
+        <div className="relative max-w-7xl w-full mx-auto z-10 flex flex-row justify-between items-end">
+          
+          {/* Logo & 2026 Wrapper */}
+          <div ref={maskRef} className="overflow-hidden pb-2 flex items-center md:items-end gap-3 md:gap-6">
+            <img
+              ref={logoImgRef}
+              src="/meraki-logo.png"
+              alt="Meraki"
+              className="h-10 sm:h-14 md:h-20 lg:h-[6.5rem] w-auto invert mb-1 md:mb-3"
+            />
             <h1
               ref={titleRef}
-              className="text-5xl md:text-[9vw] font-sans font-semibold tracking-tighter leading-none text-offwhite/90 select-none uppercase"
+              className="text-5xl sm:text-6xl md:text-[9vw] font-sans font-semibold tracking-tighter leading-none select-none uppercase m-0 p-0"
             >
-              <span data-split>Meraki</span>{' '}
               <span
                 data-split
-                className="font-serif italic font-normal text-gradient-brand"
+                className="font-serif italic font-normal text-gradient-brand leading-none inline-block pb-1"
               >
                 2026.
               </span>
             </h1>
           </div>
-        </div>
 
-        {/* Decorative dot */}
-        <div className="absolute bottom-8 right-8 md:bottom-12 md:right-16 z-10">
-          <div className="w-3 h-3 md:w-4 md:h-4 rounded-full bg-gradient-to-br from-coral to-purple opacity-60" />
+          {/* Instagram Icon */}
+          <a
+            ref={instaRef}
+            href="#"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mb-3 md:mb-6 lg:mb-8 text-neutral-400 hover:text-coral transition-colors duration-300"
+            aria-label="Instagram"
+          >
+            <svg
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="w-6 h-6 md:w-8 md:h-8"
+            >
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+            </svg>
+          </a>
+
         </div>
       </footer>
     </>
