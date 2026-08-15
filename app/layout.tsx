@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { Merriweather, Urbanist } from 'next/font/google';
 import './globals.css';
-import LenisProvider from './LenisProvider';
 
 const merriweather = Merriweather({
   subsets: ['latin'],
@@ -35,9 +34,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${merriweather.variable} ${urbanist.variable}`}>
       <body className="font-sans bg-black text-offwhite antialiased">
-        <LenisProvider>
-          {children}
-        </LenisProvider>
+        {children}
       </body>
     </html>
   );
