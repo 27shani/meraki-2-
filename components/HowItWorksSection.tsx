@@ -1,3 +1,4 @@
+// components/HowItWorksSection.tsx
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -27,10 +28,17 @@ export default function HowItWorksSection() {
   const listRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const coverRef = useRef<HTMLDivElement>(null);
+  
+  // Element Refs for manual, high-performance DOM manipulation
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const h2Refs = useRef<(HTMLHeadingElement | null)[]>([]);
+  const imgRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const descRefs = useRef<(HTMLParagraphElement | null)[]>([]);
+  const counterRef = useRef<HTMLDivElement>(null);
+  const stepLabelRef = useRef<HTMLSpanElement>(null);
+  const coverTitleRef = useRef<HTMLSpanElement>(null);
+  const scrollTriggerRef = useRef<ScrollTrigger | null>(null);
 
-  // Start at -1 so no image/highlight shows until scrolling begins
-  const [activeIndex, setActiveIndex] = useState(-1);
   const [isHovered, setIsHovered] = useState(false);
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
 
@@ -52,7 +60,6 @@ export default function HowItWorksSection() {
       typeof window !== 'undefined' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    // Use MatchMedia to separate Mobile vs Desktop ScrollTrigger logic
     const mm = gsap.matchMedia();
 
     mm.add({
@@ -61,6 +68,7 @@ export default function HowItWorksSection() {
     }, (context) => {
       const { isMobile, isDesktop } = context.conditions as { isMobile: boolean, isDesktop: boolean };
       const total = STEPS.length;
+      let lastIndex = 0; // Track index purely in memory, not in React state
 
       if (pathRef.current && listRef.current && containerRef.current) {
         const pathLength = pathRef.current.getTotalLength();
@@ -75,12 +83,10 @@ export default function HowItWorksSection() {
 
         gsap.set(listRef.current, { y: startY });
 
-        // --- Main timeline ---
         const tl = gsap.timeline({
           scrollTrigger: {
             trigger: containerRef.current,
             start: 'top top',
-            // Reduce scroll pin duration heavily on mobile to remove blank space
             end: isMobile ? '+=70%' : '+=180%',
             pin: true,
             scrub: isMobile ? 0.3 : 0.5,
@@ -88,8 +94,9 @@ export default function HowItWorksSection() {
             invalidateOnRefresh: true,
           },
         });
+        
+        scrollTriggerRef.current = tl.scrollTrigger || null;
 
-        // 1. Steps stagger in from below
         tl.fromTo(
           stepRefs.current,
           { y: 80, opacity: 0 },
@@ -103,20 +110,15 @@ export default function HowItWorksSection() {
           0
         );
 
-        // 2. Path drawing (desktop only)
         if (isDesktop) {
           tl.to(
             pathRef.current,
-            {
-              strokeDashoffset: 0,
-              ease: 'power1.inOut',
-              duration: 0.8,
-            },
+            { strokeDashoffset: 0, ease: 'power1.inOut', duration: 0.8 },
             0
           );
         }
 
-        // 3. List vertical movement & Optimized State Update
+        // List vertical movement + Manual High-Performance DOM Updates
         tl.to(
           listRef.current,
           {
@@ -124,24 +126,69 @@ export default function HowItWorksSection() {
             ease: 'none',
             duration: 1,
             onUpdate: function () {
-              const prog = this.progress();
-              let idx = -1;
+              const rawIndex = this.progress() * (total - 1);
+              const idx = Math.min(Math.round(rawIndex), total - 1);
 
-              // Only highlight and show images after 2% scroll progress
-              if (prog > 0.02) {
-                const mappedProgress = (prog - 0.02) / 0.98;
-                const rawIndex = mappedProgress * (total - 1);
-                idx = Math.max(0, Math.min(Math.round(rawIndex), total - 1));
+              // ONLY update the DOM if the active item has changed
+              if (idx !== lastIndex) {
+                lastIndex = idx;
+
+                // 1. Update text fields directly
+                if (counterRef.current) counterRef.current.innerText = `(${STEPS[idx].stepNum})`;
+                if (stepLabelRef.current) stepLabelRef.current.innerText = `STEP ${STEPS[idx].stepNum}`;
+                if (coverTitleRef.current) coverTitleRef.current.innerText = STEPS[idx].title;
+
+                // 2. Update Headings
+                h2Refs.current.forEach((h2, i) => {
+                  if (!h2) return;
+                  const distance = i - idx;
+                  let tx = '0px';
+                  if (distance === 0) tx = '-18px';
+                  else if (distance < 0) tx = `${Math.abs(distance) * 8}px`;
+                  else tx = `${distance * 8}px`;
+
+                  h2.style.transform = `translateX(${tx})`;
+                  if (i === idx) {
+                    h2.className = "text-2xl sm:text-4xl md:text-5xl lg:text-[4rem] font-sans tracking-tight whitespace-nowrap transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] leading-tight origin-center md:origin-left text-white opacity-100 scale-105 md:-translate-x-8 font-bold";
+                  } else {
+                    h2.className = "text-2xl sm:text-4xl md:text-5xl lg:text-[4rem] font-sans tracking-tight whitespace-nowrap transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] leading-tight origin-center md:origin-left text-neutral-600 opacity-30 scale-95 hover:opacity-50 font-medium";
+                  }
+                });
+
+                // 3. Update Images
+                imgRefs.current.forEach((imgDiv, i) => {
+                  if (!imgDiv) return;
+                  const img = imgDiv.querySelector('img');
+                  if (i === idx) {
+                    imgDiv.style.opacity = '1';
+                    imgDiv.style.zIndex = '10';
+                    if (img) img.style.transform = 'scale(1)';
+                  } else {
+                    imgDiv.style.opacity = '0';
+                    imgDiv.style.zIndex = '0';
+                    if (img) img.style.transform = 'scale(1.04)';
+                  }
+                });
+
+                // 4. Update Descriptions
+                descRefs.current.forEach((desc, i) => {
+                  if (!desc) return;
+                  if (i === idx) {
+                    desc.style.opacity = '1';
+                    desc.style.transform = 'translateY(0)';
+                    desc.style.pointerEvents = 'auto';
+                  } else {
+                    desc.style.opacity = '0';
+                    desc.style.transform = 'translateY(16px)';
+                    desc.style.pointerEvents = 'none';
+                  }
+                });
               }
-
-              // PERFORMANCE FIX: Only trigger React state update if index changes. This stops the stutter/lag!
-              setActiveIndex((prev) => (prev !== idx ? idx : prev));
             },
           },
           0
         );
 
-        // 4. Brief hold on last step
         tl.to({}, { duration: 0.1 }, 0.9);
       }
 
@@ -153,20 +200,6 @@ export default function HowItWorksSection() {
     return () => mm.revert();
   }, []);
 
-  // active step image fade
-  useEffect(() => {
-    if (!cardRef.current) return;
-    const images = cardRef.current.querySelectorAll('[data-step-img]');
-    images.forEach((img, i) => {
-      gsap.to(img, {
-        opacity: i === activeIndex ? 1 : 0,
-        scale: i === activeIndex ? 1 : 1.04,
-        duration: 0.7,
-        ease: 'power3.out',
-      });
-    });
-  }, [activeIndex]);
-
   useEffect(() => {
     if (!coverRef.current) return;
     gsap.to(coverRef.current, {
@@ -177,15 +210,20 @@ export default function HowItWorksSection() {
     });
   }, [isHovered]);
 
-  // Handle default state details gracefully when activeIndex is -1
-  const currentStep = STEPS[activeIndex === -1 ? 0 : activeIndex];
+  const handleStepClick = (idx: number) => {
+    if (scrollTriggerRef.current) {
+      const st = scrollTriggerRef.current;
+      const progress = idx / (STEPS.length - 1);
+      const scrollPos = st.start + (st.end - st.start) * progress;
+      window.scrollTo({ top: scrollPos, behavior: 'smooth' });
+    }
+  };
 
   return (
     <section
       ref={containerRef}
       className="relative w-full h-screen bg-black text-offwhite overflow-hidden flex items-center justify-between px-5 sm:px-8 md:px-16 select-none"
     >
-      {/* Background Ribbon Path – hidden on mobile, visible on desktop */}
       <svg
         className="absolute top-0 left-0 w-full h-full pointer-events-none z-10 hidden md:block opacity-100"
         viewBox="0 0 1000 1000"
@@ -209,40 +247,31 @@ export default function HowItWorksSection() {
       </svg>
 
       {/* Left counter */}
-      <div className="absolute left-4 sm:left-6 md:left-12 top-1/2 -translate-y-1/2 z-30 font-sans text-sm md:text-base text-neutral-300 tabular-nums">
-        ({currentStep.stepNum})
+      <div 
+        ref={counterRef} 
+        className="absolute left-4 sm:left-6 md:left-12 top-1/2 -translate-y-1/2 z-30 font-sans text-sm md:text-base text-neutral-300 tabular-nums transition-all duration-300"
+      >
+        ({STEPS[0].stepNum})
       </div>
 
       {/* Vertical title list */}
       <div className="relative z-20 w-full md:w-[55%] h-full overflow-hidden flex items-start justify-center md:justify-start px-4 md:pl-8 pt-8">
         <div ref={listRef} className="w-full flex flex-col items-center md:items-start">
           {STEPS.map((step, idx) => {
-            const isActive = idx === activeIndex;
-            // Prevent distance calc errors when activeIndex is -1 by targeting 0 initially
-            const distance = idx - Math.max(0, activeIndex); 
-            let mobileTranslateX = '0px';
-            if (distance === 0 && isActive) {
-              mobileTranslateX = '-18px';
-            } else if (distance < 0) {
-              mobileTranslateX = `${Math.abs(distance) * 8}px`;
-            } else {
-              mobileTranslateX = `${distance * 8}px`;
-            }
-
+            const isInitialActive = idx === 0;
             return (
               <div
                 key={step.id}
                 ref={(el) => { stepRefs.current[idx] = el; }}
-                onClick={() => setActiveIndex(idx)}
+                onClick={() => handleStepClick(idx)}
                 style={{ height: `${ROW_HEIGHT}px` }}
                 className="w-full flex items-center justify-center md:justify-start border-b border-neutral-800/60 cursor-pointer pr-0 md:pr-8"
               >
                 <h2
-                  style={{
-                    transform: `translateX(${mobileTranslateX})`,
-                  }}
+                  ref={(el) => { h2Refs.current[idx] = el; }}
+                  style={{ transform: isInitialActive ? 'translateX(-18px)' : `translateX(${idx * 8}px)` }}
                   className={`text-2xl sm:text-4xl md:text-5xl lg:text-[4rem] font-sans tracking-tight whitespace-nowrap transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] leading-tight origin-center md:origin-left ${
-                    isActive
+                    isInitialActive
                       ? 'text-white opacity-100 scale-105 md:-translate-x-8 font-bold'
                       : 'text-neutral-600 opacity-30 scale-95 hover:opacity-50 font-medium'
                   }`}
@@ -255,10 +284,10 @@ export default function HowItWorksSection() {
         </div>
       </div>
 
-      {/* Right column – image card + desc (desktop only) */}
+      {/* Right column */}
       <div className="relative z-20 hidden md:flex w-[40vw] max-w-[500px] flex-col items-end mr-2 sm:mr-4 md:mr-16">
-        <div className="w-full flex justify-between text-xs font-sans font-medium tracking-widest uppercase text-coral-light mb-4 px-1 transition-opacity duration-300" style={{ opacity: activeIndex === -1 ? 0 : 1 }}>
-          <span>STEP {currentStep.stepNum}</span>
+        <div className="w-full flex justify-between text-xs font-sans font-medium tracking-widest uppercase text-coral-light mb-4 px-1">
+          <span ref={stepLabelRef}>STEP {STEPS[0].stepNum}</span>
           <span />
         </div>
 
@@ -272,14 +301,18 @@ export default function HowItWorksSection() {
           {STEPS.map((step, idx) => (
             <div
               key={step.id}
-              data-step-img
-              className="absolute inset-0 opacity-0"
-              style={{ zIndex: idx === activeIndex ? 10 : 0 }}
+              ref={(el) => { imgRefs.current[idx] = el; }}
+              className="absolute inset-0 transition-opacity duration-700 ease-out"
+              style={{ 
+                opacity: idx === 0 ? 1 : 0, 
+                zIndex: idx === 0 ? 10 : 0 
+              }}
             >
               <img
                 src={step.image}
                 alt={step.title}
-                className="w-full h-full object-cover filter grayscale opacity-70 contrast-125 transition-transform duration-[1.5s] group-hover:scale-105 group-hover:grayscale-0 group-hover:opacity-100"
+                style={{ transform: idx === 0 ? 'scale(1)' : 'scale(1.04)' }}
+                className="w-full h-full object-cover filter grayscale opacity-70 contrast-125 transition-transform duration-[1.5s] ease-out group-hover:scale-105 group-hover:grayscale-0 group-hover:opacity-100"
               />
             </div>
           ))}
@@ -288,12 +321,12 @@ export default function HowItWorksSection() {
             ref={coverRef}
             className="absolute inset-4 rounded-lg bg-black/40 backdrop-blur-md border border-white/15 flex items-center justify-center pointer-events-none z-20 opacity-0"
           >
-            <span className="text-offwhite text-sm font-sans font-medium tracking-widest uppercase">
-              {currentStep.title}
+            <span ref={coverTitleRef} className="text-offwhite text-sm font-sans font-medium tracking-widest uppercase">
+              {STEPS[0].title}
             </span>
           </div>
 
-          {isHovered && activeIndex !== -1 && (
+          {isHovered && (
             <div
               style={{
                 left: `${cursorPos.x}px`,
@@ -313,18 +346,20 @@ export default function HowItWorksSection() {
           {STEPS.map((step, idx) => (
             <p
               key={step.id}
-              className={`absolute top-0 left-0 w-full text-lg text-neutral-300 font-sans font-light leading-relaxed transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)] ${
-                idx === activeIndex
-                  ? 'opacity-100 translate-y-0'
-                  : 'opacity-0 translate-y-4 pointer-events-none'
-              }`}
+              ref={(el) => { descRefs.current[idx] = el; }}
+              style={{ 
+                opacity: idx === 0 ? 1 : 0, 
+                transform: idx === 0 ? 'translateY(0)' : 'translateY(16px)',
+                pointerEvents: idx === 0 ? 'auto' : 'none' 
+              }}
+              className="absolute top-0 left-0 w-full text-lg text-neutral-300 font-sans font-light leading-relaxed transition-all duration-700 ease-[cubic-bezier(0.25,1,0.5,1)]"
             >
               {step.description}
             </p>
           ))}
         </div>
 
-        <div className="absolute -right-12 top-0 text-[11px] font-sans font-medium uppercase tracking-widest text-neutral-400 origin-right transition-opacity duration-300" style={{ opacity: activeIndex === -1 ? 0 : 1 }}>
+        <div className="absolute -right-12 top-0 text-[11px] font-sans font-medium uppercase tracking-widest text-neutral-400 origin-right">
           Process
         </div>
       </div>
