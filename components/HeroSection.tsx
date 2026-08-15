@@ -21,6 +21,7 @@ export default function HeroSection() {
   const heroTitleRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
+    // Safety unlock after 5 seconds (if something goes wrong)
     const safetyUnlock = window.setTimeout(() => {
       if (typeof window !== 'undefined' && (window as any).__unlockLenis) {
         (window as any).__unlockLenis();
@@ -39,11 +40,9 @@ export default function HeroSection() {
       if (loader && loaderTitle && wipeRed && wipeBlack) {
         const loaderTl = gsap.timeline();
 
-        // Get the logo image and the "2026" text inside loaderTitle
         const logoImg = loaderTitle.querySelector('img');
         const yearText = loaderTitle.querySelector('.year-text');
 
-        // Initial states
         gsap.set(loader, { opacity: 1, visibility: 'visible', pointerEvents: 'auto' });
         gsap.set([logoImg, yearText], { scale: 0.8, opacity: 0 });
         gsap.set([wipeRed, wipeBlack], { yPercent: 100 });
@@ -68,12 +67,17 @@ export default function HeroSection() {
             onComplete: () => {
               gsap.set(loader, { visibility: 'hidden', pointerEvents: 'none' });
               document.body.style.overflow = '';
+
+              // ✅ Unlock Lenis (now defined in lib/lenis.ts)
               if (typeof window !== 'undefined' && (window as any).__unlockLenis) {
                 (window as any).__unlockLenis();
               }
-              ScrollTrigger.refresh();
 
-              // Hero title reveal (unchanged)
+              // ✅ Refresh ScrollTrigger twice to ensure proper pin calculations
+              ScrollTrigger.refresh();
+              setTimeout(() => ScrollTrigger.refresh(), 300);
+
+              // Hero title reveal
               if (heroTitleRef.current) {
                 const words = heroTitleRef.current.querySelectorAll('span');
                 gsap.from(words, {
@@ -90,7 +94,7 @@ export default function HeroSection() {
       }
     });
 
-    // ---- DESKTOP SCROLL ANIMATION ----
+    // ---- DESKTOP SCROLL ANIMATION (≥768px) ----
     mm.add("(min-width: 768px)", () => {
       gsap.set(heroTextContainerRef.current, { y: 0 });
 
@@ -98,7 +102,7 @@ export default function HeroSection() {
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: '+=160%',
+          end: '+=80%',          // ✅ reduced from 160%
           scrub: 0.6,
           pin: true,
         },
@@ -132,16 +136,15 @@ export default function HeroSection() {
         }, '+=0.3');
     });
 
-    // ---- MOBILE SCROLL ANIMATION ----
+    // ---- MOBILE SCROLL ANIMATION (<768px) ----
     mm.add("(max-width: 767px)", () => {
-      // Reduced initial y value to prevent layout stretching on small screens
       gsap.set(heroTextContainerRef.current, { y: '10vh' });
 
       const mobileTl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: '+=180%',
+          end: '+=80%',          // ✅ reduced from 180%
           scrub: 0.6,
           pin: true,
         },
@@ -188,7 +191,6 @@ export default function HeroSection() {
     <section
       ref={containerRef}
       style={{ willChange: 'transform, opacity' }}
-      // Changed to h-[100dvh] and justify-between for all screen sizes
       className="relative w-screen h-[100dvh] bg-black text-offwhite overflow-hidden flex flex-col justify-between"
     >
       {/* Background Glow */}
@@ -216,7 +218,6 @@ export default function HeroSection() {
       <div
         ref={heroTextContainerRef}
         style={{ willChange: 'transform' }}
-        // Removed negative margins and used flex-1 to naturally center perfectly
         className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 md:px-12 pointer-events-none gap-6"
       >
         <h1
@@ -239,7 +240,7 @@ export default function HeroSection() {
         </p>
       </div>
 
-      {/* Bottom Footer – updated text */}
+      {/* Bottom Footer */}
       <div className="relative z-10 flex flex-col-reverse md:flex-row justify-between items-center gap-4 md:gap-6 text-[10px] md:text-xs tracking-widest text-neutral-400 uppercase border-t border-white/10 pt-4 md:pt-6 px-6 md:px-10 pb-8 md:pb-10 font-sans">
         <div className="flex gap-4 md:gap-6 mt-1 md:mt-0">
           <span>FOR UNDERGRADUATE FOUNDERS</span>
@@ -290,7 +291,7 @@ export default function HeroSection() {
         </div>
       </div>
 
-      {/* LOADER – shows Meraki logo + 2026 */}
+      {/* LOADER */}
       <div
         ref={loaderRef}
         className="fixed inset-0 z-[999] bg-black flex items-center justify-center overflow-hidden"
@@ -299,19 +300,16 @@ export default function HeroSection() {
           ref={loaderTitleRef}
           className="relative z-10 flex items-center justify-center gap-4 md:gap-6"
         >
-          {/* Logo image */}
           <img
             src="/Meraki full logo png-02.png"
             alt="Meraki"
             className="h-12 sm:h-16 md:h-24 lg:h-32 w-auto object-contain"
           />
-          {/* Year text */}
           <span className="year-text text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-serif font-light text-offwhite">
             2026
           </span>
         </div>
 
-        {/* Wipe overlays */}
         <div ref={loaderWipeRedRef} className="absolute inset-0 bg-coral z-20 pointer-events-none" />
         <div ref={loaderWipeBlackRef} className="absolute inset-0 bg-black z-30 pointer-events-none" />
       </div>
