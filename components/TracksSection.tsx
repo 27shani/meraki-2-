@@ -9,7 +9,8 @@ export default function TracksSection() {
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const titleRef = useRef<HTMLDivElement>(null);
-  const boxRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const tracksWrapperRef = useRef<HTMLDivElement>(null);
+  const trackBoxRefs = useRef<(HTMLDivElement | null)[]>([]);
   const prizeRef = useRef<HTMLDivElement>(null);
   const prizeBoxRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -70,7 +71,7 @@ export default function TracksSection() {
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: isMobile ? '+=400%' : '+=280%',
+          end: isMobile ? '+=500%' : '+=350%', // enough for horizontal slide + prizes
           pin: true,
           scrub: 1.0,
           anticipatePin: 1,
@@ -92,24 +93,44 @@ export default function TracksSection() {
         ease: 'power3.out',
       }, 0);
 
-      // ---- TRACK CARDS: slide in from right (one after another) ----
-      boxRefs.current.forEach((box, i) => {
+      // ---- TRACK CARDS: horizontal slider (like About mobile) ----
+      // Set initial state: start off-screen right
+      gsap.set(tracksWrapperRef.current, { x: 0 });
+      // Compute total width of track cards + gaps
+      const getTrackScrollAmount = () => {
+        if (!tracksWrapperRef.current) return 0;
+        const wrapper = tracksWrapperRef.current;
+        const wrapperWidth = wrapper.scrollWidth;
+        const viewportWidth = window.innerWidth;
+        // We want to scroll until the last card is fully visible, so move left by (wrapperWidth - viewportWidth + some padding)
+        return -(wrapperWidth - viewportWidth + 48);
+      };
+
+      // Slide the whole wrapper horizontally
+      tl.to(tracksWrapperRef.current, {
+        x: getTrackScrollAmount,
+        duration: 2.5,
+        ease: 'power2.inOut',
+      }, 0.15);
+
+      // Also animate individual cards (fade in) while sliding, but they are already visible after the slide
+      // They will be visible because we set initial opacity to 1, but we might want a slight fade-in
+      // Actually we want them to appear as they slide, but they are already in the DOM; we can add a small opacity transition
+      // Better: set initial opacity 0 and fade them in as the wrapper moves.
+      // But we can also just let the wrapper movement reveal them.
+      // For simplicity, we'll keep them with opacity 1 from start, but they start off-screen so they'll slide in.
+      // We'll add a slight fade-in for each card individually for extra polish.
+      trackBoxRefs.current.forEach((box, i) => {
         if (!box) return;
-        gsap.set(box, {
-          x: 250,          // start off-screen right
-          opacity: 0,
-          filter: 'blur(4px)',
-        });
+        gsap.set(box, { opacity: 0 });
         tl.to(box, {
-          x: 0,
           opacity: 1,
-          filter: 'blur(0px)',
-          duration: 1.0,
+          duration: 0.6,
           ease: 'power2.out',
-        }, 0.15 + i * 0.25); // stagger
+        }, 0.3 + i * 0.15);
       });
 
-      // ---- PRIZE BOXES: slide up one after another ----
+      // ---- PRIZE BOXES: slide up one by one ----
       prizeBoxRefs.current.forEach((pBox, i) => {
         if (!pBox) return;
         gsap.set(pBox, {
@@ -123,19 +144,19 @@ export default function TracksSection() {
           filter: 'blur(0px)',
           duration: 0.8,
           ease: 'power2.out',
-        }, 0.5 + i * 0.2); // starts after tracks are mostly in
+        }, 0.8 + i * 0.2); // starts after track slide is underway
       });
 
-      // ---- PRIZE label (optional) ----
+      // ---- PRIZE label ----
       gsap.set(prizeRef.current, { opacity: 0, y: 20 });
       tl.to(prizeRef.current, {
         opacity: 1,
         y: 0,
         duration: 0.6,
         ease: 'power2.out',
-      }, 0.35);
+      }, 0.6);
 
-      // ---- CONTENT PAN (vertical scroll within pinned section) ----
+      // ---- CONTENT PAN (vertical scroll) ----
       tl.to(
         contentRef.current,
         {
@@ -146,12 +167,12 @@ export default function TracksSection() {
             return overflow > 0 ? -(overflow + 80) : 0;
           },
           ease: 'none',
-          duration: 2.5,
+          duration: 2.0,
         },
-        isMobile ? 1.8 : 1.2
+        isMobile ? 2.5 : 1.5
       );
 
-      // ---- OUTRO (fade out) ----
+      // ---- OUTRO ----
       tl.to(
         containerRef.current,
         {
@@ -173,7 +194,7 @@ export default function TracksSection() {
       className="relative w-full h-screen bg-black text-offwhite overflow-hidden flex flex-col justify-start pt-16 md:pt-24 px-6 md:px-16"
     >
       <div ref={contentRef} className="w-full flex flex-col will-change-transform">
-        {/* Title - overflow-visible to prevent cutting 'g' */}
+        {/* Title */}
         <div
           ref={titleRef}
           className="max-w-7xl mx-auto w-full mb-6 sm:mb-8 md:mb-10 overflow-visible"
@@ -186,65 +207,71 @@ export default function TracksSection() {
           </h2>
         </div>
 
-        {/* Track cards */}
-        <div className="max-w-7xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 z-20 mb-10 md:mb-16">
-          {tracks.map((track, index) => (
-            <div
-              key={index}
-              ref={(el) => {
-                boxRefs.current[index] = el;
-              }}
-              className="will-change-transform"
-            >
+        {/* Track cards wrapper – horizontal slider container */}
+        <div className="max-w-7xl mx-auto w-full overflow-hidden z-20 mb-10 md:mb-16">
+          <div
+            ref={tracksWrapperRef}
+            className="flex flex-row gap-4 sm:gap-6 will-change-transform"
+            style={{ width: 'max-content' }}
+          >
+            {tracks.map((track, index) => (
               <div
-                className="
-                  h-auto min-h-[300px] md:min-h-[380px]
-                  flex flex-col justify-between
-                  p-6 sm:p-8 md:p-10
-                  rounded-[20px] sm:rounded-[28px] md:rounded-[32px]
-                  bg-white/[0.04] backdrop-blur-xl
-                  border border-white/10
-                  shadow-2xl
-                  relative overflow-hidden
-                  group
-                  transition-all duration-500
-                  hover:border-[#FB575F]/40
-                  hover:shadow-[0_20px_60px_rgba(251,87,95,0.12)]
-                  hover:-translate-y-2
-                "
+                key={index}
+                ref={(el) => {
+                  trackBoxRefs.current[index] = el;
+                }}
+                className="w-[280px] sm:w-[320px] md:w-[400px] lg:w-[500px] flex-shrink-0"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-coral/0 via-transparent to-purple/0 group-hover:from-coral/10 group-hover:to-purple/10 transition-all duration-500 pointer-events-none rounded-[20px] sm:rounded-[28px] md:rounded-[32px]" />
+                <div
+                  className="
+                    h-auto min-h-[300px] md:min-h-[380px]
+                    flex flex-col justify-between
+                    p-6 sm:p-8 md:p-10
+                    rounded-[20px] sm:rounded-[28px] md:rounded-[32px]
+                    bg-white/[0.04] backdrop-blur-xl
+                    border border-white/10
+                    shadow-2xl
+                    relative overflow-hidden
+                    group
+                    transition-all duration-500
+                    hover:border-[#FB575F]/40
+                    hover:shadow-[0_20px_60px_rgba(251,87,95,0.12)]
+                    hover:-translate-y-2
+                  "
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-coral/0 via-transparent to-purple/0 group-hover:from-coral/10 group-hover:to-purple/10 transition-all duration-500 pointer-events-none rounded-[20px] sm:rounded-[28px] md:rounded-[32px]" />
 
-                <div className="relative z-10 flex justify-between items-start mb-6">
-                  <span className="font-sans text-[10px] sm:text-xs font-semibold tracking-widest text-[#FB575F] uppercase">
-                    {track.trackNum}
-                  </span>
-                  <span className="font-serif italic text-xl sm:text-2xl text-neutral-400 font-light group-hover:text-coral-light transition-colors duration-400">
-                    {track.numLabel}
-                  </span>
-                </div>
+                  <div className="relative z-10 flex justify-between items-start mb-6">
+                    <span className="font-sans text-[10px] sm:text-xs font-semibold tracking-widest text-[#FB575F] uppercase">
+                      {track.trackNum}
+                    </span>
+                    <span className="font-serif italic text-xl sm:text-2xl text-neutral-400 font-light group-hover:text-coral-light transition-colors duration-400">
+                      {track.numLabel}
+                    </span>
+                  </div>
 
-                <div className="relative z-10 space-y-3 flex-grow">
-                  <h3 className="text-2xl md:text-4xl font-serif italic font-normal text-offwhite leading-tight">
-                    {track.title}
-                  </h3>
-                  <p className="text-xs md:text-sm text-neutral-300 font-sans font-medium leading-relaxed">
-                    {track.subtitle}
-                  </p>
-                  <p className="block text-xs md:text-sm text-neutral-400 font-sans font-light leading-relaxed pt-4 border-t border-white/10">
-                    {track.description}
-                  </p>
-                </div>
+                  <div className="relative z-10 space-y-3 flex-grow">
+                    <h3 className="text-2xl md:text-4xl font-serif italic font-normal text-offwhite leading-tight">
+                      {track.title}
+                    </h3>
+                    <p className="text-xs md:text-sm text-neutral-300 font-sans font-medium leading-relaxed">
+                      {track.subtitle}
+                    </p>
+                    <p className="block text-xs md:text-sm text-neutral-400 font-sans font-light leading-relaxed pt-4 border-t border-white/10">
+                      {track.description}
+                    </p>
+                  </div>
 
-                <div className="block relative z-10 pt-4 border-t border-white/10 text-[11px] text-neutral-400 font-sans mt-6">
-                  <span className="text-[#FB575F] font-semibold uppercase tracking-wider block mb-1">
-                    Who can apply:
-                  </span>
-                  <p>{track.whoCanApply}</p>
+                  <div className="block relative z-10 pt-4 border-t border-white/10 text-[11px] text-neutral-400 font-sans mt-6">
+                    <span className="text-[#FB575F] font-semibold uppercase tracking-wider block mb-1">
+                      Who can apply:
+                    </span>
+                    <p>{track.whoCanApply}</p>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
 
         {/* Prize Money */}
