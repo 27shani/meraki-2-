@@ -47,7 +47,7 @@ export default function TracksSection() {
     gsap.registerPlugin(ScrollTrigger);
 
     const ctx = gsap.context(() => {
-      // ---- Intro blur fade ----
+      // ---- Intro blur ----
       gsap.fromTo(
         containerRef.current,
         { opacity: 0.15, filter: 'blur(8px)' },
@@ -66,7 +66,7 @@ export default function TracksSection() {
 
       const isMobile = window.innerWidth < 768;
 
-      // ---- Main timeline with pin ----
+      // ---- Main timeline ----
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
@@ -79,7 +79,7 @@ export default function TracksSection() {
         },
       });
 
-      // ---- TITLE entrance ----
+      // ---- TITLE ----
       gsap.set(titleRef.current, {
         opacity: 0,
         y: 40,
@@ -93,31 +93,28 @@ export default function TracksSection() {
         ease: 'power3.out',
       }, 0);
 
-      // ---- TRACK CARDS: horizontal slider from RIGHT to LEFT ----
-      const getTrackScrollAmount = () => {
-        if (!tracksWrapperRef.current) return 0;
-        const wrapper = tracksWrapperRef.current;
+      // ---- TRACK CARDS: slide from RIGHT to LEFT ----
+      const wrapper = tracksWrapperRef.current;
+      if (wrapper) {
         const wrapperWidth = wrapper.scrollWidth;
         const viewportWidth = window.innerWidth;
-        // Move left until the last card is fully visible
-        // Add extra padding so there's some space after the last card
-        return -(wrapperWidth - viewportWidth + 40);
-      };
+        // Start off-screen right (60% of viewport)
+        const startOffset = viewportWidth * 0.6;
+        // Final position: slide left until the right edge of the last card is at the right edge of the viewport
+        // That means we need to move by: -(wrapperWidth - viewportWidth) to bring the last card into view
+        // Add a small padding (20px) so there's a gap after the last card
+        const finalX = -(wrapperWidth - viewportWidth + 20);
 
-      // Initial state: wrapper starts at x: 0 (all cards visible, but we'll add a right offset)
-      // We want the first card to start off-screen right and slide in
-      // So we set initial x to a positive value (offset right)
-      const startOffset = window.innerWidth * 0.6; // start 60% of viewport to the right
-      gsap.set(tracksWrapperRef.current, { x: startOffset });
+        gsap.set(wrapper, { x: startOffset });
 
-      // Slide from right to left
-      tl.to(tracksWrapperRef.current, {
-        x: getTrackScrollAmount,
-        duration: 2.8,
-        ease: 'power2.inOut',
-      }, 0.15);
+        tl.to(wrapper, {
+          x: finalX,
+          duration: 2.8,
+          ease: 'power2.inOut',
+        }, 0.15);
+      }
 
-      // Fade in each track card as it slides into view
+      // Fade in each track card
       trackBoxRefs.current.forEach((box, i) => {
         if (!box) return;
         gsap.set(box, { opacity: 0 });
@@ -128,9 +125,7 @@ export default function TracksSection() {
         }, 0.4 + i * 0.2);
       });
 
-      // ---- PRIZE BOXES: slide up, but ONLY AFTER tracks are fully in ----
-      // The track slide completes around 2.8s + 0.15s = ~3s
-      // We'll start prize boxes at ~3.2s
+      // ---- PRIZE BOXES ----
       prizeBoxRefs.current.forEach((pBox, i) => {
         if (!pBox) return;
         gsap.set(pBox, {
@@ -144,7 +139,7 @@ export default function TracksSection() {
           filter: 'blur(0px)',
           duration: 0.9,
           ease: 'power2.out',
-        }, 3.0 + i * 0.25); // Start after tracks are fully in
+        }, 3.0 + i * 0.25);
       });
 
       // ---- PRIZE label ----
@@ -156,7 +151,7 @@ export default function TracksSection() {
         ease: 'power2.out',
       }, 2.8);
 
-      // ---- CONTENT PAN (vertical scroll within pinned section) ----
+      // ---- CONTENT PAN ----
       tl.to(
         contentRef.current,
         {
@@ -194,7 +189,7 @@ export default function TracksSection() {
       className="relative w-full h-screen bg-black text-offwhite overflow-hidden flex flex-col justify-start pt-12 sm:pt-16 md:pt-20 px-4 sm:px-6 md:px-12"
     >
       <div ref={contentRef} className="w-full flex flex-col will-change-transform">
-        {/* Title - overflow-visible to prevent cutting 'g' */}
+        {/* Title */}
         <div
           ref={titleRef}
           className="max-w-7xl mx-auto w-full mb-4 sm:mb-6 md:mb-8 overflow-visible"
