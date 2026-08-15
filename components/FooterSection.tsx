@@ -7,7 +7,6 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { splitIntoChars, applyCharHover, initCharHover } from '@/lib/splitText';
 
 export default function FooterSection() {
-  const spacerRef = useRef<HTMLDivElement>(null);
   const footerRef = useRef<HTMLElement>(null);
   const navRef = useRef<HTMLDivElement>(null);
   const maskRef = useRef<HTMLDivElement>(null);
@@ -58,9 +57,9 @@ export default function FooterSection() {
 
       const tl = gsap.timeline({
         scrollTrigger: {
-          trigger: spacerRef.current,
-          start: 'top bottom',
-          end: 'top center',
+          trigger: footerRef.current,
+          start: 'top 95%', // Animates as soon as the top of the footer enters the screen
+          end: 'top 40%', // Finishes animation when it reaches 40% up the screen
           scrub: 1.2,
           invalidateOnRefresh: true,
         },
@@ -141,122 +140,116 @@ export default function FooterSection() {
   }, []);
 
   return (
-    <>
+    <footer
+      ref={footerRef}
+      // FIXED: Removed 'fixed inset-0 z-[-999]' and replaced with 'relative w-full z-10'
+      // Added a min-height so it has enough space to look nicely spaced at the end of the site
+      className="relative w-full z-10 bg-black text-offwhite px-6 md:px-16 py-12 md:py-16 flex flex-col justify-between overflow-hidden min-h-[50vh] md:min-h-[70vh]"
+      style={{ opacity: 0, y: 60 }}
+    >
+      {/* Ambient glow */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(251,87,95,0.10),transparent_55%),radial-gradient(ellipse_at_top_right,rgba(143,83,252,0.12),transparent_55%)] pointer-events-none z-0" />
+
+      {/* ---- TOP NAVIGATION ---- */}
       <div
-        ref={spacerRef}
-        className="h-[60vh] md:h-[80vh] w-full bg-transparent pointer-events-none"
-        aria-hidden="true"
-      />
-
-      <footer
-        ref={footerRef}
-        className="fixed inset-0 z-[999] bg-black text-offwhite px-6 md:px-16 py-12 md:py-16 flex flex-col justify-between overflow-hidden"
-        style={{ opacity: 0, y: 60 }}
+        ref={navRef}
+        className="relative max-w-7xl w-full mx-auto flex flex-col md:flex-row justify-between items-start gap-12 z-10 mb-12 md:mb-0"
+        style={{ opacity: 0, y: 30 }}
       >
-        {/* Ambient glow */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(251,87,95,0.10),transparent_55%),radial-gradient(ellipse_at_top_right,rgba(143,83,252,0.12),transparent_55%)] pointer-events-none z-0" />
-
-        {/* ---- TOP NAVIGATION ---- */}
-        <div
-          ref={navRef}
-          className="relative max-w-7xl w-full mx-auto flex flex-col md:flex-row justify-between items-start gap-12 z-10"
-          style={{ opacity: 0, y: 30 }}
-        >
-          {/* Left column – Contact Info */}
-          <div className="w-full md:w-auto flex flex-col">
-            <p className="text-xs uppercase tracking-widest text-coral-light mb-2 font-sans">
-              <span ref={addLinkRef}>Get in Touch</span>
-            </p>
-            <a
-              href="mailto:meraki2026@fiib.edu.in"
-              className="text-lg hover:underline text-neutral-300 font-sans break-all mb-4"
-            >
-              <span ref={addLinkRef} data-char-hover>
-                meraki2026@fiib.edu.in
-              </span>
-            </a>
-            
-            <div className="flex flex-col space-y-1 mt-1">
-              <a href="tel:+917060366392" className="hover:text-offwhite transition-colors text-neutral-400">
-                <span ref={addLinkRef}>+91 7060366392</span>
-              </a>
-              <a href="tel:+919958617024" className="hover:text-offwhite transition-colors text-neutral-400">
-                <span ref={addLinkRef}>+91 9958617024</span>
-              </a>
-              <a href="tel:+919910470427" className="hover:text-offwhite transition-colors text-neutral-400">
-                <span ref={addLinkRef}>+91 9910470427</span>
-              </a>
-            </div>
-          </div>
-
-          {/* Right column – Address Details */}
-          <div className="w-full md:w-auto flex flex-col md:items-end md:text-right">
-            <p className="text-xs uppercase tracking-widest text-neutral-500 mb-2 font-sans">
-              <span ref={addLinkRef}>Powered by FIIB</span>
-            </p>
-            <span className="text-neutral-400 normal-case tracking-normal text-sm md:text-base leading-relaxed max-w-sm">
-              <span ref={addLinkRef} className="block mb-1">
-                Fortune Institute of International Business
-              </span>
-              <span ref={addLinkRef}>
-                Plot No. 5, Rao Tula Ram Marg, Opp. Army R&R Hospital, Vasant Vihar, New Delhi 110057
-              </span>
-            </span>
-          </div>
-        </div>
-
-        {/* ---- BOTTOM CLOSING SECTION ---- */}
-        <div className="relative max-w-7xl w-full mx-auto z-10 flex flex-row justify-between items-end">
-          
-          {/* Logo & 2026 Wrapper */}
-          <div ref={maskRef} className="overflow-hidden pb-2 flex items-center md:items-end gap-3 md:gap-6">
-            <img
-              ref={logoImgRef}
-              src="/meraki-logo.png"
-              alt="Meraki"
-              className="h-10 sm:h-14 md:h-20 lg:h-[6.5rem] w-auto invert mb-1 md:mb-3"
-            />
-            <h1
-              ref={titleRef}
-              className="text-5xl sm:text-6xl md:text-[9vw] font-sans font-semibold tracking-tighter leading-none select-none uppercase m-0 p-0"
-            >
-              <span
-                data-split
-                className="font-serif italic font-normal text-gradient-brand leading-none inline-block pb-1"
-              >
-                2026.
-              </span>
-            </h1>
-          </div>
-
-          {/* Instagram Icon */}
+        {/* Left column – Contact Info */}
+        <div className="w-full md:w-auto flex flex-col">
+          <p className="text-xs uppercase tracking-widest text-coral-light mb-2 font-sans">
+            <span ref={addLinkRef}>Get in Touch</span>
+          </p>
           <a
-            ref={instaRef}
-            href="#"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mb-3 md:mb-6 lg:mb-8 text-neutral-400 hover:text-coral transition-colors duration-300"
-            aria-label="Instagram"
+            href="mailto:meraki2026@fiib.edu.in"
+            className="text-lg hover:underline text-neutral-300 font-sans break-all mb-4"
           >
-            <svg
-              width="28"
-              height="28"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="w-6 h-6 md:w-8 md:h-8"
-            >
-              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
-              <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
-              <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
-            </svg>
+            <span ref={addLinkRef} data-char-hover>
+              meraki2026@fiib.edu.in
+            </span>
           </a>
-
+          
+          <div className="flex flex-col space-y-1 mt-1">
+            <a href="tel:+917060366392" className="hover:text-offwhite transition-colors text-neutral-400">
+              <span ref={addLinkRef}>+91 7060366392</span>
+            </a>
+            <a href="tel:+919958617024" className="hover:text-offwhite transition-colors text-neutral-400">
+              <span ref={addLinkRef}>+91 9958617024</span>
+            </a>
+            <a href="tel:+919910470427" className="hover:text-offwhite transition-colors text-neutral-400">
+              <span ref={addLinkRef}>+91 9910470427</span>
+            </a>
+          </div>
         </div>
-      </footer>
-    </>
+
+        {/* Right column – Address Details */}
+        <div className="w-full md:w-auto flex flex-col md:items-end md:text-right">
+          <p className="text-xs uppercase tracking-widest text-neutral-500 mb-2 font-sans">
+            <span ref={addLinkRef}>Powered by FIIB</span>
+          </p>
+          <span className="text-neutral-400 normal-case tracking-normal text-sm md:text-base leading-relaxed max-w-sm">
+            <span ref={addLinkRef} className="block mb-1">
+              Fortune Institute of International Business
+            </span>
+            <span ref={addLinkRef}>
+              Plot No. 5, Rao Tula Ram Marg, Opp. Army R&R Hospital, Vasant Vihar, New Delhi 110057
+            </span>
+          </span>
+        </div>
+      </div>
+
+      {/* ---- BOTTOM CLOSING SECTION ---- */}
+      <div className="relative max-w-7xl w-full mx-auto z-10 flex flex-row justify-between items-end mt-auto">
+        
+        {/* Logo & 2026 Wrapper */}
+        <div ref={maskRef} className="overflow-hidden pb-2 flex items-center md:items-end gap-3 md:gap-6">
+          <img
+            ref={logoImgRef}
+            src="/meraki-logo.png"
+            alt="Meraki"
+            className="h-10 sm:h-14 md:h-20 lg:h-[6.5rem] w-auto invert mb-1 md:mb-3"
+          />
+          <h1
+            ref={titleRef}
+            className="text-5xl sm:text-6xl md:text-[9vw] font-sans font-semibold tracking-tighter leading-none select-none uppercase m-0 p-0"
+          >
+            <span
+              data-split
+              className="font-serif italic font-normal text-gradient-brand leading-none inline-block pb-1"
+            >
+              2026.
+            </span>
+          </h1>
+        </div>
+
+        {/* Instagram Icon */}
+        <a
+          ref={instaRef}
+          href="#"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mb-3 md:mb-6 lg:mb-8 text-neutral-400 hover:text-coral transition-colors duration-300"
+          aria-label="Instagram"
+        >
+          <svg
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="w-6 h-6 md:w-8 md:h-8"
+          >
+            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+          </svg>
+        </a>
+
+      </div>
+    </footer>
   );
 }
