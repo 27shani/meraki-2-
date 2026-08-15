@@ -29,6 +29,7 @@ export default function HeroSection() {
 
     const mm = gsap.matchMedia();
 
+    // ---- LOADER ANIMATION ----
     mm.add("all", () => {
       const loader = loaderRef.current;
       const loaderTitle = loaderTitleRef.current;
@@ -37,28 +38,27 @@ export default function HeroSection() {
 
       if (loader && loaderTitle && wipeRed && wipeBlack) {
         const loaderTl = gsap.timeline();
-        const chars = loaderTitle.querySelectorAll('span');
 
+        // Get the logo image and the "2026" text inside loaderTitle
+        const logoImg = loaderTitle.querySelector('img');
+        const yearText = loaderTitle.querySelector('.year-text');
+
+        // Initial states
         gsap.set(loader, { opacity: 1, visibility: 'visible', pointerEvents: 'auto' });
-        gsap.set(chars, { scale: 0.5, opacity: 0 });
+        gsap.set([logoImg, yearText], { scale: 0.8, opacity: 0 });
         gsap.set([wipeRed, wipeBlack], { yPercent: 100 });
 
         loaderTl
-          .to(chars, {
-            scale: 1.05,
+          .to([logoImg, yearText], {
+            scale: 1,
             opacity: 1,
             duration: 0.8,
-            stagger: 0.04,
+            stagger: 0.1,
             ease: 'expo.out',
-          })
-          .to(chars, {
-            scale: 1,
-            duration: 0.4,
-            ease: 'power2.inOut',
           })
           .fromTo(wipeRed, { yPercent: 100 }, { yPercent: 0, duration: 0.6, ease: 'power3.inOut' }, '+=0.2')
           .fromTo(wipeBlack, { yPercent: 100 }, { yPercent: 0, duration: 0.6, ease: 'power3.inOut' }, '-=0.4')
-          .set(chars, { opacity: 0 })
+          .set([logoImg, yearText], { opacity: 0 })
           .set(loader, { backgroundColor: 'transparent' })
           .to(wipeRed, { yPercent: 100, duration: 0.6, ease: 'power3.inOut' })
           .to(wipeBlack, {
@@ -73,6 +73,7 @@ export default function HeroSection() {
               }
               ScrollTrigger.refresh();
 
+              // Hero title reveal (unchanged)
               if (heroTitleRef.current) {
                 const words = heroTitleRef.current.querySelectorAll('span');
                 gsap.from(words, {
@@ -89,7 +90,7 @@ export default function HeroSection() {
       }
     });
 
-    // ===== DESKTOP SCROLL ANIMATION (unchanged) =====
+    // ---- DESKTOP SCROLL ANIMATION ----
     mm.add("(min-width: 768px)", () => {
       gsap.set(heroTextContainerRef.current, { y: 0 });
 
@@ -132,7 +133,7 @@ export default function HeroSection() {
         }, '+=0.3');
     });
 
-    // ===== MOBILE SCROLL ANIMATION (unchanged) =====
+    // ---- MOBILE SCROLL ANIMATION ----
     mm.add("(max-width: 767px)", () => {
       gsap.set(heroTextContainerRef.current, { y: '22vh' });
 
@@ -192,7 +193,7 @@ export default function HeroSection() {
       {/* Background Glow */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(143,83,252,0.16),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(251,87,95,0.12),transparent_55%)] pointer-events-none z-0" />
 
-      {/* Top Header – stays at top */}
+      {/* Top Header */}
       <div className="relative z-10 flex justify-between items-start md:items-center text-[10px] md:text-xs tracking-widest text-neutral-400 uppercase font-sans w-full px-6 md:px-10 pt-6 md:pt-10">
         <p className="max-w-[65%] md:max-w-sm leading-relaxed">
           Your idea deserves more than a{' '}
@@ -210,7 +211,7 @@ export default function HeroSection() {
         </span>
       </div>
 
-      {/* Centered Hero Title – uses flex-1 to take remaining space and center content */}
+      {/* Centered Hero Title */}
       <div
         ref={heroTextContainerRef}
         className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 md:px-12 pointer-events-none gap-6 -mt-16 md:mt-0"
@@ -235,14 +236,10 @@ export default function HeroSection() {
         </p>
       </div>
 
-      {/* Bottom Footer – stays at bottom */}
+      {/* Bottom Footer – updated text */}
       <div className="relative z-10 flex flex-col-reverse md:flex-row justify-between items-center gap-6 text-[10px] md:text-xs tracking-widest text-neutral-400 uppercase border-t border-white/10 pt-4 md:pt-6 px-6 md:px-10 pb-6 md:pb-10 font-sans">
         <div className="flex gap-4 md:gap-6">
-          <span>Ideate</span>
-          <span>/</span>
-          <span>Build</span>
-          <span>/</span>
-          <span>Launch</span>
+          <span>FOR UNDERGRADUATE FOUNDERS</span>
         </div>
         <div className="pointer-events-auto">
           <a
@@ -254,7 +251,7 @@ export default function HeroSection() {
         </div>
       </div>
 
-      {/* FULL-SCREEN EXPANDING OVERLAY (unchanged) */}
+      {/* FULL-SCREEN EXPANDING OVERLAY */}
       <div
         ref={expandBoxRef}
         className="absolute inset-0 m-auto w-0 h-0 opacity-0 z-30 overflow-hidden bg-ink shadow-2xl flex items-center justify-center text-center pointer-events-none"
@@ -288,45 +285,24 @@ export default function HeroSection() {
         </div>
       </div>
 
-      {/* LOADER – mobile‑friendly with word‑level wrapping */}
+      {/* LOADER – now shows Meraki logo + 2026 */}
       <div
         ref={loaderRef}
         className="fixed inset-0 z-[999] bg-black flex items-center justify-center overflow-hidden"
       >
         <div
           ref={loaderTitleRef}
-          className="relative z-10 flex flex-wrap justify-center items-baseline gap-x-1 md:gap-x-2 gap-y-2 max-w-[90vw] md:max-w-none"
+          className="relative z-10 flex items-center justify-center gap-4 md:gap-6"
         >
-          {/* Word: Pitch. */}
-          <span className="inline-block whitespace-nowrap">
-            <span className="text-3xl sm:text-4xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">P</span>
-            <span className="text-3xl sm:text-4xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">i</span>
-            <span className="text-3xl sm:text-4xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">t</span>
-            <span className="text-3xl sm:text-4xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">c</span>
-            <span className="text-3xl sm:text-4xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">h</span>
-            <span className="text-3xl sm:text-4xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">.</span>
-          </span>
-
-          {/* Word: Connect. */}
-          <span className="inline-block whitespace-nowrap">
-            <span className="text-3xl sm:text-4xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">C</span>
-            <span className="text-3xl sm:text-4xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">o</span>
-            <span className="text-3xl sm:text-4xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">n</span>
-            <span className="text-3xl sm:text-4xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">n</span>
-            <span className="text-3xl sm:text-4xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">e</span>
-            <span className="text-3xl sm:text-4xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">c</span>
-            <span className="text-3xl sm:text-4xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">t</span>
-            <span className="text-3xl sm:text-4xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">.</span>
-          </span>
-
-          {/* Word: Scale. */}
-          <span className="inline-block whitespace-nowrap">
-            <span className="text-3xl sm:text-4xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">S</span>
-            <span className="text-3xl sm:text-4xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">c</span>
-            <span className="text-3xl sm:text-4xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">a</span>
-            <span className="text-3xl sm:text-4xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">l</span>
-            <span className="text-3xl sm:text-4xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">e</span>
-            <span className="text-3xl sm:text-4xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">.</span>
+          {/* Logo image */}
+          <img
+            src="/Meraki full logo png-02.png"
+            alt="Meraki"
+            className="h-12 sm:h-16 md:h-24 lg:h-32 w-auto object-contain"
+          />
+          {/* Year text */}
+          <span className="year-text text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-serif font-light text-offwhite">
+            2026
           </span>
         </div>
 
