@@ -90,9 +90,9 @@ export default function HowItWorksSection() {
           scrollTrigger: {
             trigger: containerRef.current,
             start: 'top top',
-            end: `+=400%`, // 🔽 Reduced from 960% to a more reasonable length
+            end: `+=280%`, // 🔽 Reduced from 960% to a more reasonable length
             pin: true,
-            scrub: 1.2,
+            scrub: 0.8,
             anticipatePin: 1,
             invalidateOnRefresh: true,
           },
@@ -128,7 +128,7 @@ export default function HowItWorksSection() {
           listRef.current,
           {
             y: endY,
-            ease: 'power1.inOut',
+            ease: 'none',
             duration: 1,
             onUpdate: function () {
               const rawIndex = this.progress() * (total - 1);
@@ -152,7 +152,7 @@ export default function HowItWorksSection() {
             duration: 1.0,
             ease: 'power2.inOut',
           },
-          '+=0.3' // starts shortly after the hold
+          '+=0.1' // starts almost immediately after the hold
         );
       }
 
