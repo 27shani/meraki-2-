@@ -73,7 +73,6 @@ export default function AboutSection() {
       );
     });
 
-    // Desktop
     mm.add("(min-width: 768px)", () => {
       const tl = gsap.timeline({
         scrollTrigger: {
@@ -111,15 +110,14 @@ export default function AboutSection() {
       );
     });
 
-    // Mobile – reduced pin duration & scrub for less lag
     mm.add("(max-width: 767px)", () => {
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: '+=180%',          // Shortened further
+          end: '+=200%',
           pin: true,
-          scrub: 0.4,             // Faster response
+          scrub: 0.5,
           invalidateOnRefresh: true,
         },
       });
@@ -138,7 +136,7 @@ export default function AboutSection() {
       )
       .fromTo(
         boxRefs.current,
-        { y: '50px', scale: 0.92 },
+        { y: '40px', scale: 0.92 },
         {
           y: 0,
           scale: 1,
@@ -170,12 +168,12 @@ export default function AboutSection() {
   return (
     <section
       ref={containerRef}
-      className="relative w-full h-screen bg-black text-offwhite overflow-hidden flex flex-col justify-start pt-2 sm:pt-16 md:pt-20 px-6 md:px-16 will-change-transform"
+      className="relative w-full h-screen bg-black text-offwhite overflow-hidden flex flex-col justify-center px-6 md:px-16 will-change-transform"
     >
-      {/* Text Content – mobile heading less high, closer to boxes */}
+      {/* Heading */}
       <div
         ref={textContainerRef}
-        className="relative z-10 w-full max-w-xl md:max-w-3xl ml-0 md:ml-20 flex flex-col mt-2 md:mt-0"
+        className="relative z-10 w-full max-w-xl md:max-w-3xl ml-0 md:ml-20 flex flex-col"
       >
         <div
           ref={headingRef}
@@ -187,8 +185,8 @@ export default function AboutSection() {
         </div>
       </div>
 
-      {/* Cards Container – mobile boxes higher up */}
-      <div className="absolute bottom-2 sm:bottom-12 md:bottom-20 left-0 right-0 w-full z-30 pointer-events-none px-6 md:px-16 overflow-hidden md:overflow-visible">
+      {/* Boxes – now in normal flow, not absolute */}
+      <div className="relative z-30 pointer-events-none px-6 md:px-16 mt-4 md:mt-8 w-full">
         <div
           ref={boxesWrapperRef}
           className="flex flex-row justify-start md:justify-end items-end gap-4 sm:gap-6 lg:gap-8 pb-1 md:pb-0 w-max md:w-full max-w-7xl mx-auto md:pl-32"
@@ -198,7 +196,7 @@ export default function AboutSection() {
               key={index}
               ref={(el) => { boxRefs.current[index] = el; }}
               className="pointer-events-auto shrink-0 w-[280px] sm:w-[320px] md:w-full md:flex-1 md:max-w-[300px] will-change-transform"
-              style={{ transform: 'translateY(60px)', opacity: 1 }}
+              style={{ transform: 'translateY(40px)', opacity: 1 }}
             >
               <div className="h-[260px] sm:h-[280px] md:h-[300px] flex flex-col justify-between p-5 sm:p-6 md:p-8 rounded-[20px] sm:rounded-[24px] md:rounded-[32px] bg-white/[0.08] backdrop-blur-2xl border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] transition-transform duration-500 hover:-translate-y-2 relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-coral/10 via-transparent to-purple/10 pointer-events-none rounded-[20px] sm:rounded-[24px] md:rounded-[32px]" />
