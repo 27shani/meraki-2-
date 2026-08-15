@@ -4,74 +4,87 @@
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { SplitText } from 'gsap/SplitText';
+import { SplitText } from 'gsap/SplitText'; // 👈 Import SplitText
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
 
 export default function HeroSection() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const heroTextContainerRef = useRef<HTMLDivElement>(null);
   const expandBoxRef = useRef<HTMLDivElement>(null);
   const expandContentRef = useRef<HTMLDivElement>(null);
 
   // Opening loader refs
   const loaderRef = useRef<HTMLDivElement>(null);
   const loaderTitleRef = useRef<HTMLDivElement>(null);
-  const loaderWipeRedRef = useRef<HTMLDivElement>(null);
-  const loaderWipeBlackRef = useRef<HTMLDivElement>(null);
+  const loaderRedFlashRef = useRef<HTMLDivElement>(null);
 
-  // Main hero title ref for SplitText
+  // Main hero title ref for SplitText reveal
   const heroTitleRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
-    const safetyUnlock = window.setTimeout(() => {
-      if (typeof window !== 'undefined' && (window as any).__unlockLenis) {
-        (window as any).__unlockLenis();
-      }
-    }, 5000);
-
-    const mm = gsap.matchMedia();
-
-    /*
-     * =========================================================
-     * GLOBAL: OPENING LOADING ANIMATION (all devices)
-     * =========================================================
-     */
-    mm.add("all", () => {
+    const ctx = gsap.context(() => {
+      /*
+       * =========================================================
+       * 1. OPENING LOADING ANIMATION (with red flash)
+       * =========================================================
+       */
       const loader = loaderRef.current;
       const loaderTitle = loaderTitleRef.current;
-      const wipeRed = loaderWipeRedRef.current;
-      const wipeBlack = loaderWipeBlackRef.current;
+      const redFlash = loaderRedFlashRef.current;
 
-      if (loader && loaderTitle && wipeRed && wipeBlack) {
-        const loaderTl = gsap.timeline();
-        const chars = loaderTitle.querySelectorAll('span');
+      if (loader && loaderTitle && redFlash) {
+        const loaderTl = gsap.timeline({
+          onComplete: () => {
+            // ---- After loader finishes, reveal hero title character by character ----
+            if (heroTitleRef.current) {
+              const split = new SplitText(heroTitleRef.current, { type: 'chars' });
+              gsap.from(split.chars, {
+                opacity: 0,
+                y: 50,
+                duration: 0.5,
+                stagger: 0.03,
+                ease: 'power3.out',
+                delay: 0.2,
+              });
+            }
+          }
+        });
 
+        // Initial states
         gsap.set(loader, { opacity: 1, visibility: 'visible', pointerEvents: 'auto' });
-        gsap.set(chars, { scale: 0.5, opacity: 0 });
-        gsap.set([wipeRed, wipeBlack], { yPercent: 100 });
+        gsap.set(loaderTitle, { scale: 1, opacity: 1 });
+        gsap.set(redFlash, { opacity: 0, scale: 0.85 });
 
         loaderTl
-          .to(chars, {
+          .to({}, { duration: 0.5 })
+          .to(loaderTitle, {
+            scale: 0.35,
+            opacity: 0.95,
+            duration: 1.2,
+            ease: 'expo.inOut',
+          })
+          .to({}, { duration: 0.15 })
+          .to(redFlash, {
+            opacity: 1,
+            scale: 1,
+            duration: 0.15,
+            ease: 'power3.in',
+          })
+          .to({}, { duration: 0.05 })
+          .to(redFlash, {
+            opacity: 0,
+            duration: 0.3,
+            ease: 'power2.out',
+          })
+          .to(loaderTitle, {
             scale: 1.05,
             opacity: 1,
+            duration: 1.2,
+            ease: 'expo.inOut',
+          }, '-=0.2')
+          .to(loader, {
+            opacity: 0,
             duration: 0.8,
-            stagger: 0.04,
-            ease: 'expo.out',
-          })
-          .to(chars, {
-            scale: 1,
-            duration: 0.4,
-            ease: 'power2.inOut',
-          })
-          .fromTo(wipeRed, { yPercent: 100 }, { yPercent: 0, duration: 0.6, ease: 'power3.inOut' }, '+=0.2')
-          .fromTo(wipeBlack, { yPercent: 100 }, { yPercent: 0, duration: 0.6, ease: 'power3.inOut' }, '-=0.4')
-          .set(chars, { opacity: 0 })
-          .set(loader, { backgroundColor: 'transparent' })
-          .to(wipeRed, { yPercent: 100, duration: 0.6, ease: 'power3.inOut' })
-          .to(wipeBlack, {
-            yPercent: 100,
-            duration: 0.6,
             ease: 'power3.inOut',
             onComplete: () => {
               gsap.set(loader, { visibility: 'hidden', pointerEvents: 'none' });
@@ -80,47 +93,31 @@ export default function HeroSection() {
                 (window as any).__unlockLenis();
               }
               ScrollTrigger.refresh();
-
-              // --- CHARACTER-BY-CHARACTER REVEAL FOR HERO TITLE ---
-              if (heroTitleRef.current) {
-                const split = new SplitText(heroTitleRef.current, { type: 'chars' });
-                gsap.from(split.chars, {
-                  opacity: 0,
-                  y: 50,
-                  duration: 0.5,
-                  stagger: 0.03,
-                  ease: 'power3.out',
-                  delay: 0.2,
-                });
-              }
             },
           }, '-=0.4');
       }
-    });
 
-    /*
-     * =========================================================
-     * DESKTOP: HERO SCROLL ANIMATION (≥ 768px)
-     * =========================================================
-     */
-    mm.add("(min-width: 768px)", () => {
-      gsap.set(heroTextContainerRef.current, { y: 0 });
-
+      /*
+       * =========================================================
+       * 2. HERO SCROLL ANIMATION (pinned expand box with closing effect)
+       * =========================================================
+       */
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: '+=160%',   // 🔽 shortened so About appears sooner
-          scrub: 0.6,
+          end: '+=180%',   // Reduced from 250% so next section appears sooner
+          scrub: 1.5,
           pin: true,
         },
       });
 
+      // Expand box from small card to full screen
       tl.to(expandBoxRef.current, {
         width: '350px',
         height: '200px',
         opacity: 1,
-        borderRadius: '0px',
+        borderRadius: '24px',
         ease: 'power3.out',
       })
         .to(
@@ -136,83 +133,26 @@ export default function HeroSection() {
         )
         .fromTo(
           expandContentRef.current,
-          { opacity: 0, y: 60, filter: 'blur(12px)' },
-          { opacity: 1, y: 0, filter: 'blur(0px)', ease: 'power3.out', duration: 1.5 },
-          '<0.2'
+          { opacity: 0, y: 40 },
+          { opacity: 1, y: 0, ease: 'power2.out' },
+          '<'
         )
-        // Closing effect: hero scales down and fades out
+        // Closing effect: hero scales down and fades
         .to(
           containerRef.current,
           {
             scale: 0.85,
             opacity: 0.15,
-            filter: 'blur(6px)',
+            filter: 'blur(8px)',
             yPercent: -20,
             ease: 'power2.inOut',
             duration: 1.2,
           },
           '+=0.3'
         );
-    });
+    }, containerRef);
 
-    /*
-     * =========================================================
-     * MOBILE: HERO SCROLL ANIMATION (< 768px)
-     * =========================================================
-     */
-    mm.add("(max-width: 767px)", () => {
-      gsap.set(heroTextContainerRef.current, { y: '22vh' });
-
-      const mobileTl = gsap.timeline({
-        scrollTrigger: {
-          trigger: containerRef.current,
-          start: 'top top',
-          end: '+=180%',   // 🔽 shortened for mobile as well
-          scrub: 0.6,
-          pin: true,
-        },
-      });
-
-      mobileTl.to(heroTextContainerRef.current, {
-        y: 0,
-        duration: 1.2,
-        ease: 'power2.out',
-      })
-      .to(expandBoxRef.current, {
-        width: '220px',
-        height: '350px',
-        opacity: 1,
-        borderRadius: '0px',
-        ease: 'power3.out',
-        duration: 1
-      }, "+=0.2")
-      .to(expandBoxRef.current, {
-        width: '100%',
-        height: '100%',
-        borderRadius: '0px',
-        borderWidth: '0px',
-        ease: 'power3.inOut',
-        duration: 1.2
-      }, '+=0.2')
-      .fromTo(expandContentRef.current,
-        { opacity: 0, y: 60, filter: 'blur(12px)' },
-        { opacity: 1, y: 0, filter: 'blur(0px)', ease: 'power3.out', duration: 1.5 },
-        '<0.2'
-      )
-      .to(containerRef.current, {
-        scale: 0.85,
-        opacity: 0.15,
-        filter: 'blur(6px)',
-        yPercent: -20,
-        ease: 'power2.inOut',
-        duration: 1.2,
-      }, '+=0.3');
-    });
-
-    return () => {
-      window.clearTimeout(safetyUnlock);
-      mm.revert();
-    };
+    return () => ctx.revert();
   }, []);
 
   return (
@@ -220,34 +160,31 @@ export default function HeroSection() {
       ref={containerRef}
       className="relative w-screen h-screen bg-black text-offwhite overflow-hidden flex flex-col justify-between p-6 md:p-10"
     >
-      {/* Background Glow (unchanged) */}
+      {/* Background Glow */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(143,83,252,0.16),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(251,87,95,0.12),transparent_55%)] pointer-events-none z-0" />
 
-      {/* Top Header (unchanged) */}
-      <div className="relative z-10 flex justify-between items-start md:items-center text-[10px] md:text-xs tracking-widest text-neutral-400 uppercase font-sans w-full">
-        <p className="max-w-[65%] md:max-w-sm leading-relaxed">
+      {/* Top Header */}
+      <div className="relative z-10 flex justify-between items-center text-[10px] md:text-xs tracking-widest text-neutral-400 uppercase font-sans">
+        <p className="max-w-sm leading-relaxed">
           Your idea deserves more than a{' '}
           <span className="italic font-serif font-normal text-offwhite">
             classroom pitch.
           </span>
         </p>
-        <span className="flex items-center gap-1.5 md:gap-2 mt-1 md:mt-0 text-right">
+        <span className="hidden md:flex items-center gap-2">
           <img
             src="/meraki-logo.png"
             alt="Meraki"
-            className="h-3 md:h-4 w-auto invert opacity-90"
+            className="h-4 w-auto invert opacity-90"
           />
           <span className="font-serif">2026</span>
         </span>
       </div>
 
-      {/* MAIN HERO TYPOGRAPHY – full "Pitch. Connect. Scale." with original styles */}
-      <div
-        ref={heroTextContainerRef}
-        className="relative z-10 my-auto w-full flex flex-col items-center justify-center px-4 md:px-12 pointer-events-none gap-6"
-      >
+      {/* MAIN HERO TYPOGRAPHY – full "Pitch. Connect. Scale." with SplitText target */}
+      <div className="relative z-10 my-auto w-full flex flex-col items-center justify-center px-4 md:px-12 pointer-events-none gap-6">
         <h1
-          ref={heroTitleRef}
+          ref={heroTitleRef}   // 👈 This is where SplitText will work
           className="text-5xl md:text-[9vw] font-semibold tracking-tight text-offwhite leading-none uppercase text-center flex flex-wrap justify-center gap-x-4 md:gap-x-8 font-sans"
         >
           <span>Pitch.</span>
@@ -266,7 +203,7 @@ export default function HeroSection() {
         </p>
       </div>
 
-      {/* Bottom Footer (unchanged) */}
+      {/* Bottom Footer */}
       <div className="relative z-10 flex flex-col-reverse md:flex-row justify-between items-center gap-6 text-[10px] md:text-xs tracking-widest text-neutral-400 uppercase border-t border-white/10 pt-4 md:pt-6 font-sans">
         <div className="flex gap-4 md:gap-6">
           <span>Ideate</span>
@@ -285,10 +222,10 @@ export default function HeroSection() {
         </div>
       </div>
 
-      {/* FULL-SCREEN EXPANDING OVERLAY (unchanged) */}
+      {/* FULL-SCREEN EXPANDING OVERLAY */}
       <div
         ref={expandBoxRef}
-        className="absolute inset-0 m-auto w-0 h-0 opacity-0 z-30 overflow-hidden bg-ink shadow-2xl flex items-center justify-center text-center pointer-events-none"
+        className="absolute inset-0 m-auto w-0 h-0 opacity-0 z-30 overflow-hidden bg-ink border border-white/20 shadow-2xl flex items-center justify-center text-center pointer-events-none"
       >
         <img
           src="/C3675T01.JPG"
@@ -322,42 +259,29 @@ export default function HeroSection() {
       {/* LOADER – now displays full "Pitch. Connect. Scale." */}
       <div
         ref={loaderRef}
-        className="fixed inset-0 z-[999] bg-black flex items-center justify-center overflow-hidden"
+        className="fixed inset-0 z-[999] bg-black flex items-center justify-center overflow-hidden pointer-events-none"
       >
+        {/* Red Flash Layer */}
+        <div
+          ref={loaderRedFlashRef}
+          className="absolute inset-0 bg-coral opacity-0 scale-[0.85]"
+        />
+
+        {/* Loader Title – full three parts */}
         <div
           ref={loaderTitleRef}
-          className="relative z-10 flex items-baseline justify-center gap-1 md:gap-2 whitespace-nowrap origin-center"
+          className="relative z-10 flex items-baseline justify-center gap-3 md:gap-6 whitespace-nowrap origin-center"
         >
-          {/* "Pitch." */}
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">P</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">i</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">t</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">c</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">h</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">.</span>
-          <span className="w-3 md:w-6" />
-          {/* "Connect." (italic, gradient) */}
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">C</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">o</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">n</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">n</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">e</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">c</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">t</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">.</span>
-          <span className="w-3 md:w-6" />
-          {/* "Scale." */}
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">S</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">c</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">a</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">l</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">e</span>
-          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">.</span>
+          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">
+            Pitch.
+          </span>
+          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-serif italic font-normal tracking-tight leading-none text-gradient-brand">
+            Connect.
+          </span>
+          <span className="text-5xl sm:text-6xl md:text-8xl lg:text-[9vw] font-semibold tracking-tight leading-none text-offwhite font-sans">
+            Scale.
+          </span>
         </div>
-
-        {/* Wipe overlays */}
-        <div ref={loaderWipeRedRef} className="absolute inset-0 bg-coral z-20 pointer-events-none" />
-        <div ref={loaderWipeBlackRef} className="absolute inset-0 bg-black z-30 pointer-events-none" />
       </div>
     </section>
   );
