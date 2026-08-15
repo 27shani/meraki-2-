@@ -213,7 +213,7 @@ export default function HeroSection() {
       {/* Centered Hero Title – uses flex-1 to take remaining space and center content */}
       <div
         ref={heroTextContainerRef}
-        className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 md:px-12 pointer-events-none gap-6"
+        className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 md:px-12 pointer-events-none gap-6 -mt-16 md:mt-0"
       >
         <h1
           ref={heroTitleRef}
