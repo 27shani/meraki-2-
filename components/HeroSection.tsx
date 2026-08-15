@@ -9,14 +9,13 @@ gsap.registerPlugin(ScrollTrigger);
 
 export default function HeroSection() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const innerRef = useRef<HTMLDivElement>(null); // animate THIS, not container
+  const innerRef = useRef<HTMLDivElement>(null);
   const heroTextContainerRef = useRef<HTMLDivElement>(null);
   const expandBoxRef = useRef<HTMLDivElement>(null);
   const expandContentRef = useRef<HTMLDivElement>(null);
 
-  // UPDATED REFS
   const loaderRef = useRef<HTMLDivElement>(null);
-  const loaderLogoRef = useRef<HTMLImageElement>(null); // was loaderTitleRef
+  const loaderLogoRef = useRef<HTMLImageElement>(null);
   const loaderWipeRedRef = useRef<HTMLDivElement>(null);
   const loaderWipeBlackRef = useRef<HTMLDivElement>(null);
   const heroTitleRef = useRef<HTMLHeadingElement>(null);
@@ -30,7 +29,7 @@ export default function HeroSection() {
 
     const mm = gsap.matchMedia();
 
-    // ---------- LOADER (UPDATED) ----------
+    // ---------- LOADER ----------
     mm.add('all', () => {
       const loader = loaderRef.current;
       const logo = loaderLogoRef.current;
@@ -123,7 +122,6 @@ export default function HeroSection() {
           { opacity: 1, y: 0, ease: 'power3.out', duration: 1.3 },
           '<0.2'
         )
-        // Animate INNER, not the pinned section → fixes black gap
         .to(
           innerRef.current,
           {
@@ -137,7 +135,7 @@ export default function HeroSection() {
         );
     });
 
-    // ---------- MOBILE ----------
+    // ---------- MOBILE (UPDATED: removed pin, adjusted end) ----------
     mm.add('(max-width: 767px)', () => {
       gsap.set(heroTextContainerRef.current, { y: '8vh' });
       gsap.set(expandBoxRef.current, {
@@ -149,16 +147,14 @@ export default function HeroSection() {
       });
       gsap.set(innerRef.current, { scale: 1, opacity: 1, yPercent: 0 });
 
+      // No pin → native scroll works smoothly
       const mobileTl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: '+=50%',
+          end: 'bottom top', // finishes when section leaves viewport
           scrub: 0.35,
-          pin: true,
-          anticipatePin: 1,
           invalidateOnRefresh: true,
-          pinType: 'fixed',
         },
       });
 
@@ -184,7 +180,6 @@ export default function HeroSection() {
           { opacity: 1, y: 0, ease: 'power3.out', duration: 0.9 },
           '<0.2'
         );
-      // No scale/opacity on pinned container → no freeze / no black gap
     });
 
     return () => {
@@ -198,7 +193,7 @@ export default function HeroSection() {
       ref={containerRef}
       className="relative w-screen h-[100dvh] bg-black text-offwhite overflow-hidden"
     >
-      {/* INNER WRAPPER — this is what we animate */}
+      {/* INNER WRAPPER — we animate this on desktop only */}
       <div ref={innerRef} className="relative w-full h-full flex flex-col justify-between">
         {/* Background Glow */}
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(143,83,252,0.16),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(251,87,95,0.12),transparent_55%)] pointer-events-none z-0" />
@@ -298,7 +293,7 @@ export default function HeroSection() {
         </div>
       </div>
 
-      {/* LOADER – big logo only (UPDATED) */}
+      {/* LOADER */}
       <div
         ref={loaderRef}
         className="fixed inset-0 z-[999] bg-black flex items-center justify-center overflow-hidden"
