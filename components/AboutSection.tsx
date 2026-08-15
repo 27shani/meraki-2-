@@ -76,55 +76,54 @@ export default function AboutSection() {
       );
     });
 
-    // Desktop
+    // Desktop – reduced pin duration and scrub for performance
     mm.add("(min-width: 768px)", () => {
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: '+=250%',          // Reduced from 300% because we removed outro
+          end: '+=180%',          // Reduced from 250% for less scroll lag
           pin: true,
-          scrub: 0.8,
+          scrub: 0.6,             // Reduced from 0.8
         },
       });
 
       tl.fromTo(
         imageRef.current,
         { filter: 'blur(12px) brightness(0.6)', opacity: 0.3 },
-        { filter: 'blur(2px) brightness(1)', opacity: 1, duration: 1.2, ease: 'power2.out' },
+        { filter: 'blur(2px) brightness(1)', opacity: 1, duration: 1.0, ease: 'power2.out' },
         0
       )
       .fromTo(
         textContainerRef.current,
         { y: '30px', opacity: 0.2 },
-        { y: '-30px', opacity: 1, duration: 1.2, ease: 'power2.out' }, // Less upward movement
+        { y: '-20px', opacity: 1, duration: 1.0, ease: 'power2.out' },
         0
       )
       .fromTo(
         boxRefs.current,
-        { y: '80px', opacity: 0, scale: 0.92 },
+        { y: '80px', scale: 0.92 }, // removed opacity from initial
         {
           y: 0,
-          opacity: 1,
           scale: 1,
           stagger: 0.35,
-          duration: 1.5,
+          duration: 1.2,
           ease: 'power2.out',
         },
         0.2
       );
-      // OUTRO REMOVED – no fade/scale at the end
+      // Outro removed entirely
     });
 
-    // Mobile
+    // Mobile – adjusted pin and scrub, plus removed opacity from boxes
     mm.add("(max-width: 767px)", () => {
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: '+=350%',          // Reduced from 400% because no outro
+          end: '+=250%',          // Reduced from 350%
           pin: true,
-          scrub: 0.8,
+          scrub: 0.6,             // Reduced from 0.8
           invalidateOnRefresh: true,
         },
       });
@@ -138,18 +137,17 @@ export default function AboutSection() {
       .fromTo(
         textContainerRef.current,
         { y: '20px', opacity: 0.2 },
-        { y: '-5vh', opacity: 1, duration: 1.0, ease: 'power2.out' }, // Less movement up
+        { y: '-3vh', opacity: 1, duration: 1.0, ease: 'power2.out' },
         0
       )
       .fromTo(
         boxRefs.current,
-        { y: '60px', opacity: 0, scale: 0.92 },
+        { y: '60px', scale: 0.92 }, // removed opacity
         {
           y: 0,
-          opacity: 1,
           scale: 1,
-          stagger: 0.3,
-          duration: 1.2,
+          stagger: 0.25,
+          duration: 1.0,
           ease: 'power2.out',
         },
         0.15
@@ -163,12 +161,12 @@ export default function AboutSection() {
             const viewportWidth = window.innerWidth;
             return -(wrapperWidth - viewportWidth + 48);
           },
-          duration: 2.5,
+          duration: 2.0,
           ease: 'power2.inOut',
         },
         0.15
       );
-      // OUTRO REMOVED
+      // Outro removed
     });
 
     return () => mm.revert();
@@ -177,12 +175,12 @@ export default function AboutSection() {
   return (
     <section
       ref={containerRef}
-      className="relative w-full h-screen bg-black text-offwhite overflow-hidden flex flex-col justify-start pt-16 md:pt-20 px-6 md:px-16 will-change-transform"
+      className="relative w-full h-screen bg-black text-offwhite overflow-hidden flex flex-col justify-start pt-8 sm:pt-16 md:pt-20 px-6 md:px-16 will-change-transform"
     >
-      {/* Text Content – moved up with pt on section and reduced mt */}
+      {/* Text Content – adjusted for mobile: more top margin, less gap to boxes */}
       <div
         ref={textContainerRef}
-        className="relative z-10 w-full max-w-xl md:max-w-3xl ml-0 md:ml-20 flex flex-col mt-2 md:mt-0"
+        className="relative z-10 w-full max-w-xl md:max-w-3xl ml-0 md:ml-20 flex flex-col mt-4 md:mt-0"
       >
         <div
           ref={headingRef}
@@ -194,8 +192,8 @@ export default function AboutSection() {
         </div>
       </div>
 
-      {/* Cards Container – positioned higher on mobile and desktop */}
-      <div className="absolute bottom-8 sm:bottom-12 md:bottom-20 left-0 right-0 w-full z-30 pointer-events-none px-6 md:px-16 overflow-hidden md:overflow-visible">
+      {/* Cards Container – mobile boxes higher, desktop unchanged */}
+      <div className="absolute bottom-4 sm:bottom-12 md:bottom-20 left-0 right-0 w-full z-30 pointer-events-none px-6 md:px-16 overflow-hidden md:overflow-visible">
         <div
           ref={boxesWrapperRef}
           className="flex flex-row justify-start md:justify-end items-end gap-4 sm:gap-6 lg:gap-8 pb-1 md:pb-0 w-max md:w-full max-w-7xl mx-auto md:pl-32"
@@ -205,7 +203,7 @@ export default function AboutSection() {
               key={index}
               ref={(el) => { boxRefs.current[index] = el; }}
               className="pointer-events-auto shrink-0 w-[280px] sm:w-[320px] md:w-full md:flex-1 md:max-w-[300px] will-change-transform"
-              style={{ opacity: 0, transform: 'translateY(60px)' }}
+              style={{ transform: 'translateY(60px)', opacity: 1 }} // opacity always 1
             >
               <div className="h-[260px] sm:h-[280px] md:h-[300px] flex flex-col justify-between p-5 sm:p-6 md:p-8 rounded-[20px] sm:rounded-[24px] md:rounded-[32px] bg-white/[0.08] backdrop-blur-2xl border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] transition-transform duration-500 hover:-translate-y-2 relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-coral/10 via-transparent to-purple/10 pointer-events-none rounded-[20px] sm:rounded-[24px] md:rounded-[32px]" />
