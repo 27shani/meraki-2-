@@ -16,6 +16,20 @@ export const getLenis = () => {
       wheelMultiplier: 1,
       touchMultiplier: 2,
     });
+
+    // ✅ Expose unlock function globally so Hero can call it
+    if (typeof window !== 'undefined') {
+      (window as any).__unlockLenis = () => {
+        lenisInstance?.start();
+        // Also ensure body scroll is enabled
+        document.body.style.overflow = '';
+      };
+
+      // Optional: expose a lock function if needed
+      (window as any).__lockLenis = () => {
+        lenisInstance?.stop();
+      };
+    }
   }
   return lenisInstance;
 };
