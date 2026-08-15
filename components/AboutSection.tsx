@@ -19,7 +19,7 @@ export default function AboutSection() {
     { step: '/ GROW_03', title: 'Earn Real Recognition', desc: 'Put your idea on a bigger stage, compete for prizes and gain visibility among the entrepreneurial ecosystem.' },
   ];
 
-  // Wrap each line individually so we can animate line‑by‑line
+  // Wrap each line individually for line-by-line animation
   const wrapLineWords = (element: HTMLElement) => {
     const text = element.textContent?.trim() || '';
     const words = text.split(/\s+/);
@@ -31,9 +31,8 @@ export default function AboutSection() {
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
-    // Get the three line divs inside headingRef
+    // Title line-by-line animation
     const lineDivs = headingRef.current?.querySelectorAll('div') || [];
-    // Wrap each line's words and animate line by line
     lineDivs.forEach((div, index) => {
       wrapLineWords(div as HTMLElement);
       const words = div.querySelectorAll('.word');
@@ -43,14 +42,13 @@ export default function AboutSection() {
         {
           opacity: 1,
           filter: 'blur(0px)',
-          stagger: 0.04,          // words inside each line stagger slightly
+          stagger: 0.04,
           ease: 'power2.out',
           scrollTrigger: {
             trigger: headingRef.current,
             start: 'top 85%',
             toggleActions: 'play none none reverse',
           },
-          // Add a delay based on the line index for line‑by‑line effect
           delay: index * 0.2,
         }
       );
@@ -58,7 +56,7 @@ export default function AboutSection() {
 
     const mm = gsap.matchMedia();
 
-    // Global intro blur
+    // Global intro blur (keep)
     mm.add("all", () => {
       gsap.fromTo(
         containerRef.current,
@@ -84,7 +82,7 @@ export default function AboutSection() {
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: '+=300%',          // Increased to give more scroll room
+          end: '+=250%',          // Reduced from 300% because we removed outro
           pin: true,
           scrub: 0.8,
         },
@@ -99,12 +97,12 @@ export default function AboutSection() {
       .fromTo(
         textContainerRef.current,
         { y: '30px', opacity: 0.2 },
-        { y: '-50px', opacity: 1, duration: 1.2, ease: 'power2.out' },
+        { y: '-30px', opacity: 1, duration: 1.2, ease: 'power2.out' }, // Less upward movement
         0
       )
       .fromTo(
         boxRefs.current,
-        { y: '100px', opacity: 0, scale: 0.92 },
+        { y: '80px', opacity: 0, scale: 0.92 },
         {
           y: 0,
           opacity: 1,
@@ -114,18 +112,8 @@ export default function AboutSection() {
           ease: 'power2.out',
         },
         0.2
-      )
-      .to(
-        containerRef.current,
-        {
-          opacity: 0.08,
-          scale: 0.94,
-          filter: 'blur(8px)',
-          duration: 1.0,
-          ease: 'power2.inOut',
-        },
-        '+=0.8'
       );
+      // OUTRO REMOVED – no fade/scale at the end
     });
 
     // Mobile
@@ -134,7 +122,7 @@ export default function AboutSection() {
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: '+=400%',          // Even longer for mobile
+          end: '+=350%',          // Reduced from 400% because no outro
           pin: true,
           scrub: 0.8,
           invalidateOnRefresh: true,
@@ -150,12 +138,12 @@ export default function AboutSection() {
       .fromTo(
         textContainerRef.current,
         { y: '20px', opacity: 0.2 },
-        { y: '-10vh', opacity: 1, duration: 1.0, ease: 'power2.out' },
+        { y: '-5vh', opacity: 1, duration: 1.0, ease: 'power2.out' }, // Less movement up
         0
       )
       .fromTo(
         boxRefs.current,
-        { y: '80px', opacity: 0, scale: 0.92 },
+        { y: '60px', opacity: 0, scale: 0.92 },
         {
           y: 0,
           opacity: 1,
@@ -179,18 +167,8 @@ export default function AboutSection() {
           ease: 'power2.inOut',
         },
         0.15
-      )
-      .to(
-        containerRef.current,
-        {
-          opacity: 0.08,
-          scale: 0.94,
-          filter: 'blur(8px)',
-          duration: 1.0,
-          ease: 'power2.inOut',
-        },
-        '+=0.8'
       );
+      // OUTRO REMOVED
     });
 
     return () => mm.revert();
@@ -199,12 +177,12 @@ export default function AboutSection() {
   return (
     <section
       ref={containerRef}
-      className="relative w-full h-screen bg-black text-offwhite overflow-hidden flex flex-col justify-center px-6 md:px-16 will-change-transform"
+      className="relative w-full h-screen bg-black text-offwhite overflow-hidden flex flex-col justify-start pt-16 md:pt-20 px-6 md:px-16 will-change-transform"
     >
-      {/* Text Content – now properly positioned with reasonable top spacing */}
+      {/* Text Content – moved up with pt on section and reduced mt */}
       <div
         ref={textContainerRef}
-        className="relative z-10 w-full max-w-xl md:max-w-3xl ml-0 md:ml-20 flex flex-col mt-8 md:mt-0"
+        className="relative z-10 w-full max-w-xl md:max-w-3xl ml-0 md:ml-20 flex flex-col mt-2 md:mt-0"
       >
         <div
           ref={headingRef}
@@ -216,8 +194,8 @@ export default function AboutSection() {
         </div>
       </div>
 
-      {/* Cards Container */}
-      <div className="absolute bottom-6 sm:bottom-10 md:bottom-20 left-0 right-0 w-full z-30 pointer-events-none px-6 md:px-16 overflow-hidden md:overflow-visible">
+      {/* Cards Container – positioned higher on mobile and desktop */}
+      <div className="absolute bottom-8 sm:bottom-12 md:bottom-20 left-0 right-0 w-full z-30 pointer-events-none px-6 md:px-16 overflow-hidden md:overflow-visible">
         <div
           ref={boxesWrapperRef}
           className="flex flex-row justify-start md:justify-end items-end gap-4 sm:gap-6 lg:gap-8 pb-1 md:pb-0 w-max md:w-full max-w-7xl mx-auto md:pl-32"
@@ -227,7 +205,7 @@ export default function AboutSection() {
               key={index}
               ref={(el) => { boxRefs.current[index] = el; }}
               className="pointer-events-auto shrink-0 w-[280px] sm:w-[320px] md:w-full md:flex-1 md:max-w-[300px] will-change-transform"
-              style={{ opacity: 0, transform: 'translateY(80px)' }}
+              style={{ opacity: 0, transform: 'translateY(60px)' }}
             >
               <div className="h-[260px] sm:h-[280px] md:h-[300px] flex flex-col justify-between p-5 sm:p-6 md:p-8 rounded-[20px] sm:rounded-[24px] md:rounded-[32px] bg-white/[0.08] backdrop-blur-2xl border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] transition-transform duration-500 hover:-translate-y-2 relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-coral/10 via-transparent to-purple/10 pointer-events-none rounded-[20px] sm:rounded-[24px] md:rounded-[32px]" />
