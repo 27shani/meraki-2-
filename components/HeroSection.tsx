@@ -187,7 +187,7 @@ export default function HeroSection() {
   return (
     <section
       ref={containerRef}
-      className="relative w-screen h-screen bg-black text-offwhite overflow-hidden flex flex-col"
+      className="relative w-screen h-screen bg-black text-offwhite overflow-hidden flex flex-col md:justify-between justify-center"
     >
       {/* Background Glow */}
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(143,83,252,0.16),transparent_55%),radial-gradient(ellipse_at_bottom,rgba(251,87,95,0.12),transparent_55%)] pointer-events-none z-0" />
