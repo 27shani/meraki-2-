@@ -19,7 +19,7 @@ export default function AboutSection() {
     { step: '/ GROW_03', title: 'Earn Real Recognition', desc: 'Put your idea on a bigger stage, compete for prizes and gain visibility among the entrepreneurial ecosystem.' },
   ];
 
-  // ---- Word‑by‑word reveal for heading (from Code 1) ----
+  // Line‑by‑line word wrap (from Code 1)
   const wrapLineWords = (element: HTMLElement) => {
     const text = element.textContent?.trim() || '';
     const words = text.split(/\s+/);
@@ -31,7 +31,7 @@ export default function AboutSection() {
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
-    // ---- Heading line‑by‑line animation (from Code 1) ----
+    // Heading line‑by‑line animation (from Code 1)
     const lineDivs = headingRef.current?.querySelectorAll('div') || [];
     lineDivs.forEach((div, index) => {
       wrapLineWords(div as HTMLElement);
@@ -54,12 +54,13 @@ export default function AboutSection() {
       );
     });
 
-    // ---- Main scroll timeline (from Code 2 with slider) ----
-    const ctx = gsap.context(() => {
-      // Smooth intro blur (from Code 2)
+    const mm = gsap.matchMedia();
+
+    // Global intro blur (fade‑in)
+    mm.add("all", () => {
       gsap.fromTo(
         containerRef.current,
-        { opacity: 0, filter: 'blur(14px)' },
+        { opacity: 0.15, filter: 'blur(8px)' },
         {
           opacity: 1,
           filter: 'blur(0px)',
@@ -69,90 +70,124 @@ export default function AboutSection() {
             trigger: containerRef.current,
             start: 'top bottom',
             end: 'top center',
-            scrub: 1.5,
+            scrub: 0.6,
           },
         }
       );
+    });
 
-      const isMobile = window.innerWidth < 768;
+    // Desktop – horizontal slider
+    mm.add("(min-width: 768px)", () => {
+      const wrapper = boxesWrapperRef.current;
+      const container = containerRef.current;
+      if (!wrapper || !container) return;
 
-      // Main pinned timeline
+      const containerWidth = container.clientWidth;
+      const wrapperWidth = wrapper.scrollWidth;
+      const startOffset = containerWidth * 0.6;
+      // Reduced offset from +48 to +20 so the third card is fully visible
+      const finalX = -(wrapperWidth - containerWidth + 20);
+
+      gsap.set(wrapper, { x: startOffset });
+
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: isMobile ? '+=200%' : '+=180%',
+          end: '+=180%',
           pin: true,
-          scrub: 1.5,
+          scrub: 0.6,
         },
       });
 
-      // ---- Horizontal slider (from Code 2) ----
-      const wrapper = boxesWrapperRef.current;
-      const container = containerRef.current;
-      if (wrapper && container) {
-        const containerWidth = container.clientWidth;
-        const wrapperWidth = wrapper.scrollWidth;
-        const startOffset = containerWidth * 0.6; // start off-screen right
-        const finalX = -(wrapperWidth - containerWidth + 48); // end with last card fully visible
-
-        gsap.set(wrapper, { x: startOffset });
-        tl.to(wrapper, {
-          x: finalX,
-          duration: 2.0,
-          ease: 'power2.inOut',
-        }, 0.1);
-      }
-
-      // ---- Image sharpens ----
-      tl.to(imageRef.current, {
-        filter: 'blur(4px) brightness(1)',
-        opacity: 1,
-        duration: 0.8,
-        ease: 'power2.out',
-      }, 0);
-
-      // ---- Text moves up ----
-      tl.to(
-        textContainerRef.current,
-        {
-          y: '-50px',
-          opacity: 0.8,
-          duration: 1,
-          ease: 'power2.inOut',
-        },
-        0
-      );
-
-      // ---- Boxes stagger (slide up + fade) ----
       tl.fromTo(
+        imageRef.current,
+        { filter: 'blur(12px) brightness(0.6)', opacity: 0.3 },
+        { filter: 'blur(2px) brightness(1)', opacity: 1, duration: 1.0, ease: 'power2.out' },
+        0
+      )
+      .fromTo(
+        textContainerRef.current,
+        { y: '30px', opacity: 0.2 },
+        { y: '-20px', opacity: 1, duration: 1.0, ease: 'power2.out' },
+        0
+      )
+      .to(wrapper, {
+        x: finalX,
+        duration: 2.0,
+        ease: 'power2.inOut',
+      }, 0.1)
+      .fromTo(
         boxRefs.current,
-        { y: 80, opacity: 0, scale: 0.92 },
+        { scale: 0.92, opacity: 0 },
         {
-          y: 0,
-          opacity: 1,
           scale: 1,
-          stagger: 0.15,
-          duration: 1.2,
-          ease: 'power3.out',
+          opacity: 1,
+          stagger: 0.25,
+          duration: 1.0,
+          ease: 'power2.out',
         },
         0.2
       );
+    });
 
-      // ---- Outro (fade out) ----
-      tl.to(
-        containerRef.current,
-        {
-          opacity: 0,
-          filter: 'blur(16px)',
-          duration: 1,
-          ease: 'power2.inOut',
+    // Mobile – horizontal slider (same as desktop but with different timing)
+    mm.add("(max-width: 767px)", () => {
+      const wrapper = boxesWrapperRef.current;
+      const container = containerRef.current;
+      if (!wrapper || !container) return;
+
+      const containerWidth = container.clientWidth;
+      const wrapperWidth = wrapper.scrollWidth;
+      const startOffset = containerWidth * 0.6;
+      const finalX = -(wrapperWidth - containerWidth + 20);
+
+      gsap.set(wrapper, { x: startOffset });
+
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: 'top top',
+          end: '+=200%',
+          pin: true,
+          scrub: 0.5,
+          invalidateOnRefresh: true,
         },
-        '+=0.4'
-      );
-    }, containerRef);
+      });
 
-    return () => ctx.revert();
+      tl.fromTo(
+        imageRef.current,
+        { filter: 'blur(12px) brightness(0.6)', opacity: 0.3 },
+        { filter: 'blur(2px) brightness(1)', opacity: 1, duration: 0.8, ease: 'power2.out' },
+        0
+      )
+      .fromTo(
+        textContainerRef.current,
+        { y: '20px', opacity: 0.2 },
+        { y: '-2vh', opacity: 1, duration: 0.8, ease: 'power2.out' },
+        0
+      )
+      .fromTo(
+        boxRefs.current,
+        { y: '30px', scale: 0.92, opacity: 0 },
+        {
+          y: 0,
+          scale: 1,
+          opacity: 1,
+          stagger: 0.15,
+          duration: 0.7,
+          ease: 'power2.out',
+        },
+        0.1
+      )
+      .to(wrapper, {
+        x: finalX,
+        duration: 1.5,
+        ease: 'power2.inOut',
+      }, 0.1);
+    });
+
+    return () => mm.revert();
   }, []);
 
   return (
@@ -160,14 +195,14 @@ export default function AboutSection() {
       ref={containerRef}
       className="relative w-full h-screen bg-black text-offwhite overflow-hidden flex flex-col justify-center px-4 sm:px-6 md:px-16 will-change-transform"
     >
-      {/* Heading – positioned as in Code 1 */}
+      {/* Heading – from Code 1 (with line‑by‑line animation) */}
       <div
         ref={textContainerRef}
-        className="relative z-10 w-full max-w-xl md:max-w-3xl ml-0 md:ml-20 flex flex-col"
+        className="relative z-10 w-full max-w-xl md:max-w-3xl ml-0 md:ml-20 flex flex-col pt-6 md:pt-12"
       >
         <div
           ref={headingRef}
-          className="space-y-0.5 text-2xl sm:text-5xl md:text-6xl lg:text-[4.5rem] font-normal leading-[1.05] tracking-tight font-sans"
+          className="space-y-0.5 sm:space-y-1 text-2xl sm:text-5xl md:text-6xl lg:text-[4.5rem] font-normal leading-[1.05] tracking-tight font-sans"
         >
           <div><span className="font-serif italic font-normal text-gradient-brand">3 key benefits</span> &amp;</div>
           <div>outcomes for</div>
@@ -175,11 +210,11 @@ export default function AboutSection() {
         </div>
       </div>
 
-      {/* Boxes – in normal flow (non‑absolute), with margin-top from Code 1 */}
-      <div className="relative z-30 pointer-events-none px-4 sm:px-6 md:px-16 mt-2 sm:mt-4 md:mt-8 w-full overflow-hidden">
+      {/* Boxes – from Code 1 (dimensions & positioning) + Code 2 (slider) */}
+      <div className="absolute bottom-4 sm:bottom-8 md:bottom-20 left-0 right-0 w-full z-30 px-4 sm:px-6 md:px-16 pointer-events-none overflow-hidden">
         <div
           ref={boxesWrapperRef}
-          className="flex flex-row justify-start items-end gap-3 sm:gap-6 lg:gap-8 pb-1 md:pb-0 w-max"
+          className="flex flex-row items-end gap-3 sm:gap-4 md:gap-6 lg:gap-8 w-max"
           style={{ width: 'max-content' }}
         >
           {benefits.map((benefit, index) => (
@@ -187,9 +222,15 @@ export default function AboutSection() {
               key={index}
               ref={(el) => { boxRefs.current[index] = el; }}
               className="pointer-events-auto shrink-0 w-[240px] sm:w-[320px] md:w-[35vw] lg:w-[30vw] max-w-[400px] will-change-transform"
-              style={{ opacity: 0, transform: 'translateY(80px) scale(0.92)' }}
+              style={{ transform: 'translateY(30px) scale(0.92)', opacity: 0 }}
             >
-              <div className="h-[200px] sm:h-[260px] md:h-[300px] flex flex-col justify-between p-3 sm:p-6 md:p-8 rounded-[16px] sm:rounded-[24px] md:rounded-[32px] bg-white/[0.08] backdrop-blur-2xl border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] transition-transform duration-500 hover:-translate-y-2 relative overflow-hidden">
+              <div
+                className="h-[200px] sm:h-[260px] md:h-[300px] flex flex-col justify-between p-3 sm:p-6 md:p-8 rounded-[16px] sm:rounded-[24px] md:rounded-[32px] 
+                              bg-white/[0.08] backdrop-blur-2xl border border-white/20 
+                              shadow-[0_8px_32px_0_rgba(0,0,0,0.5)]
+                              transition-transform duration-500 hover:-translate-y-2
+                              relative overflow-hidden"
+              >
                 <div className="absolute inset-0 bg-gradient-to-br from-coral/10 via-transparent to-purple/10 pointer-events-none rounded-[16px] sm:rounded-[24px] md:rounded-[32px]" />
                 <div className="relative z-10">
                   <span className="font-sans text-[8px] sm:text-xs md:text-xs font-medium tracking-widest text-coral-light uppercase">
@@ -211,7 +252,7 @@ export default function AboutSection() {
       {/* Arch Image */}
       <div
         ref={imageRef}
-        className="absolute right-0 top-0 h-full w-[65vw] md:w-[55vw] min-w-[320px] rounded-l-[120px] md:rounded-l-[220px] overflow-hidden bg-neutral-900 z-0 pointer-events-none filter blur-[12px] opacity-40"
+        className="absolute right-0 top-0 h-full w-[65vw] md:w-[55vw] min-w-[320px] rounded-l-[120px] md:rounded-l-[220px] overflow-hidden bg-neutral-900 z-0 pointer-events-none"
       >
         <img src="/IMG_5164.JPG" alt="Hackathon Event" className="w-full h-full object-cover object-center" />
         <div className="absolute inset-0 bg-gradient-to-l from-transparent via-black/20 to-black border-l-0" />
