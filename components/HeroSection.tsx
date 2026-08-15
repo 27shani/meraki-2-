@@ -119,14 +119,14 @@ export default function HeroSection() {
           ease: 'power3.inOut',
         }, '+=0.1')
         .fromTo(expandContentRef.current,
-          { opacity: 0, y: 60, filter: 'blur(12px)' },
-          { opacity: 1, y: 0, filter: 'blur(0px)', ease: 'power3.out', duration: 1.5 },
+          // Removed blur filter for performance
+          { opacity: 0, y: 60 },
+          { opacity: 1, y: 0, ease: 'power3.out', duration: 1.5 },
           '<0.2'
         )
         .to(containerRef.current, {
           scale: 0.85,
           opacity: 0.15,
-          filter: 'blur(6px)',
           yPercent: -20,
           ease: 'power2.inOut',
           duration: 1.2,
@@ -165,14 +165,14 @@ export default function HeroSection() {
           duration: 1.2
         }, '+=0.2')
         .fromTo(expandContentRef.current,
-          { opacity: 0, y: 60, filter: 'blur(12px)' },
-          { opacity: 1, y: 0, filter: 'blur(0px)', ease: 'power3.out', duration: 1.5 },
+          // Removed blur filter for performance
+          { opacity: 0, y: 60 },
+          { opacity: 1, y: 0, ease: 'power3.out', duration: 1.5 },
           '<0.2'
         )
         .to(containerRef.current, {
           scale: 0.85,
           opacity: 0.15,
-          filter: 'blur(6px)',
           yPercent: -20,
           ease: 'power2.inOut',
           duration: 1.2,
@@ -188,6 +188,7 @@ export default function HeroSection() {
   return (
     <section
       ref={containerRef}
+      style={{ willChange: 'transform, opacity' }}
       className="relative w-screen h-screen bg-black text-offwhite overflow-hidden flex flex-col md:justify-between justify-center"
     >
       {/* Background Glow */}
@@ -214,6 +215,7 @@ export default function HeroSection() {
       {/* Centered Hero Title */}
       <div
         ref={heroTextContainerRef}
+        style={{ willChange: 'transform' }}
         className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 md:px-12 pointer-events-none gap-6 -mt-16 md:mt-0"
       >
         <h1
@@ -254,6 +256,7 @@ export default function HeroSection() {
       {/* FULL-SCREEN EXPANDING OVERLAY */}
       <div
         ref={expandBoxRef}
+        style={{ willChange: 'width, height, opacity' }}
         className="absolute inset-0 m-auto w-0 h-0 opacity-0 z-30 overflow-hidden bg-ink shadow-2xl flex items-center justify-center text-center pointer-events-none"
       >
         <img
@@ -266,6 +269,7 @@ export default function HeroSection() {
 
         <div
           ref={expandContentRef}
+          style={{ willChange: 'transform, opacity' }}
           className="relative z-40 flex flex-col items-center justify-center px-6 md:px-12 max-w-4xl space-y-6 md:space-y-8"
         >
           <h3 className="text-4xl md:text-6xl lg:text-7xl font-serif italic font-normal text-offwhite leading-tight">
@@ -285,7 +289,7 @@ export default function HeroSection() {
         </div>
       </div>
 
-      {/* LOADER – now shows Meraki logo + 2026 */}
+      {/* LOADER – shows Meraki logo + 2026 */}
       <div
         ref={loaderRef}
         className="fixed inset-0 z-[999] bg-black flex items-center justify-center overflow-hidden"
