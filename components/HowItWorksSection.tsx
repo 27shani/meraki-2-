@@ -1,4 +1,3 @@
-// components/HowItWorksSection.tsx
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -30,7 +29,8 @@ export default function HowItWorksSection() {
   const coverRef = useRef<HTMLDivElement>(null);
   const stepRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  const [activeIndex, setActiveIndex] = useState(0);
+  // Start at -1 so no image/highlight shows until scrolling begins
+  const [activeIndex, setActiveIndex] = useState(-1);
   const [isHovered, setIsHovered] = useState(false);
   const [cursorPos, setCursorPos] = useState({ x: 0, y: 0 });
 
@@ -52,10 +52,15 @@ export default function HowItWorksSection() {
       typeof window !== 'undefined' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    const ctx = gsap.context(() => {
-      const total = STEPS.length;
+    // Use MatchMedia to separate Mobile vs Desktop ScrollTrigger logic
+    const mm = gsap.matchMedia();
 
-      // INTRO BLUR REMOVED – no longer needed
+    mm.add({
+      isDesktop: "(min-width: 768px)",
+      isMobile: "(max-width: 767px)"
+    }, (context) => {
+      const { isMobile, isDesktop } = context.conditions as { isMobile: boolean, isDesktop: boolean };
+      const total = STEPS.length;
 
       if (pathRef.current && listRef.current && containerRef.current) {
         const pathLength = pathRef.current.getTotalLength();
@@ -70,20 +75,21 @@ export default function HowItWorksSection() {
 
         gsap.set(listRef.current, { y: startY });
 
-        // --- Main timeline – shortened pin duration for faster scroll ---
+        // --- Main timeline ---
         const tl = gsap.timeline({
           scrollTrigger: {
             trigger: containerRef.current,
             start: 'top top',
-            end: `+=180%`, // reduced from 280% for less scrolling
+            // Reduce scroll pin duration heavily on mobile to remove blank space
+            end: isMobile ? '+=70%' : '+=180%',
             pin: true,
-            scrub: 0.5,   // smoother, less lag
+            scrub: isMobile ? 0.3 : 0.5,
             anticipatePin: 1,
             invalidateOnRefresh: true,
           },
         });
 
-        // 1. Steps stagger in from below (opening effect kept)
+        // 1. Steps stagger in from below
         tl.fromTo(
           stepRefs.current,
           { y: 80, opacity: 0 },
@@ -97,18 +103,20 @@ export default function HowItWorksSection() {
           0
         );
 
-        // 2. Path drawing (in parallel)
-        tl.to(
-          pathRef.current,
-          {
-            strokeDashoffset: 0,
-            ease: 'power1.inOut',
-            duration: 0.8,
-          },
-          0
-        );
+        // 2. Path drawing (desktop only)
+        if (isDesktop) {
+          tl.to(
+            pathRef.current,
+            {
+              strokeDashoffset: 0,
+              ease: 'power1.inOut',
+              duration: 0.8,
+            },
+            0
+          );
+        }
 
-        // 3. List vertical movement (scrubbed)
+        // 3. List vertical movement & Optimized State Update
         tl.to(
           listRef.current,
           {
@@ -116,9 +124,18 @@ export default function HowItWorksSection() {
             ease: 'none',
             duration: 1,
             onUpdate: function () {
-              const rawIndex = this.progress() * (total - 1);
-              const idx = Math.min(Math.round(rawIndex), total - 1);
-              setActiveIndex(idx);
+              const prog = this.progress();
+              let idx = -1;
+
+              // Only highlight and show images after 2% scroll progress
+              if (prog > 0.02) {
+                const mappedProgress = (prog - 0.02) / 0.98;
+                const rawIndex = mappedProgress * (total - 1);
+                idx = Math.max(0, Math.min(Math.round(rawIndex), total - 1));
+              }
+
+              // PERFORMANCE FIX: Only trigger React state update if index changes. This stops the stutter/lag!
+              setActiveIndex((prev) => (prev !== idx ? idx : prev));
             },
           },
           0
@@ -126,17 +143,14 @@ export default function HowItWorksSection() {
 
         // 4. Brief hold on last step
         tl.to({}, { duration: 0.1 }, 0.9);
-
-        // CLOSING PHASE REMOVED – no outro
-        // (the section will just end naturally)
       }
 
       if (coverRef.current && !prefersReduced) {
         gsap.set(coverRef.current, { y: 0, opacity: 0 });
       }
-    }, containerRef);
+    });
 
-    return () => ctx.revert();
+    return () => mm.revert();
   }, []);
 
   // active step image fade
@@ -163,7 +177,8 @@ export default function HowItWorksSection() {
     });
   }, [isHovered]);
 
-  const currentStep = STEPS[activeIndex];
+  // Handle default state details gracefully when activeIndex is -1
+  const currentStep = STEPS[activeIndex === -1 ? 0 : activeIndex];
 
   return (
     <section
@@ -203,9 +218,10 @@ export default function HowItWorksSection() {
         <div ref={listRef} className="w-full flex flex-col items-center md:items-start">
           {STEPS.map((step, idx) => {
             const isActive = idx === activeIndex;
-            const distance = idx - activeIndex;
+            // Prevent distance calc errors when activeIndex is -1 by targeting 0 initially
+            const distance = idx - Math.max(0, activeIndex); 
             let mobileTranslateX = '0px';
-            if (distance === 0) {
+            if (distance === 0 && isActive) {
               mobileTranslateX = '-18px';
             } else if (distance < 0) {
               mobileTranslateX = `${Math.abs(distance) * 8}px`;
@@ -241,7 +257,7 @@ export default function HowItWorksSection() {
 
       {/* Right column – image card + desc (desktop only) */}
       <div className="relative z-20 hidden md:flex w-[40vw] max-w-[500px] flex-col items-end mr-2 sm:mr-4 md:mr-16">
-        <div className="w-full flex justify-between text-xs font-sans font-medium tracking-widest uppercase text-coral-light mb-4 px-1">
+        <div className="w-full flex justify-between text-xs font-sans font-medium tracking-widest uppercase text-coral-light mb-4 px-1 transition-opacity duration-300" style={{ opacity: activeIndex === -1 ? 0 : 1 }}>
           <span>STEP {currentStep.stepNum}</span>
           <span />
         </div>
@@ -277,7 +293,7 @@ export default function HowItWorksSection() {
             </span>
           </div>
 
-          {isHovered && (
+          {isHovered && activeIndex !== -1 && (
             <div
               style={{
                 left: `${cursorPos.x}px`,
@@ -308,7 +324,7 @@ export default function HowItWorksSection() {
           ))}
         </div>
 
-        <div className="absolute -right-12 top-0 text-[11px] font-sans font-medium uppercase tracking-widest text-neutral-400 origin-right">
+        <div className="absolute -right-12 top-0 text-[11px] font-sans font-medium uppercase tracking-widest text-neutral-400 origin-right transition-opacity duration-300" style={{ opacity: activeIndex === -1 ? 0 : 1 }}>
           Process
         </div>
       </div>
