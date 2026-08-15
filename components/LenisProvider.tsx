@@ -14,32 +14,80 @@ export default function LenisProvider({ children }: { children: ReactNode }) {
       window.matchMedia('(pointer: coarse)').matches;
 
     if (isMobile) {
+      // 🔥 Clean everything – no style injection
       document.documentElement.style.overflow = '';
       document.body.style.overflow = '';
       document.documentElement.style.removeProperty('overflow');
       document.body.style.removeProperty('overflow');
       document.documentElement.classList.remove('lenis', 'lenis-smooth', 'lenis-stopped');
 
-      // Force override any hidden overflow
-      const styleId = 'mobile-scroll-fix';
-      if (!document.getElementById(styleId)) {
-        const style = document.createElement('style');
-        style.id = styleId;
-        style.innerHTML = `
-          html, body, #__next, #root {
-            overflow: auto !important;
-            height: auto !important;
-            min-height: 100vh !important;
-          }
-        `;
-        document.head.appendChild(style);
-      }
+      // Also remove any leftover class from the loader
+      document.documentElement.classList.remove('lenis-stopped');
+
+      // Ensure scroll works
+      document.documentElement.style.overflow = 'auto';
+      document.body.style.overflow = 'auto';
 
       ScrollTrigger.config({ ignoreMobileResize: true });
-      return;
+      return; // No Lenis instance
     }
 
-    // ... desktop Lenis setup (unchanged) ...
+    // --- Desktop Lenis setup (unchanged) ---
+    const html = document.documentElement;
+    html.classList.add('lenis', 'lenis-smooth');
+
+    const lenis = new Lenis({
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      orientation: 'vertical',
+      gestureOrientation: 'vertical',
+      smoothWheel: true,
+      wheelMultiplier: 1,
+    });
+
+    (window as any).__lenis = lenis;
+
+    lenis.on('scroll', ScrollTrigger.update);
+
+    const tickerFn = (time: number) => {
+      lenis.raf(time * 1000);
+    };
+    gsap.ticker.add(tickerFn);
+    gsap.ticker.lagSmoothing(0);
+
+    // Lock only during loader (desktop)
+    lenis.stop();
+    html.classList.add('lenis-stopped');
+    html.style.overflow = 'hidden';
+
+    const unlock = () => {
+      html.style.overflow = '';
+      document.body.style.overflow = '';
+      html.classList.remove('lenis-stopped');
+      lenis.start();
+      requestAnimationFrame(() => ScrollTrigger.refresh());
+    };
+
+    (window as any).__unlockLenis = unlock;
+
+    const safety = window.setTimeout(() => {
+      if (html.classList.contains('lenis-stopped')) unlock();
+    }, 4000);
+
+    const onLoad = () => ScrollTrigger.refresh();
+    window.addEventListener('load', onLoad);
+
+    return () => {
+      window.clearTimeout(safety);
+      window.removeEventListener('load', onLoad);
+      gsap.ticker.remove(tickerFn);
+      lenis.destroy();
+      html.classList.remove('lenis', 'lenis-smooth', 'lenis-stopped');
+      html.style.overflow = '';
+      document.body.style.overflow = '';
+      (window as any).__lenis = null;
+      (window as any).__unlockLenis = undefined;
+    };
   }, []);
 
   return <>{children}</>;
