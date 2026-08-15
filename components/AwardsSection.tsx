@@ -47,9 +47,6 @@ export default function AwardsSection() {
     const isMobile = window.innerWidth < 768;
 
     const ctx = gsap.context(() => {
-      gsap.set(bgRefs.current, { scaleX: 0, transformOrigin: 'left center' });
-      gsap.set(textRefs.current, { color: '#737373' });
-
       // Intro blur
       gsap.fromTo(
         sectionRef.current,
@@ -67,9 +64,25 @@ export default function AwardsSection() {
         }
       );
 
-      // Staggered row reveal (faster on mobile)
+      // On mobile, skip the scroll-pinned white strip animation entirely
+      if (isMobile) {
+        gsap.set(bgRefs.current, { scaleX: 0, transformOrigin: 'left center' });
+        // Set mobile default text color based on initial open index state (index 0 is open/highlighted)
+        textRefs.current.forEach((row, i) => {
+          if (!row) return;
+          gsap.set(row, { opacity: 1, y: 0, filter: 'blur(0px)' });
+          gsap.set(bgRefs.current[i], { scaleX: i === 0 ? 1 : 0 });
+          gsap.set(row, { color: i === 0 ? '#191818' : '#737373' });
+        });
+        return;
+      }
+
+      // ---- DESKTOP ONLY LOGIC ----
+      gsap.set(bgRefs.current, { scaleX: 0, transformOrigin: 'left center' });
+      gsap.set(textRefs.current, { color: '#737373' });
+
+      // Staggered row reveal
       if (!prefersReduced) {
-        const staggerDuration = isMobile ? 0.3 : 0.8;
         textRefs.current.forEach((row, i) => {
           if (!row) return;
           gsap.fromTo(
@@ -84,7 +97,7 @@ export default function AwardsSection() {
                 trigger: row,
                 start: 'top 85%',
                 end: 'top 60%',
-                scrub: staggerDuration,
+                scrub: 0.8,
               },
               delay: i * 0.03,
             }
@@ -93,24 +106,21 @@ export default function AwardsSection() {
       }
 
       // ---- MAIN PIN TIMELINE (white strip highlight) ----
-      // Shorter pin duration on mobile so the strip moves faster
-      const pinDuration = isMobile ? faqs.length * 80 : faqs.length * 150;
-      const scrubValue = isMobile ? 0.6 : 1.0;
-      const enterDuration = isMobile ? 0.5 : 1.0;
-      const staggerDelay = isMobile ? 0.3 : 0.6;
-
+      const pinDuration = faqs.length * 150;
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: sectionRef.current,
           start: 'top top',
           end: `+=${pinDuration}%`,
           pin: true,
-          scrub: scrubValue,
+          scrub: 1.0,
         },
       });
 
       let time = 0;
       const activeCount = 2;
+      const enterDuration = 1.0;
+      const staggerDelay = 0.6;
 
       // First two rows highlight
       for (let i = 0; i < activeCount; i++) {
@@ -205,7 +215,7 @@ export default function AwardsSection() {
     return () => ctx.revert();
   }, []);
 
-  // Custom cursor (unchanged)
+  // Custom cursor setup
   useEffect(() => {
     const cursor = cursorRef.current;
     if (!cursor) return;
@@ -247,6 +257,29 @@ export default function AwardsSection() {
     }
   };
 
+  // Mobile Click Handler to toggle white strip highlight on the clicked question
+  const handleMobileClick = (index: number) => {
+    const isMobile = window.innerWidth < 768;
+    const newIndex = openIndex === index ? null : index;
+    setOpenIndex(newIndex);
+
+    if (isMobile) {
+      faqs.forEach((_, i) => {
+        const bgEl = bgRefs.current[i];
+        const textEl = textRefs.current[i];
+        if (bgEl && textEl) {
+          if (i === newIndex) {
+            gsap.to(bgEl, { scaleX: 1, duration: 0.3, ease: 'power2.out' });
+            gsap.to(textEl, { color: '#191818', duration: 0.3 });
+          } else {
+            gsap.to(bgEl, { scaleX: 0, duration: 0.3, ease: 'power2.out' });
+            gsap.to(textEl, { color: '#737373', duration: 0.3 });
+          }
+        }
+      });
+    }
+  };
+
   return (
     <section
       ref={sectionRef}
@@ -284,10 +317,11 @@ export default function AwardsSection() {
                     bgRefs.current[index] = el;
                   }}
                   className="absolute inset-0 bg-offwhite z-0"
+                  style={{ transformOrigin: 'left center' }}
                 />
 
                 <button
-                  onClick={() => setOpenIndex(isOpen ? null : index)}
+                  onClick={() => handleMobileClick(index)}
                   className="relative z-10 w-full flex justify-between items-center text-left group cursor-none md:cursor-none"
                 >
                   <span className="text-lg md:text-2xl font-sans font-medium pr-6">
