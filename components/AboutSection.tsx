@@ -147,18 +147,17 @@ export default function AboutSection() {
           );
       });
 
-      // ---------- MOBILE (lighter) ----------
+      // ---------- MOBILE (UPDATED: removed pin, adjusted end) ----------
       mm.add('(max-width: 767px)', () => {
         gsap.set(boxRefs.current, { y: 0, scale: 1, opacity: 1 });
 
+        // No pin → native scroll works smoothly
         const tl = gsap.timeline({
           scrollTrigger: {
             trigger: containerRef.current,
             start: 'top top',
-            end: '+=120%',          // much shorter → less sticky
-            pin: true,
-            scrub: 0.4,             // more responsive
-            anticipatePin: 1,
+            end: 'bottom top',    // finishes when section leaves viewport
+            scrub: 0.5,
             invalidateOnRefresh: true,
           },
         });
