@@ -22,23 +22,24 @@ export default function AboutSection() {
     const text = element.textContent?.trim() || '';
     const words = text.split(/\s+/);
     element.innerHTML = words
-      .map((word) => `<span class="word" style="display:inline-block; opacity:0; filter:blur(8px);">${word}&nbsp;</span>`)
+      .map((word) => `<span class="word" style="display:inline-block; opacity:0; transform:translateY(10px);">${word}&nbsp;</span>`)
       .join('');
   };
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
+    // Initial heading text animation (Blur removed for performance)
     const lineDivs = headingRef.current?.querySelectorAll('div') || [];
     lineDivs.forEach((div, index) => {
       wrapLineWords(div as HTMLElement);
       const words = div.querySelectorAll('.word');
       gsap.fromTo(
         words,
-        { opacity: 0, filter: 'blur(8px)' },
+        { opacity: 0, y: 10 },
         {
           opacity: 1,
-          filter: 'blur(0px)',
+          y: 0,
           stagger: 0.04,
           ease: 'power2.out',
           scrollTrigger: {
@@ -53,13 +54,13 @@ export default function AboutSection() {
 
     const mm = gsap.matchMedia();
 
+    // Base container fade-in
     mm.add("all", () => {
       gsap.fromTo(
         containerRef.current,
-        { opacity: 0.15, filter: 'blur(8px)' },
+        { opacity: 0.15 },
         {
           opacity: 1,
-          filter: 'blur(0px)',
           duration: 1,
           ease: 'power2.out',
           scrollTrigger: {
@@ -72,58 +73,51 @@ export default function AboutSection() {
       );
     });
 
-    // ---- DESKTOP (≥ 768px) – adds horizontal slider ----
+    // ---- DESKTOP (≥ 768px) ----
     mm.add("(min-width: 768px)", () => {
       const wrapper = boxesWrapperRef.current;
       const container = containerRef.current;
       if (!wrapper || !container) return;
 
-      // Compute widths for slider
       const containerWidth = container.clientWidth;
       const wrapperWidth = wrapper.scrollWidth;
-      const startOffset = containerWidth * 0.6; // start off-screen right
+      const startOffset = containerWidth * 0.6;
       
-      // INCREASED offset from 48 to 200 so the 3rd card slides fully into view
       const finalX = -(wrapperWidth - containerWidth + 200); 
 
-      // Set initial position
       gsap.set(wrapper, { x: startOffset });
 
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          // REDUCED end to minimize black space after scroll
-          end: '+=120%', 
+          end: '+=250%', // Increased for much smoother, slower scrolling
           pin: true,
-          scrub: 0.6,
+          scrub: 1, // Smoother scrub value
         },
       });
 
-      // Image animation (unchanged)
       tl.fromTo(
         imageRef.current,
-        { filter: 'blur(12px) brightness(0.6)', opacity: 0.3 },
-        { filter: 'blur(2px) brightness(1)', opacity: 1, duration: 1.0, ease: 'power2.out' },
+        // Removed heavy filters, using hardware-accelerated opacity & scale
+        { opacity: 0.3, scale: 1.05 },
+        { opacity: 1, scale: 1, duration: 1.0, ease: 'power2.out' },
         0
       )
-      // Text moves up (unchanged)
       .fromTo(
         textContainerRef.current,
-        { y: '30px', opacity: 0.2 },
-        { y: '-20px', opacity: 1, duration: 1.0, ease: 'power2.out' },
+        { y: 30, opacity: 0.2 },
+        { y: -20, opacity: 1, duration: 1.0, ease: 'power2.out' },
         0
       )
-      // ---- SLIDER: wrapper slides from right to left ----
       .to(wrapper, {
         x: finalX,
         duration: 2.0,
-        ease: 'power2.inOut',
+        ease: 'none', // Linear ease creates a smoother 1:1 scroll tracking
       }, 0.1)
-      // Boxes stagger (unchanged)
       .fromTo(
         boxRefs.current,
-        { y: '80px', scale: 0.92 },
+        { y: 80, scale: 0.92 },
         {
           y: 0,
           scale: 1,
@@ -141,29 +135,29 @@ export default function AboutSection() {
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          // REDUCED end to minimize black space after scroll
-          end: '+=130%', 
+          end: '+=250%', // Increased scroll distance for better mobile control
           pin: true,
-          scrub: 0.5,
+          scrub: 1,
           invalidateOnRefresh: true,
         },
       });
 
       tl.fromTo(
         imageRef.current,
-        { filter: 'blur(12px) brightness(0.6)', opacity: 0.3 },
-        { filter: 'blur(2px) brightness(1)', opacity: 1, duration: 0.8, ease: 'power2.out' },
+        // Removed heavy filters for mobile GPU safety
+        { opacity: 0.3, scale: 1.05 },
+        { opacity: 1, scale: 1, duration: 0.8, ease: 'power2.out' },
         0
       )
       .fromTo(
         textContainerRef.current,
-        { y: '20px', opacity: 0.2 },
-        { y: '-2vh', opacity: 1, duration: 0.8, ease: 'power2.out' },
+        { y: 20, opacity: 0.2 },
+        { y: -10, opacity: 1, duration: 0.8, ease: 'power2.out' },
         0
       )
       .fromTo(
         boxRefs.current,
-        { y: '40px', scale: 0.92 },
+        { y: 40, scale: 0.92 },
         {
           y: 0,
           scale: 1,
@@ -180,11 +174,10 @@ export default function AboutSection() {
             if (!boxesWrapperRef.current) return 0;
             const wrapperWidth = boxesWrapperRef.current.scrollWidth || 0;
             const viewportWidth = window.innerWidth;
-            // INCREASED offset from 48 to 120 so the 3rd card shows fully
-            return -(wrapperWidth - viewportWidth + 120); 
+            return -(wrapperWidth - viewportWidth + 60); 
           },
           duration: 1.8,
-          ease: 'power2.inOut',
+          ease: 'none', // Removed ease for predictable touch scrolling
         },
         0.1
       );
@@ -196,11 +189,13 @@ export default function AboutSection() {
   return (
     <section
       ref={containerRef}
-      className="relative w-full h-screen bg-black text-offwhite overflow-hidden flex flex-col justify-center px-6 md:px-16 will-change-transform"
+      // Changed h-screen to h-[100svh] to fix mobile address bar jumps
+      className="relative w-full h-[100svh] bg-black text-offwhite overflow-hidden flex flex-col justify-center px-6 md:px-16"
     >
       {/* Heading */}
       <div
         ref={textContainerRef}
+        style={{ willChange: 'transform, opacity' }}
         className="relative z-10 w-full max-w-xl md:max-w-3xl ml-0 md:ml-20 flex flex-col"
       >
         <div
@@ -218,7 +213,7 @@ export default function AboutSection() {
         <div
           ref={boxesWrapperRef}
           className="flex flex-row justify-start items-end gap-4 sm:gap-6 lg:gap-8 pb-1 md:pb-0 w-max"
-          style={{ width: 'max-content' }}
+          style={{ width: 'max-content', willChange: 'transform' }}
         >
           {benefits.map((benefit, index) => (
             <div
@@ -249,6 +244,7 @@ export default function AboutSection() {
       {/* Arch Image */}
       <div
         ref={imageRef}
+        style={{ willChange: 'transform, opacity' }}
         className="absolute right-0 top-0 h-full w-[65vw] md:w-[55vw] min-w-[320px] rounded-l-[120px] md:rounded-l-[220px] overflow-hidden bg-neutral-900 z-0 pointer-events-none"
       >
         <img src="/IMG_5164.JPG" alt="Hackathon Event" className="w-full h-full object-cover object-center" />
