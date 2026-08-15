@@ -1,4 +1,3 @@
-// components/FloatingGallery.tsx
 'use client';
 
 import { useEffect, useRef } from 'react';
@@ -11,22 +10,33 @@ interface Investor {
   logo: string;
 }
 
-const PAST_INVESTORS: Investor[] = [
-  { id: 1, name: 'Partner 01', logo: '/Image-26.png' },
-  { id: 2, name: 'Partner 02', logo: '/Image-29.png' },
-  { id: 3, name: 'Partner 03', logo: '/Image-32.png' },
-  { id: 4, name: 'Partner 04', logo: '/Image-33.png' },
-  { id: 5, name: 'Partner 05', logo: '/Image-34.png' },
-  { id: 6, name: 'Partner 06', logo: '/Image-35.png' },
-  { id: 7, name: 'Partner 07', logo: '/Image-36.png' },
-  { id: 8, name: 'Partner 08', logo: '/Image-38-1.png' },
+const LINE_ONE_INVESTORS: Investor[] = [
+  { id: 1, name: 'Aricent', logo: '/logo/Aricent_Logo_2011.png' },
+  { id: 2, name: 'Mayfield', logo: '/logo/Mayfield.webp' },
+  { id: 3, name: 'Network18', logo: '/logo/NETWORK18.png' },
+  { id: 4, name: 'Venture Catalyst', logo: '/logo/Venture-Catalyst-logo-startuptalky.png' },
+  { id: 5, name: 'Chalo', logo: '/logo/chalo.png' },
+  { id: 6, name: 'Dozee', logo: '/logo/dozee.png' },
+  { id: 7, name: 'Fir Tree', logo: '/logo/firtree.gif' },
+];
+
+const LINE_TWO_INVESTORS: Investor[] = [
+  { id: 8, name: 'Herculas', logo: '/logo/herculas.png' },
+  { id: 9, name: 'iCreate', logo: '/logo/icreate.png' },
+  { id: 10, name: 'MagicPin', logo: '/logo/magic-pin-logo.webp' },
+  { id: 11, name: 'Motorola', logo: '/logo/motorola-logo.svg' },
+  { id: 12, name: 'Social Business Creation', logo: '/logo/social business creation.webp' },
+  { id: 13, name: 'SocialCops', logo: '/logo/socialcops.png' },
+  { id: 14, name: 'WaterBridge Venture', logo: '/logo/waterbridge venture.png' },
 ];
 
 export default function FloatingGallery() {
   const sectionRef = useRef<HTMLElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const trackOneRef = useRef<HTMLDivElement>(null);
+  const trackTwoRef = useRef<HTMLDivElement>(null);
+  const cardRefsOne = useRef<(HTMLDivElement | null)[]>([]);
+  const cardRefsTwo = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
@@ -34,10 +44,12 @@ export default function FloatingGallery() {
     const ctx = gsap.context(() => {
       const section = sectionRef.current;
       const text = textRef.current;
-      const track = trackRef.current;
-      const cards = cardRefs.current;
+      const trackOne = trackOneRef.current;
+      const trackTwo = trackTwoRef.current;
+      const cardsOne = cardRefsOne.current;
+      const cardsTwo = cardRefsTwo.current;
 
-      if (!section || !text || !track) return;
+      if (!section || !text || !trackOne || !trackTwo) return;
 
       // --- Initial states ---
       gsap.set(text, {
@@ -46,25 +58,34 @@ export default function FloatingGallery() {
         filter: 'blur(14px)',
       });
 
-      // Cards start below and invisible
-      gsap.set(cards, {
-        y: 60,
+      // Cards start invisible with slight offsets
+      gsap.set(cardsOne, {
+        y: 40,
         opacity: 0,
-        scale: 0.85,
+        scale: 0.88,
       });
 
-      // Track starts to the right (so it scrolls left)
-      const getStartX = () => {
-        return -(track.scrollWidth - window.innerWidth + 48);
+      gsap.set(cardsTwo, {
+        y: 40,
+        opacity: 0,
+        scale: 0.88,
+      });
+
+      // Track One starts shifted left (scrolls right to left -> moves x to 0)
+      const getStartXOne = () => {
+        return -(trackOne.scrollWidth - window.innerWidth + 48);
       };
-      gsap.set(track, { x: getStartX() });
+      gsap.set(trackOne, { x: getStartXOne() });
+
+      // Track Two starts at 0 (scrolls right -> moves positive x)
+      gsap.set(trackTwo, { x: 0 });
 
       // --- Main timeline with pin ---
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: section,
           start: 'top top',
-          end: '+=800%',  // 🔽 Reduced from dynamic huge value to a fixed 8 screens – adjust as needed
+          end: '+=800%',
           pin: true,
           scrub: 1.2,
           anticipatePin: 1,
@@ -87,21 +108,21 @@ export default function FloatingGallery() {
 
       // 2. Cards stagger in from below (opening)
       tl.to(
-        cards,
+        [cardsOne, cardsTwo],
         {
           y: 0,
           opacity: 1,
           scale: 1,
-          stagger: 0.08,
+          stagger: 0.05,
           duration: 1.2,
           ease: 'power2.out',
         },
         0.1
       );
 
-      // 3. Horizontal track movement (scrubbed)
+      // 3. Track One moves left (x: 0)
       tl.to(
-        track,
+        trackOne,
         {
           x: 0,
           duration: 7,
@@ -110,7 +131,19 @@ export default function FloatingGallery() {
         0.45
       );
 
-      // 4. Text fades out (closing)
+      // 4. Track Two moves right (opposite direction)
+      const targetXTwo = -(trackTwo.scrollWidth - window.innerWidth + 48);
+      tl.to(
+        trackTwo,
+        {
+          x: targetXTwo,
+          duration: 7,
+          ease: 'none',
+        },
+        0.45
+      );
+
+      // 5. Text fades out (closing)
       tl.to(
         text,
         {
@@ -123,7 +156,7 @@ export default function FloatingGallery() {
         6.3
       );
 
-      // 5. Whole section scales down and fades (closing)
+      // 6. Whole section scales down and fades (closing)
       tl.to(
         section,
         {
@@ -136,7 +169,6 @@ export default function FloatingGallery() {
         '+=0.5'
       );
 
-      // Handle resize to recalc track position
       const handleResize = () => {
         ScrollTrigger.refresh();
       };
@@ -166,13 +198,13 @@ export default function FloatingGallery() {
         select-none
       "
     >
-      {/* Center Text */}
+      {/* Center Text - Moved higher up via top positioning */}
       <div
         ref={textRef}
         className="
           absolute
-          top-[38%]
-          sm:top-1/2
+          top-[26%]
+          sm:top-[30%]
           -translate-y-1/2
           left-1/2
           -translate-x-1/2
@@ -203,24 +235,29 @@ export default function FloatingGallery() {
         </h2>
       </div>
 
-      {/* Investor Logo Track */}
+      {/* Dual Logo Tracks Container */}
       <div
         className="
           absolute
           left-0
           right-0
-          top-[62%]
-          sm:top-auto
-          sm:bottom-10
-          md:bottom-14
+          top-[50%]
           -translate-y-1/2
+          sm:top-auto
+          sm:bottom-6
+          md:bottom-10
           sm:translate-y-0
           z-[50]
+          flex
+          flex-col
+          gap-4
+          sm:gap-5
           overflow-visible
         "
       >
+        {/* Track One: Moves Left */}
         <div
-          ref={trackRef}
+          ref={trackOneRef}
           className="
             flex
             w-max
@@ -235,10 +272,10 @@ export default function FloatingGallery() {
             will-change-transform
           "
         >
-          {PAST_INVESTORS.map((investor, index) => (
+          {LINE_ONE_INVESTORS.map((investor, index) => (
             <div
               key={investor.id}
-              ref={(el) => { cardRefs.current[index] = el; }}
+              ref={(el) => { cardRefsOne.current[index] = el; }}
               className="
                 relative
                 shrink-0
@@ -253,7 +290,66 @@ export default function FloatingGallery() {
                 rounded-xl
                 overflow-hidden
                 border
-                border-white/10
+                border-white/15
+                bg-offwhite
+                flex
+                items-center
+                justify-center
+                shadow-[0_20px_60px_rgba(0,0,0,0.35)]
+                will-change-transform
+              "
+            >
+              <img
+                src={investor.logo}
+                alt={investor.name}
+                className="
+                  max-w-[75%]
+                  max-h-[65%]
+                  w-auto
+                  h-auto
+                  object-contain
+                "
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Track Two: Moves Right */}
+        <div
+          ref={trackTwoRef}
+          className="
+            flex
+            w-max
+            items-center
+            gap-4
+            sm:gap-5
+            md:gap-6
+            pl-6
+            md:pl-12
+            pr-6
+            md:pr-12
+            will-change-transform
+          "
+        >
+          {LINE_TWO_INVESTORS.map((investor, index) => (
+            <div
+              key={investor.id}
+              ref={(el) => { cardRefsTwo.current[index] = el; }}
+              className="
+                relative
+                shrink-0
+                w-[180px]
+                h-[110px]
+                sm:w-[220px]
+                sm:h-[130px]
+                md:w-[280px]
+                md:h-[160px]
+                lg:w-[320px]
+                lg:h-[180px]
+                rounded-xl
+                overflow-hidden
+                border
+                border-white/15
                 bg-offwhite
                 flex
                 items-center
