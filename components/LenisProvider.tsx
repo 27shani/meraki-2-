@@ -16,19 +16,24 @@ export default function LenisProvider({ children }: { children: ReactNode }) {
       window.matchMedia('(pointer: coarse)').matches;
 
     if (isMobile) {
+      // 🔥 Force-clean ALL locks (including leftover from loader)
       document.documentElement.style.overflow = '';
       document.body.style.overflow = '';
+      document.documentElement.style.removeProperty('overflow');
+      document.body.style.removeProperty('overflow');
       document.documentElement.classList.remove(
         'lenis',
         'lenis-smooth',
         'lenis-stopped'
       );
+      // Extra safety: remove class even if it appears elsewhere
+      document.documentElement.classList.remove('lenis-stopped');
 
-      // Helps pin stability on real phones
       ScrollTrigger.config({ ignoreMobileResize: true });
-      return;
+      return; // Do not create Lenis instance
     }
 
+    // --- Desktop Lenis setup (unchanged) ---
     const html = document.documentElement;
     html.classList.add('lenis', 'lenis-smooth');
 
