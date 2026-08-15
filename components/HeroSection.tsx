@@ -12,99 +12,88 @@ export default function HeroSection() {
   const heroTextContainerRef = useRef<HTMLDivElement>(null);
   const expandBoxRef = useRef<HTMLDivElement>(null);
   const expandContentRef = useRef<HTMLDivElement>(null);
-
   const loaderRef = useRef<HTMLDivElement>(null);
-  const loaderTitleRef = useRef<HTMLDivElement>(null);
+  const loaderLogoRef = useRef<HTMLImageElement>(null);
   const loaderWipeRedRef = useRef<HTMLDivElement>(null);
   const loaderWipeBlackRef = useRef<HTMLDivElement>(null);
-
   const heroTitleRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
-    // Safety unlock after 5 seconds (if something goes wrong)
+    // Safety unlock after 4 seconds
     const safetyUnlock = window.setTimeout(() => {
-      if (typeof window !== 'undefined' && (window as any).__unlockLenis) {
-        (window as any).__unlockLenis();
-      }
-    }, 5000);
+      (window as any).__unlockLenis?.();
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    }, 4000);
 
     const mm = gsap.matchMedia();
 
-    // ---- LOADER ANIMATION ----
-    mm.add("all", () => {
+    // ---------- LOADER (logo only) ----------
+    mm.add('all', () => {
       const loader = loaderRef.current;
-      const loaderTitle = loaderTitleRef.current;
+      const logo = loaderLogoRef.current;
       const wipeRed = loaderWipeRedRef.current;
       const wipeBlack = loaderWipeBlackRef.current;
 
-      if (loader && loaderTitle && wipeRed && wipeBlack) {
-        const loaderTl = gsap.timeline();
+      if (!loader || !logo || !wipeRed || !wipeBlack) return;
 
-        const logoImg = loaderTitle.querySelector('img');
-        const yearText = loaderTitle.querySelector('.year-text');
+      gsap.set(loader, { opacity: 1, visibility: 'visible', pointerEvents: 'auto' });
+      gsap.set(logo, { scale: 0.75, opacity: 0 });
+      gsap.set([wipeRed, wipeBlack], { yPercent: 100 });
 
-        gsap.set(loader, { opacity: 1, visibility: 'visible', pointerEvents: 'auto' });
-        gsap.set([logoImg, yearText], { scale: 0.8, opacity: 0 });
-        gsap.set([wipeRed, wipeBlack], { yPercent: 100 });
+      const tl = gsap.timeline({
+        onComplete: () => {
+          gsap.set(loader, { visibility: 'hidden', pointerEvents: 'none' });
+          document.body.style.overflow = '';
+          document.documentElement.style.overflow = '';
+          document.documentElement.classList.remove('lenis-stopped');
 
-        loaderTl
-          .to([logoImg, yearText], {
-            scale: 1,
-            opacity: 1,
-            duration: 0.8,
-            stagger: 0.1,
-            ease: 'expo.out',
-          })
-          .fromTo(wipeRed, { yPercent: 100 }, { yPercent: 0, duration: 0.6, ease: 'power3.inOut' }, '+=0.2')
-          .fromTo(wipeBlack, { yPercent: 100 }, { yPercent: 0, duration: 0.6, ease: 'power3.inOut' }, '-=0.4')
-          .set([logoImg, yearText], { opacity: 0 })
-          .set(loader, { backgroundColor: 'transparent' })
-          .to(wipeRed, { yPercent: 100, duration: 0.6, ease: 'power3.inOut' })
-          .to(wipeBlack, {
-            yPercent: 100,
-            duration: 0.6,
-            ease: 'power3.inOut',
-            onComplete: () => {
-              gsap.set(loader, { visibility: 'hidden', pointerEvents: 'none' });
-              document.body.style.overflow = '';
+          (window as any).__unlockLenis?.();
 
-              // ✅ Unlock Lenis (now defined in lib/lenis.ts)
-              if (typeof window !== 'undefined' && (window as any).__unlockLenis) {
-                (window as any).__unlockLenis();
-              }
+          ScrollTrigger.refresh();
+          setTimeout(() => ScrollTrigger.refresh(), 200);
 
-              // ✅ Refresh ScrollTrigger twice to ensure proper pin calculations
-              ScrollTrigger.refresh();
-              setTimeout(() => ScrollTrigger.refresh(), 300);
+          // Title reveal
+          if (heroTitleRef.current) {
+            const words = heroTitleRef.current.querySelectorAll('span');
+            gsap.from(words, {
+              opacity: 0,
+              y: 40,
+              duration: 0.55,
+              stagger: 0.1,
+              ease: 'power3.out',
+            });
+          }
+        },
+      });
 
-              // Hero title reveal
-              if (heroTitleRef.current) {
-                const words = heroTitleRef.current.querySelectorAll('span');
-                gsap.from(words, {
-                  opacity: 0,
-                  y: 50,
-                  duration: 0.6,
-                  stagger: 0.12,
-                  ease: 'power3.out',
-                  delay: 0.2,
-                });
-              }
-            },
-          }, '-=0.4');
-      }
+      tl.to(logo, {
+        scale: 1,
+        opacity: 1,
+        duration: 0.7,
+        ease: 'expo.out',
+      })
+        .fromTo(wipeRed, { yPercent: 100 }, { yPercent: 0, duration: 0.5, ease: 'power3.inOut' }, '+=0.15')
+        .fromTo(wipeBlack, { yPercent: 100 }, { yPercent: 0, duration: 0.5, ease: 'power3.inOut' }, '-=0.35')
+        .set(logo, { opacity: 0 })
+        .set(loader, { backgroundColor: 'transparent' })
+        .to(wipeRed, { yPercent: 100, duration: 0.5, ease: 'power3.inOut' })
+        .to(wipeBlack, { yPercent: 100, duration: 0.5, ease: 'power3.inOut' }, '-=0.35');
     });
 
-    // ---- DESKTOP SCROLL ANIMATION (≥768px) ----
-    mm.add("(min-width: 768px)", () => {
+    // ---------- DESKTOP (≥768px) ----------
+    mm.add('(min-width: 768px)', () => {
       gsap.set(heroTextContainerRef.current, { y: 0 });
 
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: '+=80%',          // ✅ reduced from 160%
+          end: '+=80%',
           scrub: 0.6,
           pin: true,
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
         },
       });
 
@@ -112,73 +101,94 @@ export default function HeroSection() {
         width: '350px',
         height: '200px',
         opacity: 1,
-        borderRadius: '0px',
+        borderRadius: 0,
         ease: 'power3.out',
       })
-        .to(expandBoxRef.current, {
-          width: '100%',
-          height: '100%',
-          borderRadius: '0px',
-          borderWidth: '0px',
-          ease: 'power3.inOut',
-        }, '+=0.1')
-        .fromTo(expandContentRef.current,
+        .to(
+          expandBoxRef.current,
+          {
+            width: '100%',
+            height: '100%',
+            borderWidth: 0,
+            ease: 'power3.inOut',
+          },
+          '+=0.1'
+        )
+        .fromTo(
+          expandContentRef.current,
           { opacity: 0, y: 60 },
-          { opacity: 1, y: 0, ease: 'power3.out', duration: 1.5 },
+          { opacity: 1, y: 0, ease: 'power3.out', duration: 1.4 },
           '<0.2'
         )
-        .to(containerRef.current, {
-          scale: 0.85,
-          opacity: 0.15,
-          yPercent: -20,
-          ease: 'power2.inOut',
-          duration: 1.2,
-        }, '+=0.3');
+        .to(
+          containerRef.current,
+          {
+            scale: 0.85,
+            opacity: 0.15,
+            yPercent: -20,
+            ease: 'power2.inOut',
+            duration: 1.1,
+          },
+          '+=0.25'
+        );
     });
 
-    // ---- MOBILE SCROLL ANIMATION (<768px) ----
-    mm.add("(max-width: 767px)", () => {
-      gsap.set(heroTextContainerRef.current, { y: '10vh' });
+    // ---------- MOBILE (<768px) – lighter ----------
+    mm.add('(max-width: 767px)', () => {
+      // Much lighter animation – no heavy width/height changes
+      gsap.set(heroTextContainerRef.current, { y: '6vh' });
+      gsap.set(expandBoxRef.current, {
+        scale: 0.3,
+        opacity: 0,
+        width: '100%',
+        height: '100%',
+        borderRadius: 0,
+      });
 
-      const mobileTl = gsap.timeline({
+      const tl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: '+=80%',          // ✅ reduced from 180%
-          scrub: 0.6,
+          end: '+=55%',          // shorter pin
+          scrub: 0.35,           // more responsive
           pin: true,
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
         },
       });
 
-      mobileTl.to(heroTextContainerRef.current, { y: 0, duration: 1.2, ease: 'power2.out' })
-        .to(expandBoxRef.current, {
-          width: '220px',
-          height: '350px',
-          opacity: 1,
-          borderRadius: '0px',
-          ease: 'power3.out',
-          duration: 1
-        }, "+=0.2")
-        .to(expandBoxRef.current, {
-          width: '100%',
-          height: '100%',
-          borderRadius: '0px',
-          borderWidth: '0px',
-          ease: 'power3.inOut',
-          duration: 1.2
-        }, '+=0.2')
-        .fromTo(expandContentRef.current,
-          { opacity: 0, y: 60 },
-          { opacity: 1, y: 0, ease: 'power3.out', duration: 1.5 },
+      tl.to(heroTextContainerRef.current, {
+        y: 0,
+        duration: 0.9,
+        ease: 'power2.out',
+      })
+        .to(
+          expandBoxRef.current,
+          {
+            scale: 1,
+            opacity: 1,
+            duration: 1,
+            ease: 'power3.inOut',
+          },
+          '+=0.1'
+        )
+        .fromTo(
+          expandContentRef.current,
+          { opacity: 0, y: 30 },
+          { opacity: 1, y: 0, ease: 'power3.out', duration: 1 },
           '<0.2'
         )
-        .to(containerRef.current, {
-          scale: 0.85,
-          opacity: 0.15,
-          yPercent: -20,
-          ease: 'power2.inOut',
-          duration: 1.2,
-        }, '+=0.3');
+        .to(
+          containerRef.current,
+          {
+            scale: 0.92,
+            opacity: 0.2,
+            yPercent: -10,
+            ease: 'power2.inOut',
+            duration: 0.9,
+          },
+          '+=0.15'
+        );
     });
 
     return () => {
@@ -190,7 +200,6 @@ export default function HeroSection() {
   return (
     <section
       ref={containerRef}
-      style={{ willChange: 'transform, opacity' }}
       className="relative w-screen h-[100dvh] bg-black text-offwhite overflow-hidden flex flex-col justify-between"
     >
       {/* Background Glow */}
@@ -217,7 +226,6 @@ export default function HeroSection() {
       {/* Centered Hero Title */}
       <div
         ref={heroTextContainerRef}
-        style={{ willChange: 'transform' }}
         className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 md:px-12 pointer-events-none gap-6"
       >
         <h1
@@ -230,13 +238,8 @@ export default function HeroSection() {
           </span>
           <span>Scale.</span>
         </h1>
-
         <p className="text-lg md:text-2xl text-neutral-300 font-light tracking-widest uppercase font-sans">
-          23rd{' '}
-          <span className="text-coral-light/70">
-            —
-          </span>{' '}
-          25th October 2026
+          23rd <span className="text-coral-light/70">—</span> 25th October 2026
         </p>
       </div>
 
@@ -255,11 +258,10 @@ export default function HeroSection() {
         </div>
       </div>
 
-      {/* FULL-SCREEN EXPANDING OVERLAY */}
+      {/* Expanding Overlay */}
       <div
         ref={expandBoxRef}
-        style={{ willChange: 'width, height, opacity' }}
-        className="absolute inset-0 m-auto w-0 h-0 opacity-0 z-30 overflow-hidden bg-ink shadow-2xl flex items-center justify-center text-center pointer-events-none"
+        className="absolute inset-0 m-auto w-0 h-0 opacity-0 z-30 overflow-hidden bg-ink shadow-2xl flex items-center justify-center text-center pointer-events-none origin-center"
       >
         <img
           src="/C3675T01.JPG"
@@ -271,7 +273,6 @@ export default function HeroSection() {
 
         <div
           ref={expandContentRef}
-          style={{ willChange: 'transform, opacity' }}
           className="relative z-40 flex flex-col items-center justify-center px-6 md:px-12 max-w-4xl space-y-6 md:space-y-8"
         >
           <h3 className="text-4xl md:text-6xl lg:text-7xl font-serif italic font-normal text-offwhite leading-tight">
@@ -279,37 +280,29 @@ export default function HeroSection() {
           </h3>
           <div className="space-y-4 text-sm md:text-lg lg:text-xl text-neutral-300 font-sans font-light leading-relaxed max-w-3xl">
             <p>
-              <strong className="font-medium text-offwhite">Meraki</strong> is FIIB's flagship international business plan competition for the next generation of entrepreneurs.
+              <strong className="font-medium text-offwhite">Meraki</strong> is FIIB&apos;s flagship international business plan competition for the next generation of entrepreneurs.
             </p>
             <p>
               Since 2012, it has brought together ambitious students, mentors, investors and industry leaders to turn promising ideas into stronger, more viable ventures.
             </p>
             <p>
-              It’s not just about having a great idea. It’s about solving a real problem, building a strong business case and pitching it with conviction.
+              It&apos;s not just about having a great idea. It&apos;s about solving a real problem, building a strong business case and pitching it with conviction.
             </p>
           </div>
         </div>
       </div>
 
-      {/* LOADER */}
+      {/* LOADER – only big logo */}
       <div
         ref={loaderRef}
         className="fixed inset-0 z-[999] bg-black flex items-center justify-center overflow-hidden"
       >
-        <div
-          ref={loaderTitleRef}
-          className="relative z-10 flex items-center justify-center gap-4 md:gap-6"
-        >
-          <img
-            src="/Meraki full logo png-02.png"
-            alt="Meraki"
-            className="h-12 sm:h-16 md:h-24 lg:h-32 w-auto object-contain"
-          />
-          <span className="year-text text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-serif font-light text-offwhite">
-            2026
-          </span>
-        </div>
-
+        <img
+          ref={loaderLogoRef}
+          src="/Meraki full logo png-02.png"
+          alt="Meraki"
+          className="h-20 sm:h-28 md:h-36 lg:h-44 w-auto object-contain"
+        />
         <div ref={loaderWipeRedRef} className="absolute inset-0 bg-coral z-20 pointer-events-none" />
         <div ref={loaderWipeBlackRef} className="absolute inset-0 bg-black z-30 pointer-events-none" />
       </div>
