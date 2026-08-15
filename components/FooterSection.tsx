@@ -1,194 +1,255 @@
-// components/ContactSection.tsx
+// components/FooterSection.tsx
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { splitIntoChars, applyCharHover, initCharHover } from '@/lib/splitText';
 
-export default function ContactSection() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const circleRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
+export default function FooterSection() {
+  const footerRef = useRef<HTMLElement>(null);
+  const navRef = useRef<HTMLDivElement>(null);
+  const maskRef = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const logoImgRef = useRef<HTMLImageElement>(null);
+  const instaRef = useRef<HTMLAnchorElement>(null);
+  const linkRefs = useRef<(HTMLElement | null)[]>([]);
 
-  // Timer state
-  const [mounted, setMounted] = useState(false);
-  const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0 });
+  const addLinkRef = (el: HTMLElement | null) => {
+    if (el && !linkRefs.current.includes(el)) {
+      linkRefs.current.push(el);
+    }
+  };
 
-  useEffect(() => {
-    setMounted(true);
-    // Target Date for the countdown
-    const targetDate = new Date('2026-10-23T00:00:00').getTime();
-
-    const interval = setInterval(() => {
-      const now = new Date().getTime();
-      const distance = targetDate - now;
-
-      if (distance < 0) {
-        clearInterval(interval);
-        return;
-      }
-
-      setTimeLeft({
-        days: Math.floor(distance / (1000 * 60 * 60 * 24)),
-        hours: Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
-        minutes: Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)),
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // GSAP Animation
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
+    const prefersReduced =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
     const ctx = gsap.context(() => {
+      gsap.set(footerRef.current, { opacity: 0, y: 60 });
+      gsap.set(navRef.current, { opacity: 0, y: 30 });
+      if (instaRef.current) gsap.set(instaRef.current, { opacity: 0, scale: 0.5 });
+      if (logoImgRef.current) gsap.set(logoImgRef.current, { yPercent: 100, opacity: 0 });
+
+      let titleChars: HTMLElement[] = [];
+      if (titleRef.current && !prefersReduced) {
+        const spans = titleRef.current.querySelectorAll('[data-split]');
+        spans.forEach((span) => {
+          const chars = splitIntoChars(span as HTMLElement);
+          applyCharHover(chars);
+          titleChars = titleChars.concat(chars.map((c) => c.wrapper));
+        });
+        gsap.set(titleChars, { yPercent: 110, opacity: 0 });
+      } else if (titleRef.current) {
+        gsap.set(titleRef.current, { yPercent: 100 });
+      }
+
+      initCharHover(footerRef.current || document);
+
+      gsap.set(linkRefs.current, {
+        opacity: 0,
+        clipPath: 'inset(100% 0 0 0)',
+        y: 12,
+      });
+
       const tl = gsap.timeline({
         scrollTrigger: {
-          trigger: containerRef.current,
-          start: 'top top',
-          end: '+=100%',
-          scrub: 1,
-          pin: true,
+          trigger: footerRef.current,
+          start: 'top 95%', // Animates as soon as the top of the footer enters the screen
+          end: 'top 40%', // Finishes animation when it reaches 40% up the screen
+          scrub: 1.2,
+          invalidateOnRefresh: true,
         },
       });
 
-      // Increased scale to ensure it fully covers large desktop monitors
       tl.to(
-        circleRef.current,
-        {
-          scale: 40,
-          ease: 'power2.inOut',
-          duration: 1,
-        },
+        footerRef.current,
+        { opacity: 1, y: 0, ease: 'power2.out', duration: 1.2 },
         0
       );
 
-      // Content gently rises + fades in as the mask finishes expanding
-      tl.fromTo(
-        contentRef.current,
-        { opacity: 0, y: 40 },
-        { opacity: 1, y: 0, ease: 'power2.out', duration: 0.5 },
-        0.5
+      tl.to(
+        navRef.current,
+        { opacity: 1, y: 0, ease: 'power2.out', duration: 1 },
+        0.1
       );
-    }, containerRef);
+
+      tl.to(
+        linkRefs.current,
+        {
+          opacity: 1,
+          clipPath: 'inset(0% 0 0 0)',
+          y: 0,
+          stagger: 0.04,
+          ease: 'power3.out',
+          duration: 0.7,
+        },
+        0.15
+      );
+
+      // Logo slide up
+      if (logoImgRef.current) {
+        tl.to(
+          logoImgRef.current,
+          {
+            yPercent: 0,
+            opacity: 1,
+            ease: 'power3.out',
+            duration: 1.2,
+          },
+          0.25
+        );
+      }
+
+      // 2026 Text slide up
+      if (titleChars.length) {
+        tl.to(
+          titleChars,
+          {
+            yPercent: 0,
+            opacity: 1,
+            stagger: { each: 0.025, from: 'start' },
+            ease: 'power3.out',
+            duration: 1.2,
+          },
+          0.25
+        );
+      } else if (titleRef.current) {
+        tl.to(
+          titleRef.current,
+          { yPercent: 0, ease: 'power3.out', duration: 1 },
+          0.25
+        );
+      }
+
+      // Instagram icon pop-in
+      if (instaRef.current) {
+        tl.to(
+          instaRef.current,
+          { opacity: 1, scale: 1, ease: 'back.out(1.5)', duration: 0.8 },
+          0.4
+        );
+      }
+
+    }, footerRef);
 
     return () => ctx.revert();
   }, []);
 
   return (
-    <section
-      ref={containerRef}
-      className="relative h-screen bg-black overflow-hidden flex items-center justify-center rounded-b-[40px] md:rounded-b-[80px] z-10"
+    <footer
+      ref={footerRef}
+      // FIXED: Removed 'fixed inset-0 z-[-999]' and replaced with 'relative w-full z-10'
+      // Added a min-height so it has enough space to look nicely spaced at the end of the site
+      className="relative w-full z-10 bg-black text-offwhite px-6 md:px-16 py-12 md:py-16 flex flex-col justify-between overflow-hidden min-h-[50vh] md:min-h-[70vh]"
+      style={{ opacity: 0, y: 60 }}
     >
-      {/* Expanding Abstract Art Background */}
-      <div
-        ref={circleRef}
-        className="absolute w-24 h-24 rounded-full z-0 transform scale-1"
-        style={{
-          // Pure CSS radial gradients guarantee the abstract art renders correctly on all browsers
-          background: `
-            radial-gradient(circle at 20% 30%, rgba(244,114,182,0.15) 0%, transparent 50%),
-            radial-gradient(circle at 80% 20%, rgba(45,212,191,0.15) 0%, transparent 50%),
-            radial-gradient(circle at 50% 80%, rgba(129,140,248,0.15) 0%, transparent 50%),
-            #f8fafc
-          `
-        }}
-      />
+      {/* Ambient glow */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(251,87,95,0.10),transparent_55%),radial-gradient(ellipse_at_top_right,rgba(143,83,252,0.12),transparent_55%)] pointer-events-none z-0" />
 
-      {/* Contact Content revealed inside light background */}
+      {/* ---- TOP NAVIGATION ---- */}
       <div
-        ref={contentRef}
-        className="relative z-10 text-ink max-w-7xl w-full px-6 md:px-12 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"
+        ref={navRef}
+        className="relative max-w-7xl w-full mx-auto flex flex-col md:flex-row justify-between items-start gap-12 z-10 mb-12 md:mb-0"
+        style={{ opacity: 0, y: 30 }}
       >
-        {/* Text & CTA Left Side */}
-        <div className="space-y-8 mt-8 md:mt-0">
-          
-          {/* Complex Font-Mixed Heading */}
-          <div className="relative inline-block w-full">
-            {/* Floating decorative words */}
-            <span className="absolute -top-6 left-[45%] text-[10px] md:text-xs font-serif italic text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-pink-500">
-              Leadership
-            </span>
-            <span className="absolute top-[20%] -left-4 md:-left-8 text-[10px] md:text-xs font-serif italic text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-500">
-              Ideas
-            </span>
-            <span className="absolute top-[10%] -right-2 md:-right-8 text-[10px] md:text-xs font-serif italic text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-500">
-              Startups
-            </span>
-            <span className="absolute -bottom-4 md:-bottom-6 left-[15%] text-[10px] md:text-xs font-serif italic text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-pink-500">
-              Startups
-            </span>
-            <span className="absolute -bottom-8 right-[25%] text-[10px] md:text-xs font-serif italic text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-500">
-              Innovation
-            </span>
-            <span className="absolute bottom-[20%] right-[35%] text-[10px] md:text-xs font-serif italic text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-rose-400">
-              Leadership
-            </span>
-
-            {/* Main Title */}
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-[4.2rem] font-sans font-normal tracking-tight leading-[1.15] text-ink relative z-10 text-center md:text-left">
-              Early-stage <span className="font-serif italic font-light text-neutral-800">ideas</span> to<br />
-              young ventures seeking<br />
-              <span className="font-serif italic font-light text-neutral-800">validation or growth</span>
-            </h1>
-          </div>
-          
-          {/* Subtext */}
-          <p className="text-base md:text-lg font-serif text-neutral-600 leading-relaxed max-w-lg italic text-center md:text-left mx-auto md:mx-0">
-            Join innovators worldwide to transform your groundbreaking ideas into reality. Seize this opportunity to showcase your talent.
+        {/* Left column – Contact Info */}
+        <div className="w-full md:w-auto flex flex-col">
+          <p className="text-xs uppercase tracking-widest text-coral-light mb-2 font-sans">
+            <span ref={addLinkRef}>Get in Touch</span>
           </p>
+          <a
+            href="mailto:meraki2026@fiib.edu.in"
+            className="text-lg hover:underline text-neutral-300 font-sans break-all mb-4"
+          >
+            <span ref={addLinkRef} data-char-hover>
+              meraki2026@fiib.edu.in
+            </span>
+          </a>
           
-          {/* CTA Button */}
-          <div className="pt-2 text-center md:text-left">
-            <a
-              href="#register"
-              className="inline-block bg-[#ff4d4d] text-offwhite px-10 py-4 rounded-full font-sans font-semibold uppercase tracking-wider text-sm hover:bg-purple transition-all duration-300 hover:shadow-[0_10px_30px_rgba(255,77,77,0.3)] hover:-translate-y-1"
-            >
-              Apply Now
+          <div className="flex flex-col space-y-1 mt-1">
+            <a href="tel:+917060366392" className="hover:text-offwhite transition-colors text-neutral-400">
+              <span ref={addLinkRef}>+91 7060366392</span>
+            </a>
+            <a href="tel:+919958617024" className="hover:text-offwhite transition-colors text-neutral-400">
+              <span ref={addLinkRef}>+91 9958617024</span>
+            </a>
+            <a href="tel:+919910470427" className="hover:text-offwhite transition-colors text-neutral-400">
+              <span ref={addLinkRef}>+91 9910470427</span>
             </a>
           </div>
         </div>
 
-        {/* Timer Blocks Right Side */}
-        <div className="flex flex-col items-center lg:items-end w-full pt-8 lg:pt-0">
-          <p className="text-xs uppercase tracking-widest text-neutral-500 mb-6 font-sans font-semibold">
-            Time remaining to apply
+        {/* Right column – Address Details */}
+        <div className="w-full md:w-auto flex flex-col md:items-end md:text-right">
+          <p className="text-xs uppercase tracking-widest text-neutral-500 mb-2 font-sans">
+            <span ref={addLinkRef}>Powered by FIIB</span>
           </p>
-          
-          <div className="flex gap-3 sm:gap-4 md:gap-6 w-full justify-center lg:justify-end overflow-visible pb-4">
-            {/* Days */}
-            <div className="flex flex-col items-center justify-center bg-white border border-gray-100 rounded-[24px] p-5 sm:p-6 md:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.06)] min-w-[90px] sm:min-w-[110px] md:min-w-[120px]">
-              <span className="text-4xl sm:text-5xl md:text-6xl font-serif italic font-medium text-ink">
-                {mounted ? String(timeLeft.days).padStart(2, '0') : '00'}
-              </span>
-              <span className="text-[10px] sm:text-xs md:text-sm font-sans uppercase tracking-widest text-neutral-500 mt-2 md:mt-3">
-                Days
-              </span>
-            </div>
-
-            {/* Hours */}
-            <div className="flex flex-col items-center justify-center bg-white border border-gray-100 rounded-[24px] p-5 sm:p-6 md:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.06)] min-w-[90px] sm:min-w-[110px] md:min-w-[120px]">
-              <span className="text-4xl sm:text-5xl md:text-6xl font-serif italic font-medium text-ink">
-                {mounted ? String(timeLeft.hours).padStart(2, '0') : '00'}
-              </span>
-              <span className="text-[10px] sm:text-xs md:text-sm font-sans uppercase tracking-widest text-neutral-500 mt-2 md:mt-3">
-                Hours
-              </span>
-            </div>
-
-            {/* Minutes */}
-            <div className="flex flex-col items-center justify-center bg-white border border-gray-100 rounded-[24px] p-5 sm:p-6 md:p-8 shadow-[0_8px_30px_rgb(0,0,0,0.06)] min-w-[90px] sm:min-w-[110px] md:min-w-[120px]">
-              <span className="text-4xl sm:text-5xl md:text-6xl font-serif italic font-medium text-ink">
-                {mounted ? String(timeLeft.minutes).padStart(2, '0') : '00'}
-              </span>
-              <span className="text-[10px] sm:text-xs md:text-sm font-sans uppercase tracking-widest text-neutral-500 mt-2 md:mt-3">
-                Minutes
-              </span>
-            </div>
-          </div>
+          <span className="text-neutral-400 normal-case tracking-normal text-sm md:text-base leading-relaxed max-w-sm">
+            <span ref={addLinkRef} className="block mb-1">
+              Fortune Institute of International Business
+            </span>
+            <span ref={addLinkRef}>
+              Plot No. 5, Rao Tula Ram Marg, Opp. Army R&R Hospital, Vasant Vihar, New Delhi 110057
+            </span>
+          </span>
         </div>
       </div>
-    </section>
+
+      {/* ---- BOTTOM CLOSING SECTION ---- */}
+      <div className="relative max-w-7xl w-full mx-auto z-10 flex flex-row justify-between items-end mt-auto">
+        
+        {/* Logo & 2026 Wrapper */}
+        <div ref={maskRef} className="overflow-hidden pb-2 flex items-center md:items-end gap-3 md:gap-6">
+          <img
+            ref={logoImgRef}
+            src="/meraki-logo.png"
+            alt="Meraki"
+            className="h-10 sm:h-14 md:h-20 lg:h-[6.5rem] w-auto invert mb-1 md:mb-3"
+          />
+          <h1
+            ref={titleRef}
+            className="text-5xl sm:text-6xl md:text-[9vw] font-sans font-semibold tracking-tighter leading-none select-none uppercase m-0 p-0"
+          >
+            <span
+              data-split
+              className="font-serif italic font-normal text-gradient-brand leading-none inline-block pb-1"
+            >
+              2026.
+            </span>
+          </h1>
+        </div>
+
+        {/* Instagram Icon */}
+        <a
+          ref={instaRef}
+          href="#"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mb-3 md:mb-6 lg:mb-8 text-neutral-400 hover:text-coral transition-colors duration-300"
+          aria-label="Instagram"
+        >
+          <svg
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="w-6 h-6 md:w-8 md:h-8"
+          >
+            <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+            <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+          </svg>
+        </a>
+
+      </div>
+    </footer>
   );
 }
