@@ -73,6 +73,7 @@ export default function AboutSection() {
       );
     });
 
+    // Desktop – now with horizontal sliding
     mm.add("(min-width: 768px)", () => {
       const tl = gsap.timeline({
         scrollTrigger: {
@@ -96,6 +97,7 @@ export default function AboutSection() {
         { y: '-20px', opacity: 1, duration: 1.0, ease: 'power2.out' },
         0
       )
+      // Boxes: stagger in from below (same as before)
       .fromTo(
         boxRefs.current,
         { y: '80px', scale: 0.92 },
@@ -107,9 +109,26 @@ export default function AboutSection() {
           ease: 'power2.out',
         },
         0.2
+      )
+      // Horizontal slide (like mobile) – added for desktop
+      .to(
+        boxesWrapperRef.current,
+        {
+          x: () => {
+            if (!boxesWrapperRef.current) return 0;
+            const wrapperWidth = boxesWrapperRef.current.scrollWidth || 0;
+            const viewportWidth = window.innerWidth;
+            // Slide left so the right edge of the wrapper aligns with the right edge of the viewport
+            return -(wrapperWidth - viewportWidth + 48);
+          },
+          duration: 2.5,
+          ease: 'power2.inOut',
+        },
+        0.4 // starts after boxes have appeared
       );
     });
 
+    // Mobile – unchanged
     mm.add("(max-width: 767px)", () => {
       const tl = gsap.timeline({
         scrollTrigger: {
@@ -185,8 +204,8 @@ export default function AboutSection() {
         </div>
       </div>
 
-      {/* Boxes – now in normal flow, not absolute */}
-      <div className="relative z-30 pointer-events-none px-6 md:px-16 mt-4 md:mt-8 w-full">
+      {/* Boxes – now in normal flow (not absolute) */}
+      <div className="relative z-30 pointer-events-none px-6 md:px-16 mt-4 md:mt-8 w-full overflow-visible">
         <div
           ref={boxesWrapperRef}
           className="flex flex-row justify-start md:justify-end items-end gap-4 sm:gap-6 lg:gap-8 pb-1 md:pb-0 w-max md:w-full max-w-7xl mx-auto md:pl-32"
@@ -195,7 +214,7 @@ export default function AboutSection() {
             <div
               key={index}
               ref={(el) => { boxRefs.current[index] = el; }}
-              className="pointer-events-auto shrink-0 w-[280px] sm:w-[320px] md:w-full md:flex-1 md:max-w-[300px] will-change-transform"
+              className="pointer-events-auto shrink-0 w-[280px] sm:w-[320px] md:w-[280px] lg:w-[300px] will-change-transform"
               style={{ transform: 'translateY(40px)', opacity: 1 }}
             >
               <div className="h-[260px] sm:h-[280px] md:h-[300px] flex flex-col justify-between p-5 sm:p-6 md:p-8 rounded-[20px] sm:rounded-[24px] md:rounded-[32px] bg-white/[0.08] backdrop-blur-2xl border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] transition-transform duration-500 hover:-translate-y-2 relative overflow-hidden">
