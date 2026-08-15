@@ -3,11 +3,7 @@
 import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-
-// IMPORTANT: Import your Lenis instance from wherever you initialize it.
-// For this example, we assume you have a global `lenis` object.
-// If not, you can pass it via a prop or Context.
-import { lenis } from '@/lib/lenis'; // <-- CHANGE THIS PATH TO YOUR LENIS FILE
+import { getLenis } from '@/lib/lenis';
 
 export default function AboutSection() {
   const containerRef = useRef<HTMLElement>(null);
@@ -15,8 +11,6 @@ export default function AboutSection() {
   const imageRef = useRef<HTMLDivElement>(null);
   const boxesWrapperRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLDivElement>(null);
-  
-  // Use a Map or stable array for refs to avoid null issues
   const boxRefs = useRef<HTMLDivElement[]>([]);
 
   const benefits = [
@@ -34,20 +28,18 @@ export default function AboutSection() {
   };
 
   useEffect(() => {
-    // 1. Register plugin
     gsap.registerPlugin(ScrollTrigger);
 
-    // 2. CRITICAL: Sync Lenis with ScrollTrigger (Fixes the "not opening" on phone)
+    // Lenis sync – safely initialised
+    const lenis = getLenis();
     if (lenis) {
       lenis.on('scroll', ScrollTrigger.update);
-      // Add Lenis' raf to GSAP's ticker
       gsap.ticker.add((time) => {
         lenis.raf(time * 1000);
       });
       gsap.ticker.lagSmoothing(0);
     }
 
-    // 3. Use gsap.context() for proper React cleanup and re-render handling
     const ctx = gsap.context(() => {
       // --- Heading Word Animations ---
       const lineDivs = headingRef.current?.querySelectorAll('div') || [];
@@ -72,10 +64,9 @@ export default function AboutSection() {
         );
       });
 
-      // --- Main Timeline Logic using matchMedia ---
       const mm = gsap.matchMedia();
 
-      // Base container fade-in (for all screens)
+      // Base container fade-in (all screens)
       mm.add("all", () => {
         gsap.fromTo(
           containerRef.current,
@@ -94,13 +85,12 @@ export default function AboutSection() {
         );
       });
 
-      // --- DESKTOP (≥ 768px) ---
+      // Desktop (≥ 768px)
       mm.add("(min-width: 768px)", () => {
         const wrapper = boxesWrapperRef.current;
         const container = containerRef.current;
         if (!wrapper || !container) return;
 
-        // Cache widths to prevent layout thrashing
         const containerWidth = container.clientWidth;
         const wrapperWidth = wrapper.scrollWidth;
         const startOffset = containerWidth * 0.6;
@@ -115,7 +105,7 @@ export default function AboutSection() {
             end: '+=250%',
             pin: true,
             scrub: 1,
-            invalidateOnRefresh: true, // Re-calculates on resize
+            invalidateOnRefresh: true,
           },
         });
 
@@ -150,9 +140,8 @@ export default function AboutSection() {
         );
       });
 
-      // --- MOBILE (< 768px) ---
+      // Mobile (< 768px)
       mm.add("(max-width: 767px)", () => {
-        // Ensure boxes are visible initially
         gsap.set(boxRefs.current, { y: 0, scale: 1, opacity: 1 });
 
         const tl = gsap.timeline({
@@ -198,7 +187,6 @@ export default function AboutSection() {
               const wrapperWidth = boxesWrapperRef.current.scrollWidth || 0;
               const viewportWidth = window.innerWidth;
               const moveX = -(wrapperWidth - viewportWidth + 60);
-              // Clamp to 0 if wrapper is smaller than viewport (prevents positive X pushing boxes right)
               return Math.min(moveX, 0);
             },
             duration: 1.8,
@@ -208,26 +196,27 @@ export default function AboutSection() {
         );
       });
 
-      // Cleanup matchMedia
       return () => mm.revert();
-    }, containerRef); // GSAP Context binds to this container
+    }, containerRef);
 
-    // 4. Force a refresh after fonts/images load (crucial for mobile heights)
+    // Refresh on load & orientation – only on client
     const refreshOnLoad = () => {
       ScrollTrigger.refresh();
     };
 
-    window.addEventListener('load', refreshOnLoad);
-    // Also refresh on orientation change
-    window.addEventListener('orientationchange', () => {
-      setTimeout(ScrollTrigger.refresh, 300);
-    });
+    if (typeof window !== 'undefined') {
+      window.addEventListener('load', refreshOnLoad);
+      window.addEventListener('orientationchange', () => {
+        setTimeout(ScrollTrigger.refresh, 300);
+      });
+    }
 
-    // 5. Cleanup everything on unmount
     return () => {
-      window.removeEventListener('load', refreshOnLoad);
-      window.removeEventListener('orientationchange', refreshOnLoad);
-      ctx.revert(); // Kills all GSAP animations and ScrollTriggers inside this component
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('load', refreshOnLoad);
+        window.removeEventListener('orientationchange', refreshOnLoad);
+      }
+      ctx.revert();
       if (lenis) {
         lenis.off('scroll', ScrollTrigger.update);
         gsap.ticker.remove(lenis.raf);
@@ -240,7 +229,6 @@ export default function AboutSection() {
       ref={containerRef}
       className="relative w-full h-[100svh] bg-black text-offwhite overflow-hidden flex flex-col justify-center px-6 md:px-16"
     >
-      {/* Heading */}
       <div
         ref={textContainerRef}
         style={{ willChange: 'transform, opacity' }}
@@ -256,7 +244,6 @@ export default function AboutSection() {
         </div>
       </div>
 
-      {/* Boxes Wrapper */}
       <div className="relative z-30 pointer-events-none px-6 md:px-16 mt-4 md:mt-8 w-full overflow-hidden">
         <div
           ref={boxesWrapperRef}
@@ -290,7 +277,6 @@ export default function AboutSection() {
         </div>
       </div>
 
-      {/* Arch Image */}
       <div
         ref={imageRef}
         style={{ willChange: 'transform, opacity' }}
