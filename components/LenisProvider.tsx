@@ -16,22 +16,31 @@ export default function LenisProvider({ children }: { children: ReactNode }) {
       window.matchMedia('(pointer: coarse)').matches;
 
     if (isMobile) {
-      // 🔥 Force-clean ALL locks (including leftover from loader)
-      document.documentElement.style.overflow = '';
-      document.body.style.overflow = '';
-      document.documentElement.style.removeProperty('overflow');
-      document.body.style.removeProperty('overflow');
-      document.documentElement.classList.remove(
-        'lenis',
-        'lenis-smooth',
-        'lenis-stopped'
-      );
-      // Extra safety: remove class even if it appears elsewhere
-      document.documentElement.classList.remove('lenis-stopped');
+  // Force-clean inline styles
+  document.documentElement.style.overflow = '';
+  document.body.style.overflow = '';
+  document.documentElement.style.removeProperty('overflow');
+  document.body.style.removeProperty('overflow');
+  document.documentElement.classList.remove('lenis', 'lenis-smooth', 'lenis-stopped');
 
-      ScrollTrigger.config({ ignoreMobileResize: true });
-      return; // Do not create Lenis instance
-    }
+  // 🔥 Inject a style tag to force overflow: auto !important
+  const styleId = 'mobile-scroll-fix';
+  if (!document.getElementById(styleId)) {
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.innerHTML = `
+      html, body, #__next, #root {
+        overflow: auto !important;
+        height: auto !important;
+        min-height: 100vh !important;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  ScrollTrigger.config({ ignoreMobileResize: true });
+  return;
+}
 
     // --- Desktop Lenis setup (unchanged) ---
     const html = document.documentElement;
