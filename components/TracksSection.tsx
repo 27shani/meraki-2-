@@ -5,12 +5,6 @@ import { useEffect, useRef } from 'react';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-/**
- * TracksSection
- * -------------------------------------------------
- * - Strong entrance via clip-path + y + opacity + blur
- * - Improved hover states on the two track cards
- */
 export default function TracksSection() {
   const containerRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -51,12 +45,8 @@ export default function TracksSection() {
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
-    const prefersReduced =
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
     const ctx = gsap.context(() => {
-      // Intro blur
+      // ---- Intro blur fade (global) ----
       gsap.fromTo(
         containerRef.current,
         { opacity: 0.15, filter: 'blur(8px)' },
@@ -75,132 +65,77 @@ export default function TracksSection() {
 
       const isMobile = window.innerWidth < 768;
 
+      // ---- Main timeline with pin ----
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: isMobile ? '+=380%' : '+=250%',
+          end: isMobile ? '+=400%' : '+=280%',
           pin: true,
-          scrub: 0.5,
+          scrub: 1.0,
           anticipatePin: 1,
           invalidateOnRefresh: true,
         },
       });
 
-      // Title – clip-path wipe + rise
-      if (titleRef.current && !prefersReduced) {
-        gsap.set(titleRef.current, {
+      // ---- TITLE entrance ----
+      gsap.set(titleRef.current, {
+        opacity: 0,
+        y: 40,
+        clipPath: 'inset(0 0 100% 0)',
+      });
+      tl.to(titleRef.current, {
+        opacity: 1,
+        y: 0,
+        clipPath: 'inset(0 0 0% 0)',
+        duration: 0.8,
+        ease: 'power3.out',
+      }, 0);
+
+      // ---- TRACK CARDS: slide in from right (one after another) ----
+      boxRefs.current.forEach((box, i) => {
+        if (!box) return;
+        gsap.set(box, {
+          x: 250,          // start off-screen right
           opacity: 0,
-          y: 50,
-          clipPath: 'inset(100% 0 0 0)',
-          filter: 'blur(10px)',
+          filter: 'blur(4px)',
         });
-        tl.to(
-          titleRef.current,
-          {
-            opacity: 1,
-            y: 0,
-            clipPath: 'inset(0% 0 0 0)',
-            filter: 'blur(0px)',
-            duration: 1,
-            ease: 'power3.out',
-          },
-          0
-        );
-      } else {
-        tl.fromTo(
-          titleRef.current,
-          { opacity: 0, y: 40 },
-          { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' },
-          0
-        );
-      }
+        tl.to(box, {
+          x: 0,
+          opacity: 1,
+          filter: 'blur(0px)',
+          duration: 1.0,
+          ease: 'power2.out',
+        }, 0.15 + i * 0.25); // stagger
+      });
 
-      // Track cards animation
-      if (isMobile) {
-        boxRefs.current.forEach((box, i) => {
-          if (!box) return;
-          gsap.set(box, {
-            x: 120,
-            opacity: 0.2,
-          filter: 'blur(8px)',
-          });
-          tl.to(
-            box,
-            {
-              x: 0,
-              opacity: 1,
-              filter: 'blur(0px)',
-              duration: 1.2,
-              ease: 'power3.out',
-            },
-            0.3 + i * 0.9
-          );
+      // ---- PRIZE BOXES: slide up one after another ----
+      prizeBoxRefs.current.forEach((pBox, i) => {
+        if (!pBox) return;
+        gsap.set(pBox, {
+          y: 60,
+          opacity: 0,
+          filter: 'blur(4px)',
         });
+        tl.to(pBox, {
+          y: 0,
+          opacity: 1,
+          filter: 'blur(0px)',
+          duration: 0.8,
+          ease: 'power2.out',
+        }, 0.5 + i * 0.2); // starts after tracks are mostly in
+      });
 
-        gsap.set(prizeRef.current, { opacity: 0, y: 40 });
-        tl.to(
-          prizeRef.current,
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.8,
-            ease: 'power3.out',
-          },
-          2.1
-        );
+      // ---- PRIZE label (optional) ----
+      gsap.set(prizeRef.current, { opacity: 0, y: 20 });
+      tl.to(prizeRef.current, {
+        opacity: 1,
+        y: 0,
+        duration: 0.6,
+        ease: 'power2.out',
+      }, 0.35);
 
-        prizeBoxRefs.current.forEach((pBox, i) => {
-          if (!pBox) return;
-          gsap.set(pBox, { y: 60, opacity: 0, filter: 'blur(8px)' });
-          tl.to(
-            pBox,
-            {
-              y: 0,
-              opacity: 1,
-              filter: 'blur(0px)',
-              duration: 1,
-              ease: 'power3.out',
-            },
-            2.3 + i * 0.6
-          );
-        });
-      } else {
-        boxRefs.current.forEach((box, i) => {
-          if (!box) return;
-          gsap.set(box, {
-            y: 80,
-            opacity: 0,
-            clipPath: 'inset(100% 0 0 0)',
-            filter: 'blur(12px)',
-          });
-          tl.to(
-            box,
-            {
-              y: 0,
-              opacity: 1,
-              clipPath: 'inset(0% 0 0 0)',
-              filter: 'blur(0px)',
-              duration: 1.15,
-              ease: 'power3.out',
-            },
-            0.25 + i * 0.18
-          );
-        });
-
-        tl.to(
-          prizeRef.current,
-          {
-            y: 0,
-            opacity: 1,
-            duration: 1.15,
-            ease: 'power3.out',
-          },
-          0.7
-        );
-      }
-
-      // Pan content if overflowing
+      // ---- CONTENT PAN (vertical scroll within pinned section) ----
       tl.to(
         contentRef.current,
         {
@@ -208,24 +143,24 @@ export default function TracksSection() {
             if (!contentRef.current) return 0;
             const overflow =
               contentRef.current.scrollHeight - window.innerHeight;
-            return overflow > 0 ? -(overflow + 100) : 0;
+            return overflow > 0 ? -(overflow + 80) : 0;
           },
           ease: 'none',
-          duration: 2,
+          duration: 2.5,
         },
-        isMobile ? 3.5 : 1.1
+        isMobile ? 1.8 : 1.2
       );
 
-      // Outro
+      // ---- OUTRO (fade out) ----
       tl.to(
         containerRef.current,
         {
-          opacity: 0.2,
+          opacity: 0.15,
           filter: 'blur(8px)',
           duration: 0.8,
           ease: 'power2.inOut',
         },
-        '+=0.15'
+        '+=0.3'
       );
     }, containerRef);
 
@@ -238,12 +173,12 @@ export default function TracksSection() {
       className="relative w-full h-screen bg-black text-offwhite overflow-hidden flex flex-col justify-start pt-16 md:pt-24 px-6 md:px-16"
     >
       <div ref={contentRef} className="w-full flex flex-col will-change-transform">
-        {/* Title */}
+        {/* Title - overflow-visible to prevent cutting 'g' */}
         <div
           ref={titleRef}
-          className="max-w-7xl mx-auto w-full mb-6 sm:mb-8 md:mb-10 opacity-0"
+          className="max-w-7xl mx-auto w-full mb-6 sm:mb-8 md:mb-10 overflow-visible"
         >
-          <h2 className="text-3xl sm:text-4xl md:text-[3.5rem] font-sans font-medium tracking-tight">
+          <h2 className="text-3xl sm:text-4xl md:text-[3.5rem] font-sans font-medium tracking-tight whitespace-normal">
             Two tracks.{' '}
             <span className="font-serif italic font-normal text-[#FB575F]">
               One stage.
@@ -259,7 +194,7 @@ export default function TracksSection() {
               ref={(el) => {
                 boxRefs.current[index] = el;
               }}
-              className="opacity-0 will-change-transform"
+              className="will-change-transform"
             >
               <div
                 className="
@@ -278,7 +213,6 @@ export default function TracksSection() {
                   hover:-translate-y-2
                 "
               >
-                {/* Hover gradient wash */}
                 <div className="absolute inset-0 bg-gradient-to-br from-coral/0 via-transparent to-purple/0 group-hover:from-coral/10 group-hover:to-purple/10 transition-all duration-500 pointer-events-none rounded-[20px] sm:rounded-[28px] md:rounded-[32px]" />
 
                 <div className="relative z-10 flex justify-between items-start mb-6">
@@ -317,7 +251,6 @@ export default function TracksSection() {
         <div
           ref={prizeRef}
           className="max-w-7xl mx-auto w-full opacity-0 will-change-transform pb-32 md:pb-40"
-          style={{ transform: 'translateY(60px)' }}
         >
           <h3 className="text-3xl md:text-4xl font-serif italic font-normal text-center text-offwhite mb-8">
             Prize Money
