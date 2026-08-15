@@ -55,22 +55,7 @@ export default function HowItWorksSection() {
     const ctx = gsap.context(() => {
       const total = STEPS.length;
 
-      // --- Intro blur fade (global) ---
-      gsap.fromTo(
-        containerRef.current,
-        { opacity: 0.15, filter: 'blur(8px)' },
-        {
-          opacity: 1,
-          filter: 'blur(0px)',
-          ease: 'power2.out',
-          scrollTrigger: {
-            trigger: containerRef.current,
-            start: 'top bottom',
-            end: 'top center',
-            scrub: 0.6,
-          },
-        }
-      );
+      // INTRO BLUR REMOVED – no longer needed
 
       if (pathRef.current && listRef.current && containerRef.current) {
         const pathLength = pathRef.current.getTotalLength();
@@ -85,28 +70,28 @@ export default function HowItWorksSection() {
 
         gsap.set(listRef.current, { y: startY });
 
-        // --- Main timeline with pin, now with opening + closing ---
+        // --- Main timeline – shortened pin duration for faster scroll ---
         const tl = gsap.timeline({
           scrollTrigger: {
             trigger: containerRef.current,
             start: 'top top',
-            end: `+=280%`, // 🔽 Reduced from 960% to a more reasonable length
+            end: `+=180%`, // reduced from 280% for less scrolling
             pin: true,
-            scrub: 0.8,
+            scrub: 0.5,   // smoother, less lag
             anticipatePin: 1,
             invalidateOnRefresh: true,
           },
         });
 
-        // 1. OPENING PHASE: steps stagger in from below
+        // 1. Steps stagger in from below (opening effect kept)
         tl.fromTo(
           stepRefs.current,
           { y: 80, opacity: 0 },
           {
             y: 0,
             opacity: 1,
-            stagger: 0.1,
-            duration: 1.2,
+            stagger: 0.08,
+            duration: 1.0,
             ease: 'power2.out',
           },
           0
@@ -118,7 +103,7 @@ export default function HowItWorksSection() {
           {
             strokeDashoffset: 0,
             ease: 'power1.inOut',
-            duration: 1,
+            duration: 0.8,
           },
           0
         );
@@ -140,20 +125,10 @@ export default function HowItWorksSection() {
         );
 
         // 4. Brief hold on last step
-        tl.to({}, { duration: 0.15 }, 1);
+        tl.to({}, { duration: 0.1 }, 0.9);
 
-        // 5. CLOSING PHASE: whole section scales down, blurs, and fades
-        tl.to(
-          containerRef.current,
-          {
-            scale: 0.85,
-            opacity: 0.1,
-            filter: 'blur(10px)',
-            duration: 1.0,
-            ease: 'power2.inOut',
-          },
-          '+=0.1' // starts almost immediately after the hold
-        );
+        // CLOSING PHASE REMOVED – no outro
+        // (the section will just end naturally)
       }
 
       if (coverRef.current && !prefersReduced) {
@@ -164,8 +139,7 @@ export default function HowItWorksSection() {
     return () => ctx.revert();
   }, []);
 
-  // (Keep the rest of the hooks and render as is)
-  // --- active step image fade, cover hover, etc. unchanged ---
+  // active step image fade
   useEffect(() => {
     if (!cardRef.current) return;
     const images = cardRef.current.querySelectorAll('[data-step-img]');
@@ -196,9 +170,9 @@ export default function HowItWorksSection() {
       ref={containerRef}
       className="relative w-full h-screen bg-black text-offwhite overflow-hidden flex items-center justify-between px-5 sm:px-8 md:px-16 select-none"
     >
-      {/* Background Ribbon Path */}
+      {/* Background Ribbon Path – hidden on mobile, visible on desktop */}
       <svg
-        className="absolute top-0 left-0 w-full h-full pointer-events-none z-10 opacity-30 md:opacity-100"
+        className="absolute top-0 left-0 w-full h-full pointer-events-none z-10 hidden md:block opacity-100"
         viewBox="0 0 1000 1000"
         fill="none"
         preserveAspectRatio="none"
