@@ -71,7 +71,7 @@ export default function TracksSection() {
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: isMobile ? '+=600%' : '+=450%',
+          end: isMobile ? '+=500%' : '+=450%',
           pin: true,
           scrub: 1.2,
           anticipatePin: 1,
@@ -100,17 +100,12 @@ export default function TracksSection() {
       // ---- TRACK CARDS: slide from RIGHT to LEFT ----
       const wrapper = tracksWrapperRef.current;
       if (wrapper) {
-        const wrapperRect = wrapper.getBoundingClientRect();
-        const wrapperWidth = wrapperRect.width;
+        const wrapperWidth = wrapper.scrollWidth;
         const viewportWidth = window.innerWidth;
 
-        const startOffset = viewportWidth * 0.8;
-
-        let finalX = 0;
-        if (wrapperWidth > viewportWidth) {
-          finalX = -(wrapperWidth - viewportWidth);
-          finalX -= 20;
-        }
+        const startOffset = viewportWidth * 0.85;
+        // Ensure it scrolls far enough to completely reveal track 2 with padding
+        const finalX = -(wrapperWidth - viewportWidth + (isMobile ? 32 : 48));
 
         gsap.set(wrapper, { x: startOffset });
 
@@ -209,15 +204,15 @@ export default function TracksSection() {
   return (
     <section
       ref={containerRef}
-      className="relative w-full h-screen bg-black text-offwhite overflow-hidden flex flex-col justify-start pt-10 sm:pt-16 md:pt-20 px-4 sm:px-6 md:px-12"
+      className="relative w-full h-screen bg-black text-offwhite overflow-visible flex flex-col justify-start pt-10 sm:pt-16 md:pt-20 px-4 sm:px-6 md:px-12"
     >
-      <div ref={contentRef} className="w-full flex flex-col will-change-transform">
+      <div ref={contentRef} className="w-full flex flex-col will-change-transform pb-12">
         {/* Title */}
         <div
           ref={titleRef}
-          className="max-w-7xl mx-auto w-full mb-4 sm:mb-6 md:mb-8 overflow-visible py-2"
+          className="max-w-7xl mx-auto w-full mb-6 sm:mb-8 overflow-visible pt-2 pb-3"
         >
-          <h2 className="text-2xl sm:text-3xl md:text-[3.5rem] font-sans font-medium tracking-tight leading-normal whitespace-normal">
+          <h2 className="text-2xl sm:text-3xl md:text-[3.5rem] font-sans font-medium tracking-tight leading-[1.3] whitespace-normal">
             Two tracks.{' '}
             <span className="font-serif italic font-normal text-[#FB575F]">
               One stage.
@@ -238,7 +233,7 @@ export default function TracksSection() {
                 ref={(el) => {
                   trackBoxRefs.current[index] = el;
                 }}
-                className="w-[88vw] sm:w-[75vw] md:w-[42vw] lg:w-[40vw] flex-shrink-0 flex"
+                className="w-[85vw] sm:w-[75vw] md:w-[42vw] lg:w-[40vw] flex-shrink-0 flex"
               >
                 <div
                   className="
