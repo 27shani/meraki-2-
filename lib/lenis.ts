@@ -1,11 +1,18 @@
+// lib/lenis.ts
 import Lenis from '@studio-freight/lenis';
 
 let lenisInstance: Lenis | null = null;
 
 export const getLenis = () => {
-  // Only create the instance on the client
   if (typeof window === 'undefined') return null;
-  
+
+  // 🔥 Critical: never create Lenis on real mobile
+  const isMobile =
+    window.matchMedia('(max-width: 767px)').matches ||
+    window.matchMedia('(pointer: coarse)').matches;
+
+  if (isMobile) return null;
+
   if (!lenisInstance) {
     lenisInstance = new Lenis({
       duration: 1.2,
@@ -14,22 +21,29 @@ export const getLenis = () => {
       gestureOrientation: 'vertical',
       smoothWheel: true,
       wheelMultiplier: 1,
-      touchMultiplier: 2,
+      // touchMultiplier removed – we don't run on touch devices
     });
 
-    // ✅ Expose unlock function globally so Hero can call it
-    if (typeof window !== 'undefined') {
-      (window as any).__unlockLenis = () => {
-        lenisInstance?.start();
-        // Also ensure body scroll is enabled
-        document.body.style.overflow = '';
-      };
-
-      // Optional: expose a lock function if needed
-      (window as any).__lockLenis = () => {
-        lenisInstance?.stop();
-      };
+    // Start the RAF loop
+    function raf(time: number) {
+      lenisInstance?.raf(time);
+      requestAnimationFrame(raf);
     }
+    requestAnimationFrame(raf);
+
+    // Global helpers
+    (window as any).__unlockLenis = () => {
+      lenisInstance?.start();
+      document.documentElement.classList.remove('lenis-stopped');
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+    };
+
+    (window as any).__lockLenis = () => {
+      lenisInstance?.stop();
+      document.documentElement.classList.add('lenis-stopped');
+    };
   }
+
   return lenisInstance;
 };
