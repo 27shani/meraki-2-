@@ -30,13 +30,18 @@ export default function AboutSection() {
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
-    // Lenis sync – safely initialised
     const lenis = getLenis();
     if (lenis) {
       lenis.on('scroll', ScrollTrigger.update);
-      gsap.ticker.add((time) => {
-        lenis.raf(time * 1000);
-      });
+    }
+
+    // ✅ FIX: Store the ticker function in a variable so we can remove it later
+    const rafCallback = (time: number) => {
+      if (lenis) lenis.raf(time * 1000);
+    };
+
+    if (lenis) {
+      gsap.ticker.add(rafCallback);
       gsap.ticker.lagSmoothing(0);
     }
 
@@ -199,7 +204,7 @@ export default function AboutSection() {
       return () => mm.revert();
     }, containerRef);
 
-    // Refresh on load & orientation – only on client
+    // Refresh on load & orientation
     const refreshOnLoad = () => {
       ScrollTrigger.refresh();
     };
@@ -212,15 +217,18 @@ export default function AboutSection() {
     }
 
     return () => {
+      // ✅ FIX: Remove the SAME stored function, not an anonymous one
+      if (lenis) {
+        lenis.off('scroll', ScrollTrigger.update);
+        gsap.ticker.remove(rafCallback);
+      }
+
       if (typeof window !== 'undefined') {
         window.removeEventListener('load', refreshOnLoad);
         window.removeEventListener('orientationchange', refreshOnLoad);
       }
+
       ctx.revert();
-      if (lenis) {
-        lenis.off('scroll', ScrollTrigger.update);
-        gsap.ticker.remove(lenis.raf);
-      }
     };
   }, []);
 
