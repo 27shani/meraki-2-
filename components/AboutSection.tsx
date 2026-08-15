@@ -10,6 +10,7 @@ export default function AboutSection() {
   const textContainerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLDivElement>(null);
   const boxesWrapperRef = useRef<HTMLDivElement>(null);
+  const headingRef = useRef<HTMLDivElement>(null);
   const boxRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const benefits = [
@@ -18,11 +19,44 @@ export default function AboutSection() {
     { step: '/ GROW_03', title: 'Earn Real Recognition', desc: 'Put your idea on a bigger stage, compete for prizes and gain visibility among the entrepreneurial ecosystem.' },
   ];
 
+  // ---- Word‑by‑word reveal for heading (from Code 1) ----
+  const wrapLineWords = (element: HTMLElement) => {
+    const text = element.textContent?.trim() || '';
+    const words = text.split(/\s+/);
+    element.innerHTML = words
+      .map((word) => `<span class="word" style="display:inline-block; opacity:0; filter:blur(8px);">${word}&nbsp;</span>`)
+      .join('');
+  };
+
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
+    // ---- Heading line‑by‑line animation (from Code 1) ----
+    const lineDivs = headingRef.current?.querySelectorAll('div') || [];
+    lineDivs.forEach((div, index) => {
+      wrapLineWords(div as HTMLElement);
+      const words = div.querySelectorAll('.word');
+      gsap.fromTo(
+        words,
+        { opacity: 0, filter: 'blur(8px)' },
+        {
+          opacity: 1,
+          filter: 'blur(0px)',
+          stagger: 0.04,
+          ease: 'power2.out',
+          scrollTrigger: {
+            trigger: headingRef.current,
+            start: 'top 85%',
+            toggleActions: 'play none none reverse',
+          },
+          delay: index * 0.2,
+        }
+      );
+    });
+
+    // ---- Main scroll timeline (from Code 2 with slider) ----
     const ctx = gsap.context(() => {
-      // Smooth fade + rise intro
+      // Smooth intro blur (from Code 2)
       gsap.fromTo(
         containerRef.current,
         { opacity: 0, filter: 'blur(14px)' },
@@ -42,18 +76,18 @@ export default function AboutSection() {
 
       const isMobile = window.innerWidth < 768;
 
-      // Main timeline with pin
+      // Main pinned timeline
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: '+=160%', // enough for sliding and content
+          end: isMobile ? '+=200%' : '+=180%',
           pin: true,
           scrub: 1.5,
         },
       });
 
-      // ---- Horizontal slider (same for desktop & mobile) ----
+      // ---- Horizontal slider (from Code 2) ----
       const wrapper = boxesWrapperRef.current;
       const container = containerRef.current;
       if (wrapper && container) {
@@ -62,10 +96,7 @@ export default function AboutSection() {
         const startOffset = containerWidth * 0.6; // start off-screen right
         const finalX = -(wrapperWidth - containerWidth + 48); // end with last card fully visible
 
-        // Set initial position
         gsap.set(wrapper, { x: startOffset });
-
-        // Slide wrapper from right to left
         tl.to(wrapper, {
           x: finalX,
           duration: 2.0,
@@ -73,7 +104,7 @@ export default function AboutSection() {
         }, 0.1);
       }
 
-      // ---- Other animations ----
+      // ---- Image sharpens ----
       tl.to(imageRef.current, {
         filter: 'blur(4px) brightness(1)',
         opacity: 1,
@@ -81,6 +112,7 @@ export default function AboutSection() {
         ease: 'power2.out',
       }, 0);
 
+      // ---- Text moves up ----
       tl.to(
         textContainerRef.current,
         {
@@ -92,7 +124,7 @@ export default function AboutSection() {
         0
       );
 
-      // Boxes stagger (slide up + fade)
+      // ---- Boxes stagger (slide up + fade) ----
       tl.fromTo(
         boxRefs.current,
         { y: 80, opacity: 0, scale: 0.92 },
@@ -107,7 +139,7 @@ export default function AboutSection() {
         0.2
       );
 
-      // Outro
+      // ---- Outro (fade out) ----
       tl.to(
         containerRef.current,
         {
@@ -126,55 +158,48 @@ export default function AboutSection() {
   return (
     <section
       ref={containerRef}
-      className="relative w-full h-screen bg-black text-offwhite overflow-hidden flex flex-col justify-center px-6 md:px-16 will-change-transform"
+      className="relative w-full h-screen bg-black text-offwhite overflow-hidden flex flex-col justify-center px-4 sm:px-6 md:px-16 will-change-transform"
     >
-      {/* Text Content */}
+      {/* Heading – positioned as in Code 1 */}
       <div
         ref={textContainerRef}
-        className="relative z-10 w-full max-w-xl md:max-w-3xl ml-0 md:ml-20 flex flex-col pt-6 md:pt-12"
+        className="relative z-10 w-full max-w-xl md:max-w-3xl ml-0 md:ml-20 flex flex-col"
       >
-        <div className="space-y-0.5 sm:space-y-1 text-3xl sm:text-5xl md:text-6xl lg:text-[4.5rem] font-normal leading-[1.1] tracking-tight font-sans">
-          <div>
-            <span className="font-serif italic font-normal text-gradient-brand">3 key benefits</span> &amp;
-          </div>
+        <div
+          ref={headingRef}
+          className="space-y-0.5 text-2xl sm:text-5xl md:text-6xl lg:text-[4.5rem] font-normal leading-[1.05] tracking-tight font-sans"
+        >
+          <div><span className="font-serif italic font-normal text-gradient-brand">3 key benefits</span> &amp;</div>
           <div>outcomes for</div>
-          <div>
-            <span className="font-serif italic font-normal text-offwhite">applicants.</span>
-          </div>
+          <div><span className="font-serif italic font-normal text-offwhite">applicants.</span></div>
         </div>
       </div>
 
-      {/* Liquid Glass Boxes – horizontal slider container */}
-      <div className="absolute bottom-4 sm:bottom-8 md:bottom-20 left-0 right-0 w-full z-30 px-6 md:px-16 pointer-events-none overflow-hidden">
+      {/* Boxes – in normal flow (non‑absolute), with margin-top from Code 1 */}
+      <div className="relative z-30 pointer-events-none px-4 sm:px-6 md:px-16 mt-2 sm:mt-4 md:mt-8 w-full overflow-hidden">
         <div
           ref={boxesWrapperRef}
-          className="flex flex-row items-end gap-3 sm:gap-4 md:gap-6 lg:gap-8 w-max"
+          className="flex flex-row justify-start items-end gap-3 sm:gap-6 lg:gap-8 pb-1 md:pb-0 w-max"
           style={{ width: 'max-content' }}
         >
           {benefits.map((benefit, index) => (
             <div
               key={index}
               ref={(el) => { boxRefs.current[index] = el; }}
-              className="pointer-events-auto shrink-0 w-[210px] sm:w-[240px] md:w-[280px] lg:w-[320px] will-change-transform"
-              style={{ transform: 'translateY(80px) scale(0.92)', opacity: 0 }}
+              className="pointer-events-auto shrink-0 w-[240px] sm:w-[320px] md:w-[35vw] lg:w-[30vw] max-w-[400px] will-change-transform"
+              style={{ opacity: 0, transform: 'translateY(80px) scale(0.92)' }}
             >
-              <div
-                className="h-[190px] sm:h-[230px] md:h-[300px] flex flex-col justify-between p-4 sm:p-6 md:p-8 rounded-[18px] sm:rounded-[24px] md:rounded-[32px] 
-                              bg-white/[0.08] backdrop-blur-2xl border border-white/20 
-                              shadow-[0_8px_32px_0_rgba(0,0,0,0.5)]
-                              transition-transform duration-500 hover:-translate-y-2
-                              relative overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-coral/10 via-transparent to-purple/10 pointer-events-none rounded-[18px] sm:rounded-[24px] md:rounded-[32px]" />
+              <div className="h-[200px] sm:h-[260px] md:h-[300px] flex flex-col justify-between p-3 sm:p-6 md:p-8 rounded-[16px] sm:rounded-[24px] md:rounded-[32px] bg-white/[0.08] backdrop-blur-2xl border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] transition-transform duration-500 hover:-translate-y-2 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-coral/10 via-transparent to-purple/10 pointer-events-none rounded-[16px] sm:rounded-[24px] md:rounded-[32px]" />
                 <div className="relative z-10">
-                  <span className="font-sans text-[9px] sm:text-[10px] md:text-xs font-medium tracking-widest text-coral-light uppercase">
+                  <span className="font-sans text-[8px] sm:text-xs md:text-xs font-medium tracking-widest text-coral-light uppercase">
                     {benefit.step}
                   </span>
-                  <h3 className="text-base sm:text-xl md:text-3xl font-serif italic font-normal text-offwhite mt-2 sm:mt-3 leading-[1.2]">
+                  <h3 className="text-base sm:text-2xl md:text-3xl font-serif italic font-normal text-offwhite mt-1 sm:mt-3 md:mt-4 leading-[1.2]">
                     {benefit.title}
                   </h3>
                 </div>
-                <p className="relative z-10 text-[11px] sm:text-xs md:text-sm text-neutral-300 font-light leading-relaxed font-sans line-clamp-3 md:line-clamp-none">
+                <p className="relative z-10 text-[11px] sm:text-sm md:text-sm text-neutral-300 font-light leading-relaxed font-sans line-clamp-3 sm:line-clamp-none">
                   {benefit.desc}
                 </p>
               </div>
