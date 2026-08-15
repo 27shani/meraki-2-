@@ -19,7 +19,6 @@ export default function AboutSection() {
     { step: '/ GROW_03', title: 'Earn Real Recognition', desc: 'Put your idea on a bigger stage, compete for prizes and gain visibility among the entrepreneurial ecosystem.' },
   ];
 
-  // Wrap each line individually for line-by-line animation
   const wrapLineWords = (element: HTMLElement) => {
     const text = element.textContent?.trim() || '';
     const words = text.split(/\s+/);
@@ -31,7 +30,6 @@ export default function AboutSection() {
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
-    // Title line-by-line animation
     const lineDivs = headingRef.current?.querySelectorAll('div') || [];
     lineDivs.forEach((div, index) => {
       wrapLineWords(div as HTMLElement);
@@ -56,7 +54,6 @@ export default function AboutSection() {
 
     const mm = gsap.matchMedia();
 
-    // Global intro blur (keep)
     mm.add("all", () => {
       gsap.fromTo(
         containerRef.current,
@@ -76,15 +73,15 @@ export default function AboutSection() {
       );
     });
 
-    // Desktop – reduced pin duration and scrub for performance
+    // Desktop
     mm.add("(min-width: 768px)", () => {
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: '+=180%',          // Reduced from 250% for less scroll lag
+          end: '+=180%',
           pin: true,
-          scrub: 0.6,             // Reduced from 0.8
+          scrub: 0.6,
         },
       });
 
@@ -102,7 +99,7 @@ export default function AboutSection() {
       )
       .fromTo(
         boxRefs.current,
-        { y: '80px', scale: 0.92 }, // removed opacity from initial
+        { y: '80px', scale: 0.92 },
         {
           y: 0,
           scale: 1,
@@ -112,18 +109,17 @@ export default function AboutSection() {
         },
         0.2
       );
-      // Outro removed entirely
     });
 
-    // Mobile – adjusted pin and scrub, plus removed opacity from boxes
+    // Mobile – reduced pin duration & scrub for less lag
     mm.add("(max-width: 767px)", () => {
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: '+=250%',          // Reduced from 350%
+          end: '+=180%',          // Shortened further
           pin: true,
-          scrub: 0.6,             // Reduced from 0.8
+          scrub: 0.4,             // Faster response
           invalidateOnRefresh: true,
         },
       });
@@ -131,26 +127,26 @@ export default function AboutSection() {
       tl.fromTo(
         imageRef.current,
         { filter: 'blur(12px) brightness(0.6)', opacity: 0.3 },
-        { filter: 'blur(2px) brightness(1)', opacity: 1, duration: 1.0, ease: 'power2.out' },
+        { filter: 'blur(2px) brightness(1)', opacity: 1, duration: 0.8, ease: 'power2.out' },
         0
       )
       .fromTo(
         textContainerRef.current,
         { y: '20px', opacity: 0.2 },
-        { y: '-3vh', opacity: 1, duration: 1.0, ease: 'power2.out' },
+        { y: '-2vh', opacity: 1, duration: 0.8, ease: 'power2.out' },
         0
       )
       .fromTo(
         boxRefs.current,
-        { y: '60px', scale: 0.92 }, // removed opacity
+        { y: '50px', scale: 0.92 },
         {
           y: 0,
           scale: 1,
-          stagger: 0.25,
-          duration: 1.0,
+          stagger: 0.2,
+          duration: 0.9,
           ease: 'power2.out',
         },
-        0.15
+        0.1
       )
       .to(
         boxesWrapperRef.current,
@@ -161,12 +157,11 @@ export default function AboutSection() {
             const viewportWidth = window.innerWidth;
             return -(wrapperWidth - viewportWidth + 48);
           },
-          duration: 2.0,
+          duration: 1.8,
           ease: 'power2.inOut',
         },
-        0.15
+        0.1
       );
-      // Outro removed
     });
 
     return () => mm.revert();
@@ -175,12 +170,12 @@ export default function AboutSection() {
   return (
     <section
       ref={containerRef}
-      className="relative w-full h-screen bg-black text-offwhite overflow-hidden flex flex-col justify-start pt-8 sm:pt-16 md:pt-20 px-6 md:px-16 will-change-transform"
+      className="relative w-full h-screen bg-black text-offwhite overflow-hidden flex flex-col justify-start pt-2 sm:pt-16 md:pt-20 px-6 md:px-16 will-change-transform"
     >
-      {/* Text Content – adjusted for mobile: more top margin, less gap to boxes */}
+      {/* Text Content – mobile heading less high, closer to boxes */}
       <div
         ref={textContainerRef}
-        className="relative z-10 w-full max-w-xl md:max-w-3xl ml-0 md:ml-20 flex flex-col mt-4 md:mt-0"
+        className="relative z-10 w-full max-w-xl md:max-w-3xl ml-0 md:ml-20 flex flex-col mt-2 md:mt-0"
       >
         <div
           ref={headingRef}
@@ -192,8 +187,8 @@ export default function AboutSection() {
         </div>
       </div>
 
-      {/* Cards Container – mobile boxes higher, desktop unchanged */}
-      <div className="absolute bottom-4 sm:bottom-12 md:bottom-20 left-0 right-0 w-full z-30 pointer-events-none px-6 md:px-16 overflow-hidden md:overflow-visible">
+      {/* Cards Container – mobile boxes higher up */}
+      <div className="absolute bottom-2 sm:bottom-12 md:bottom-20 left-0 right-0 w-full z-30 pointer-events-none px-6 md:px-16 overflow-hidden md:overflow-visible">
         <div
           ref={boxesWrapperRef}
           className="flex flex-row justify-start md:justify-end items-end gap-4 sm:gap-6 lg:gap-8 pb-1 md:pb-0 w-max md:w-full max-w-7xl mx-auto md:pl-32"
@@ -203,7 +198,7 @@ export default function AboutSection() {
               key={index}
               ref={(el) => { boxRefs.current[index] = el; }}
               className="pointer-events-auto shrink-0 w-[280px] sm:w-[320px] md:w-full md:flex-1 md:max-w-[300px] will-change-transform"
-              style={{ transform: 'translateY(60px)', opacity: 1 }} // opacity always 1
+              style={{ transform: 'translateY(60px)', opacity: 1 }}
             >
               <div className="h-[260px] sm:h-[280px] md:h-[300px] flex flex-col justify-between p-5 sm:p-6 md:p-8 rounded-[20px] sm:rounded-[24px] md:rounded-[32px] bg-white/[0.08] backdrop-blur-2xl border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] transition-transform duration-500 hover:-translate-y-2 relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-coral/10 via-transparent to-purple/10 pointer-events-none rounded-[20px] sm:rounded-[24px] md:rounded-[32px]" />
