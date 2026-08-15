@@ -71,7 +71,7 @@ export default function TracksSection() {
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: isMobile ? '+=550%' : '+=400%',
+          end: isMobile ? '+=600%' : '+=450%',
           pin: true,
           scrub: 1.2,
           anticipatePin: 1,
@@ -96,20 +96,29 @@ export default function TracksSection() {
       // ---- TRACK CARDS: slide from RIGHT to LEFT ----
       const wrapper = tracksWrapperRef.current;
       if (wrapper) {
-        const wrapperWidth = wrapper.scrollWidth;
+        // Get the actual rendered width of the wrapper
+        const wrapperRect = wrapper.getBoundingClientRect();
+        const wrapperWidth = wrapperRect.width;
         const viewportWidth = window.innerWidth;
-        // Start off-screen right (60% of viewport)
-        const startOffset = viewportWidth * 0.6;
-        // Final position: slide left until the right edge of the last card is at the right edge of the viewport
-        // That means we need to move by: -(wrapperWidth - viewportWidth) to bring the last card into view
-        // Add a small padding (20px) so there's a gap after the last card
-        const finalX = -(wrapperWidth - viewportWidth + 20);
+
+        // Start position: off-screen right (80% of viewport for a dramatic slide)
+        const startOffset = viewportWidth * 0.8;
+
+        // Final position: slide left until the right edge of the wrapper aligns with the right edge of the viewport
+        // This ensures the last card is fully visible
+        let finalX = 0;
+        if (wrapperWidth > viewportWidth) {
+          // Move left by the overflow amount
+          finalX = -(wrapperWidth - viewportWidth);
+          // Add a small gap (20px) for breathing room
+          finalX -= 20;
+        }
 
         gsap.set(wrapper, { x: startOffset });
 
         tl.to(wrapper, {
           x: finalX,
-          duration: 2.8,
+          duration: 3.0,
           ease: 'power2.inOut',
         }, 0.15);
       }
@@ -139,7 +148,7 @@ export default function TracksSection() {
           filter: 'blur(0px)',
           duration: 0.9,
           ease: 'power2.out',
-        }, 3.0 + i * 0.25);
+        }, 3.2 + i * 0.25); // Slightly delayed to ensure tracks finish sliding
       });
 
       // ---- PRIZE label ----
@@ -149,7 +158,7 @@ export default function TracksSection() {
         y: 0,
         duration: 0.6,
         ease: 'power2.out',
-      }, 2.8);
+      }, 3.0);
 
       // ---- CONTENT PAN ----
       tl.to(
@@ -164,7 +173,7 @@ export default function TracksSection() {
           ease: 'none',
           duration: 2.5,
         },
-        isMobile ? 4.0 : 3.5
+        isMobile ? 4.5 : 4.0
       );
 
       // ---- OUTRO ----
