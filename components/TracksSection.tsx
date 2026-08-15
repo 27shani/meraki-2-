@@ -47,7 +47,7 @@ export default function TracksSection() {
     gsap.registerPlugin(ScrollTrigger);
 
     const ctx = gsap.context(() => {
-      // ---- Intro blur fade (global) ----
+      // ---- Intro blur fade ----
       gsap.fromTo(
         containerRef.current,
         { opacity: 0.15, filter: 'blur(8px)' },
@@ -71,9 +71,9 @@ export default function TracksSection() {
         scrollTrigger: {
           trigger: containerRef.current,
           start: 'top top',
-          end: isMobile ? '+=500%' : '+=350%', // enough for horizontal slide + prizes
+          end: isMobile ? '+=550%' : '+=400%',
           pin: true,
-          scrub: 1.0,
+          scrub: 1.2,
           anticipatePin: 1,
           invalidateOnRefresh: true,
         },
@@ -93,58 +93,58 @@ export default function TracksSection() {
         ease: 'power3.out',
       }, 0);
 
-      // ---- TRACK CARDS: horizontal slider (like About mobile) ----
-      // Set initial state: start off-screen right
-      gsap.set(tracksWrapperRef.current, { x: 0 });
-      // Compute total width of track cards + gaps
+      // ---- TRACK CARDS: horizontal slider from RIGHT to LEFT ----
       const getTrackScrollAmount = () => {
         if (!tracksWrapperRef.current) return 0;
         const wrapper = tracksWrapperRef.current;
         const wrapperWidth = wrapper.scrollWidth;
         const viewportWidth = window.innerWidth;
-        // We want to scroll until the last card is fully visible, so move left by (wrapperWidth - viewportWidth + some padding)
-        return -(wrapperWidth - viewportWidth + 48);
+        // Move left until the last card is fully visible
+        // Add extra padding so there's some space after the last card
+        return -(wrapperWidth - viewportWidth + 40);
       };
 
-      // Slide the whole wrapper horizontally
+      // Initial state: wrapper starts at x: 0 (all cards visible, but we'll add a right offset)
+      // We want the first card to start off-screen right and slide in
+      // So we set initial x to a positive value (offset right)
+      const startOffset = window.innerWidth * 0.6; // start 60% of viewport to the right
+      gsap.set(tracksWrapperRef.current, { x: startOffset });
+
+      // Slide from right to left
       tl.to(tracksWrapperRef.current, {
         x: getTrackScrollAmount,
-        duration: 2.5,
+        duration: 2.8,
         ease: 'power2.inOut',
       }, 0.15);
 
-      // Also animate individual cards (fade in) while sliding, but they are already visible after the slide
-      // They will be visible because we set initial opacity to 1, but we might want a slight fade-in
-      // Actually we want them to appear as they slide, but they are already in the DOM; we can add a small opacity transition
-      // Better: set initial opacity 0 and fade them in as the wrapper moves.
-      // But we can also just let the wrapper movement reveal them.
-      // For simplicity, we'll keep them with opacity 1 from start, but they start off-screen so they'll slide in.
-      // We'll add a slight fade-in for each card individually for extra polish.
+      // Fade in each track card as it slides into view
       trackBoxRefs.current.forEach((box, i) => {
         if (!box) return;
         gsap.set(box, { opacity: 0 });
         tl.to(box, {
           opacity: 1,
-          duration: 0.6,
+          duration: 0.8,
           ease: 'power2.out',
-        }, 0.3 + i * 0.15);
+        }, 0.4 + i * 0.2);
       });
 
-      // ---- PRIZE BOXES: slide up one by one ----
+      // ---- PRIZE BOXES: slide up, but ONLY AFTER tracks are fully in ----
+      // The track slide completes around 2.8s + 0.15s = ~3s
+      // We'll start prize boxes at ~3.2s
       prizeBoxRefs.current.forEach((pBox, i) => {
         if (!pBox) return;
         gsap.set(pBox, {
-          y: 60,
+          y: 70,
           opacity: 0,
-          filter: 'blur(4px)',
+          filter: 'blur(6px)',
         });
         tl.to(pBox, {
           y: 0,
           opacity: 1,
           filter: 'blur(0px)',
-          duration: 0.8,
+          duration: 0.9,
           ease: 'power2.out',
-        }, 0.8 + i * 0.2); // starts after track slide is underway
+        }, 3.0 + i * 0.25); // Start after tracks are fully in
       });
 
       // ---- PRIZE label ----
@@ -154,9 +154,9 @@ export default function TracksSection() {
         y: 0,
         duration: 0.6,
         ease: 'power2.out',
-      }, 0.6);
+      }, 2.8);
 
-      // ---- CONTENT PAN (vertical scroll) ----
+      // ---- CONTENT PAN (vertical scroll within pinned section) ----
       tl.to(
         contentRef.current,
         {
@@ -164,24 +164,24 @@ export default function TracksSection() {
             if (!contentRef.current) return 0;
             const overflow =
               contentRef.current.scrollHeight - window.innerHeight;
-            return overflow > 0 ? -(overflow + 80) : 0;
+            return overflow > 0 ? -(overflow + 100) : 0;
           },
           ease: 'none',
-          duration: 2.0,
+          duration: 2.5,
         },
-        isMobile ? 2.5 : 1.5
+        isMobile ? 4.0 : 3.5
       );
 
       // ---- OUTRO ----
       tl.to(
         containerRef.current,
         {
-          opacity: 0.15,
-          filter: 'blur(8px)',
-          duration: 0.8,
+          opacity: 0.12,
+          filter: 'blur(10px)',
+          duration: 1.0,
           ease: 'power2.inOut',
         },
-        '+=0.3'
+        '+=0.5'
       );
     }, containerRef);
 
@@ -191,15 +191,15 @@ export default function TracksSection() {
   return (
     <section
       ref={containerRef}
-      className="relative w-full h-screen bg-black text-offwhite overflow-hidden flex flex-col justify-start pt-16 md:pt-24 px-6 md:px-16"
+      className="relative w-full h-screen bg-black text-offwhite overflow-hidden flex flex-col justify-start pt-12 sm:pt-16 md:pt-20 px-4 sm:px-6 md:px-12"
     >
       <div ref={contentRef} className="w-full flex flex-col will-change-transform">
-        {/* Title */}
+        {/* Title - overflow-visible to prevent cutting 'g' */}
         <div
           ref={titleRef}
-          className="max-w-7xl mx-auto w-full mb-6 sm:mb-8 md:mb-10 overflow-visible"
+          className="max-w-7xl mx-auto w-full mb-4 sm:mb-6 md:mb-8 overflow-visible"
         >
-          <h2 className="text-3xl sm:text-4xl md:text-[3.5rem] font-sans font-medium tracking-tight whitespace-normal">
+          <h2 className="text-2xl sm:text-3xl md:text-[3.5rem] font-sans font-medium tracking-tight whitespace-normal">
             Two tracks.{' '}
             <span className="font-serif italic font-normal text-[#FB575F]">
               One stage.
@@ -207,11 +207,11 @@ export default function TracksSection() {
           </h2>
         </div>
 
-        {/* Track cards wrapper – horizontal slider container */}
-        <div className="max-w-7xl mx-auto w-full overflow-hidden z-20 mb-10 md:mb-16">
+        {/* Track cards wrapper – horizontal slider */}
+        <div className="max-w-7xl mx-auto w-full overflow-visible z-20 mb-6 sm:mb-8 md:mb-12">
           <div
             ref={tracksWrapperRef}
-            className="flex flex-row gap-4 sm:gap-6 will-change-transform"
+            className="flex flex-row gap-3 sm:gap-4 md:gap-6 will-change-transform"
             style={{ width: 'max-content' }}
           >
             {tracks.map((track, index) => (
@@ -220,14 +220,14 @@ export default function TracksSection() {
                 ref={(el) => {
                   trackBoxRefs.current[index] = el;
                 }}
-                className="w-[280px] sm:w-[320px] md:w-[400px] lg:w-[500px] flex-shrink-0"
+                className="w-[85vw] sm:w-[80vw] md:w-[42vw] lg:w-[40vw] flex-shrink-0"
               >
                 <div
                   className="
-                    h-auto min-h-[300px] md:min-h-[380px]
+                    h-auto min-h-[280px] sm:min-h-[320px] md:min-h-[400px]
                     flex flex-col justify-between
-                    p-6 sm:p-8 md:p-10
-                    rounded-[20px] sm:rounded-[28px] md:rounded-[32px]
+                    p-4 sm:p-6 md:p-10
+                    rounded-[16px] sm:rounded-[24px] md:rounded-[32px]
                     bg-white/[0.04] backdrop-blur-xl
                     border border-white/10
                     shadow-2xl
@@ -239,34 +239,34 @@ export default function TracksSection() {
                     hover:-translate-y-2
                   "
                 >
-                  <div className="absolute inset-0 bg-gradient-to-br from-coral/0 via-transparent to-purple/0 group-hover:from-coral/10 group-hover:to-purple/10 transition-all duration-500 pointer-events-none rounded-[20px] sm:rounded-[28px] md:rounded-[32px]" />
+                  <div className="absolute inset-0 bg-gradient-to-br from-coral/0 via-transparent to-purple/0 group-hover:from-coral/10 group-hover:to-purple/10 transition-all duration-500 pointer-events-none rounded-[16px] sm:rounded-[24px] md:rounded-[32px]" />
 
-                  <div className="relative z-10 flex justify-between items-start mb-6">
-                    <span className="font-sans text-[10px] sm:text-xs font-semibold tracking-widest text-[#FB575F] uppercase">
+                  <div className="relative z-10 flex justify-between items-start mb-4 sm:mb-6">
+                    <span className="font-sans text-[9px] sm:text-[10px] md:text-xs font-semibold tracking-widest text-[#FB575F] uppercase">
                       {track.trackNum}
                     </span>
-                    <span className="font-serif italic text-xl sm:text-2xl text-neutral-400 font-light group-hover:text-coral-light transition-colors duration-400">
+                    <span className="font-serif italic text-lg sm:text-xl md:text-2xl text-neutral-400 font-light group-hover:text-coral-light transition-colors duration-400">
                       {track.numLabel}
                     </span>
                   </div>
 
-                  <div className="relative z-10 space-y-3 flex-grow">
-                    <h3 className="text-2xl md:text-4xl font-serif italic font-normal text-offwhite leading-tight">
+                  <div className="relative z-10 space-y-2 sm:space-y-3 flex-grow">
+                    <h3 className="text-xl sm:text-2xl md:text-4xl font-serif italic font-normal text-offwhite leading-tight">
                       {track.title}
                     </h3>
-                    <p className="text-xs md:text-sm text-neutral-300 font-sans font-medium leading-relaxed">
+                    <p className="text-xs sm:text-sm md:text-base text-neutral-300 font-sans font-medium leading-relaxed">
                       {track.subtitle}
                     </p>
-                    <p className="block text-xs md:text-sm text-neutral-400 font-sans font-light leading-relaxed pt-4 border-t border-white/10">
+                    <p className="block text-xs sm:text-sm md:text-base text-neutral-400 font-sans font-light leading-relaxed pt-3 sm:pt-4 border-t border-white/10">
                       {track.description}
                     </p>
                   </div>
 
-                  <div className="block relative z-10 pt-4 border-t border-white/10 text-[11px] text-neutral-400 font-sans mt-6">
+                  <div className="block relative z-10 pt-3 sm:pt-4 border-t border-white/10 text-[10px] sm:text-[11px] md:text-xs text-neutral-400 font-sans mt-4 sm:mt-6">
                     <span className="text-[#FB575F] font-semibold uppercase tracking-wider block mb-1">
                       Who can apply:
                     </span>
-                    <p>{track.whoCanApply}</p>
+                    <p className="leading-relaxed">{track.whoCanApply}</p>
                   </div>
                 </div>
               </div>
@@ -277,27 +277,27 @@ export default function TracksSection() {
         {/* Prize Money */}
         <div
           ref={prizeRef}
-          className="max-w-7xl mx-auto w-full opacity-0 will-change-transform pb-32 md:pb-40"
+          className="max-w-7xl mx-auto w-full opacity-0 will-change-transform pb-20 sm:pb-28 md:pb-40"
         >
-          <h3 className="text-3xl md:text-4xl font-serif italic font-normal text-center text-offwhite mb-8">
+          <h3 className="text-2xl sm:text-3xl md:text-4xl font-serif italic font-normal text-center text-offwhite mb-6 sm:mb-8">
             Prize Money
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 md:gap-6">
             {prizes.map((p, index) => (
               <div
                 key={index}
                 ref={(el) => {
                   prizeBoxRefs.current[index] = el;
                 }}
-                className="bg-white/[0.04] backdrop-blur-xl border border-white/10 rounded-2xl p-6 md:p-8 flex flex-col items-center justify-center text-center shadow-xl group hover:border-[#FB575F]/30 hover:-translate-y-1 transition-all duration-400 will-change-transform"
+                className="bg-white/[0.04] backdrop-blur-xl border border-white/10 rounded-2xl p-5 sm:p-6 md:p-8 flex flex-col items-center justify-center text-center shadow-xl group hover:border-[#FB575F]/30 hover:-translate-y-1 transition-all duration-400 will-change-transform"
               >
-                <h4 className="text-2xl md:text-3xl font-serif italic font-normal text-offwhite mb-2">
+                <h4 className="text-xl sm:text-2xl md:text-3xl font-serif italic font-normal text-offwhite mb-1 sm:mb-2">
                   {p.title}
                 </h4>
-                <p className="text-base md:text-lg text-neutral-300 font-sans font-medium">
+                <p className="text-sm sm:text-base md:text-lg text-neutral-300 font-sans font-medium">
                   {p.prize}
                 </p>
-                <p className="text-xs md:text-sm text-neutral-400 font-sans font-light mt-1">
+                <p className="text-xs sm:text-sm text-neutral-400 font-sans font-light mt-1">
                   {p.note}
                 </p>
               </div>
