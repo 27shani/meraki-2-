@@ -74,8 +74,20 @@ export default function AboutSection() {
       );
     });
 
-    // Desktop – now with horizontal slider (same as mobile)
+    // Desktop – horizontal slider from right to left
     mm.add("(min-width: 768px)", () => {
+      const wrapper = boxesWrapperRef.current;
+      if (!wrapper) return;
+
+      // Get wrapper width after layout
+      const wrapperWidth = wrapper.scrollWidth;
+      const viewportWidth = window.innerWidth;
+      const startOffset = viewportWidth * 0.6; // start off-screen right
+      const finalX = -(wrapperWidth - viewportWidth + 48); // end with last card visible
+
+      // Set initial position
+      gsap.set(wrapper, { x: startOffset });
+
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
@@ -100,22 +112,13 @@ export default function AboutSection() {
         { y: '-20px', opacity: 1, duration: 1.0, ease: 'power2.out' },
         0
       )
-      // ---- Horizontal slider for boxes (like mobile) ----
-      .to(
-        boxesWrapperRef.current,
-        {
-          x: () => {
-            if (!boxesWrapperRef.current) return 0;
-            const wrapperWidth = boxesWrapperRef.current.scrollWidth || 0;
-            const viewportWidth = window.innerWidth;
-            return -(wrapperWidth - viewportWidth + 48);
-          },
-          duration: 2.0,
-          ease: 'power2.inOut',
-        },
-        0.1
-      )
-      // Individual box animations (scale up and fade) – they slide with the wrapper
+      // Wrapper slides from right to left
+      .to(wrapper, {
+        x: finalX,
+        duration: 2.0,
+        ease: 'power2.inOut',
+      }, 0.1)
+      // Each box fades in and scales up while sliding
       .fromTo(
         boxRefs.current,
         { scale: 0.92, opacity: 0 },
@@ -130,8 +133,18 @@ export default function AboutSection() {
       );
     });
 
-    // Mobile – unchanged (already a slider)
+    // Mobile – unchanged slider (already working)
     mm.add("(max-width: 767px)", () => {
+      const wrapper = boxesWrapperRef.current;
+      if (!wrapper) return;
+
+      const wrapperWidth = wrapper.scrollWidth;
+      const viewportWidth = window.innerWidth;
+      const startOffset = viewportWidth * 0.6;
+      const finalX = -(wrapperWidth - viewportWidth + 48);
+
+      gsap.set(wrapper, { x: startOffset });
+
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
@@ -168,20 +181,11 @@ export default function AboutSection() {
         },
         0.1
       )
-      .to(
-        boxesWrapperRef.current,
-        {
-          x: () => {
-            if (!boxesWrapperRef.current) return 0;
-            const wrapperWidth = boxesWrapperRef.current.scrollWidth || 0;
-            const viewportWidth = window.innerWidth;
-            return -(wrapperWidth - viewportWidth + 48);
-          },
-          duration: 1.8,
-          ease: 'power2.inOut',
-        },
-        0.1
-      );
+      .to(wrapper, {
+        x: finalX,
+        duration: 1.8,
+        ease: 'power2.inOut',
+      }, 0.1);
     });
 
     return () => mm.revert();
@@ -207,17 +211,18 @@ export default function AboutSection() {
         </div>
       </div>
 
-      {/* Boxes Wrapper – horizontal scroll container */}
+      {/* Boxes Wrapper – horizontal slider container */}
       <div className="relative z-30 pointer-events-none px-6 md:px-16 mt-4 md:mt-8 w-full overflow-hidden">
         <div
           ref={boxesWrapperRef}
-          className="flex flex-row justify-start md:justify-start items-end gap-4 sm:gap-6 lg:gap-8 pb-1 md:pb-0 w-max md:w-max max-w-7xl mx-auto"
+          className="flex flex-row justify-start items-end gap-4 sm:gap-6 lg:gap-8 pb-1 md:pb-0 w-max"
+          style={{ width: 'max-content' }}
         >
           {benefits.map((benefit, index) => (
             <div
               key={index}
               ref={(el) => { boxRefs.current[index] = el; }}
-              className="pointer-events-auto shrink-0 w-[280px] sm:w-[320px] md:w-[300px] lg:w-[320px] will-change-transform"
+              className="pointer-events-auto shrink-0 w-[280px] sm:w-[320px] md:w-[35vw] lg:w-[30vw] max-w-[400px] will-change-transform"
               style={{ opacity: 0, transform: 'translateY(40px) scale(0.92)' }}
             >
               <div className="h-[260px] sm:h-[280px] md:h-[300px] flex flex-col justify-between p-5 sm:p-6 md:p-8 rounded-[20px] sm:rounded-[24px] md:rounded-[32px] bg-white/[0.08] backdrop-blur-2xl border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] transition-transform duration-500 hover:-translate-y-2 relative overflow-hidden">
