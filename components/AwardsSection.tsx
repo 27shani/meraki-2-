@@ -67,7 +67,6 @@ export default function AwardsSection() {
       // On mobile, skip the scroll-pinned white strip animation entirely
       if (isMobile) {
         gsap.set(bgRefs.current, { scaleX: 0, transformOrigin: 'left center' });
-        // Set mobile default text color based on initial open index state (index 0 is open/highlighted)
         textRefs.current.forEach((row, i) => {
           if (!row) return;
           gsap.set(row, { opacity: 1, y: 0, filter: 'blur(0px)' });
@@ -257,8 +256,9 @@ export default function AwardsSection() {
     }
   };
 
-  // Mobile Click Handler to toggle white strip highlight on the clicked question
-  const handleMobileClick = (index: number) => {
+  // Mobile Click Handler to toggle white strip highlight safely
+  const handleMobileClick = (e: React.MouseEvent, index: number) => {
+    e.stopPropagation();
     const isMobile = window.innerWidth < 768;
     const newIndex = openIndex === index ? null : index;
     setOpenIndex(newIndex);
@@ -321,8 +321,9 @@ export default function AwardsSection() {
                 />
 
                 <button
-                  onClick={() => handleMobileClick(index)}
-                  className="relative z-10 w-full flex justify-between items-center text-left group cursor-none md:cursor-none"
+                  type="button"
+                  onClick={(e) => handleMobileClick(e, index)}
+                  className="relative z-10 w-full flex justify-between items-center text-left group cursor-pointer md:cursor-none"
                 >
                   <span className="text-lg md:text-2xl font-sans font-medium pr-6">
                     {faq.question}
