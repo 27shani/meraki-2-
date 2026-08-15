@@ -85,53 +85,59 @@ export default function TracksSection() {
         y: 40,
         clipPath: 'inset(0 0 100% 0)',
       });
-      tl.to(titleRef.current, {
-        opacity: 1,
-        y: 0,
-        clipPath: 'inset(0 0 0% 0)',
-        duration: 0.8,
-        ease: 'power3.out',
-      }, 0);
+      tl.to(
+        titleRef.current,
+        {
+          opacity: 1,
+          y: 0,
+          clipPath: 'inset(0 0 0% 0)',
+          duration: 0.8,
+          ease: 'power3.out',
+        },
+        0
+      );
 
       // ---- TRACK CARDS: slide from RIGHT to LEFT ----
       const wrapper = tracksWrapperRef.current;
       if (wrapper) {
-        // Get the actual rendered width of the wrapper
         const wrapperRect = wrapper.getBoundingClientRect();
         const wrapperWidth = wrapperRect.width;
         const viewportWidth = window.innerWidth;
 
-        // Start position: off-screen right (80% of viewport for a dramatic slide)
         const startOffset = viewportWidth * 0.8;
 
-        // Final position: slide left until the right edge of the wrapper aligns with the right edge of the viewport
-        // This ensures the last card is fully visible
         let finalX = 0;
         if (wrapperWidth > viewportWidth) {
-          // Move left by the overflow amount
           finalX = -(wrapperWidth - viewportWidth);
-          // Add a small gap (20px) for breathing room
           finalX -= 20;
         }
 
         gsap.set(wrapper, { x: startOffset });
 
-        tl.to(wrapper, {
-          x: finalX,
-          duration: 3.0,
-          ease: 'power2.inOut',
-        }, 0.15);
+        tl.to(
+          wrapper,
+          {
+            x: finalX,
+            duration: 3.0,
+            ease: 'power2.inOut',
+          },
+          0.15
+        );
       }
 
       // Fade in each track card
       trackBoxRefs.current.forEach((box, i) => {
         if (!box) return;
         gsap.set(box, { opacity: 0 });
-        tl.to(box, {
-          opacity: 1,
-          duration: 0.8,
-          ease: 'power2.out',
-        }, 0.4 + i * 0.2);
+        tl.to(
+          box,
+          {
+            opacity: 1,
+            duration: 0.8,
+            ease: 'power2.out',
+          },
+          0.4 + i * 0.2
+        );
       });
 
       // ---- PRIZE BOXES ----
@@ -142,23 +148,31 @@ export default function TracksSection() {
           opacity: 0,
           filter: 'blur(6px)',
         });
-        tl.to(pBox, {
-          y: 0,
-          opacity: 1,
-          filter: 'blur(0px)',
-          duration: 0.9,
-          ease: 'power2.out',
-        }, 3.2 + i * 0.25); // Slightly delayed to ensure tracks finish sliding
+        tl.to(
+          pBox,
+          {
+            y: 0,
+            opacity: 1,
+            filter: 'blur(0px)',
+            duration: 0.9,
+            ease: 'power2.out',
+          },
+          3.2 + i * 0.25
+        );
       });
 
       // ---- PRIZE label ----
       gsap.set(prizeRef.current, { opacity: 0, y: 20 });
-      tl.to(prizeRef.current, {
-        opacity: 1,
-        y: 0,
-        duration: 0.6,
-        ease: 'power2.out',
-      }, 3.0);
+      tl.to(
+        prizeRef.current,
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.6,
+          ease: 'power2.out',
+        },
+        3.0
+      );
 
       // ---- CONTENT PAN ----
       tl.to(
@@ -195,15 +209,15 @@ export default function TracksSection() {
   return (
     <section
       ref={containerRef}
-      className="relative w-full h-screen bg-black text-offwhite overflow-hidden flex flex-col justify-start pt-12 sm:pt-16 md:pt-20 px-4 sm:px-6 md:px-12"
+      className="relative w-full h-screen bg-black text-offwhite overflow-hidden flex flex-col justify-start pt-10 sm:pt-16 md:pt-20 px-4 sm:px-6 md:px-12"
     >
       <div ref={contentRef} className="w-full flex flex-col will-change-transform">
         {/* Title */}
         <div
           ref={titleRef}
-          className="max-w-7xl mx-auto w-full mb-4 sm:mb-6 md:mb-8 overflow-visible"
+          className="max-w-7xl mx-auto w-full mb-4 sm:mb-6 md:mb-8 overflow-visible py-2"
         >
-          <h2 className="text-2xl sm:text-3xl md:text-[3.5rem] font-sans font-medium tracking-tight whitespace-normal">
+          <h2 className="text-2xl sm:text-3xl md:text-[3.5rem] font-sans font-medium tracking-tight leading-normal whitespace-normal">
             Two tracks.{' '}
             <span className="font-serif italic font-normal text-[#FB575F]">
               One stage.
@@ -215,7 +229,7 @@ export default function TracksSection() {
         <div className="max-w-7xl mx-auto w-full overflow-visible z-20 mb-6 sm:mb-8 md:mb-12">
           <div
             ref={tracksWrapperRef}
-            className="flex flex-row gap-3 sm:gap-4 md:gap-6 will-change-transform"
+            className="flex flex-row items-stretch gap-4 sm:gap-6 will-change-transform"
             style={{ width: 'max-content' }}
           >
             {tracks.map((track, index) => (
@@ -224,13 +238,14 @@ export default function TracksSection() {
                 ref={(el) => {
                   trackBoxRefs.current[index] = el;
                 }}
-                className="w-[85vw] sm:w-[80vw] md:w-[42vw] lg:w-[40vw] flex-shrink-0"
+                className="w-[88vw] sm:w-[75vw] md:w-[42vw] lg:w-[40vw] flex-shrink-0 flex"
               >
                 <div
                   className="
-                    h-auto min-h-[280px] sm:min-h-[320px] md:min-h-[400px]
+                    w-full
+                    h-full
                     flex flex-col justify-between
-                    p-4 sm:p-6 md:p-10
+                    p-5 sm:p-6 md:p-10
                     rounded-[16px] sm:rounded-[24px] md:rounded-[32px]
                     bg-white/[0.04] backdrop-blur-xl
                     border border-white/10
@@ -246,7 +261,7 @@ export default function TracksSection() {
                   <div className="absolute inset-0 bg-gradient-to-br from-coral/0 via-transparent to-purple/0 group-hover:from-coral/10 group-hover:to-purple/10 transition-all duration-500 pointer-events-none rounded-[16px] sm:rounded-[24px] md:rounded-[32px]" />
 
                   <div className="relative z-10 flex justify-between items-start mb-4 sm:mb-6">
-                    <span className="font-sans text-[9px] sm:text-[10px] md:text-xs font-semibold tracking-widest text-[#FB575F] uppercase">
+                    <span className="font-sans text-[10px] sm:text-[11px] md:text-xs font-semibold tracking-widest text-[#FB575F] uppercase">
                       {track.trackNum}
                     </span>
                     <span className="font-serif italic text-lg sm:text-xl md:text-2xl text-neutral-400 font-light group-hover:text-coral-light transition-colors duration-400">
