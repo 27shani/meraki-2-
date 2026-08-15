@@ -6,7 +6,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 export default function AboutSection() {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLElement>(null);
   const textContainerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLDivElement>(null);
   const boxesWrapperRef = useRef<HTMLDivElement>(null);
@@ -19,7 +19,6 @@ export default function AboutSection() {
     { step: '/ GROW_03', title: 'Earn Real Recognition', desc: 'Put your idea on a bigger stage, compete for prizes and gain visibility among the entrepreneurial ecosystem.' },
   ];
 
-  // Line‑by‑line word wrap for heading
   const wrapLineWords = (element: HTMLElement) => {
     const text = element.textContent?.trim() || '';
     const words = text.split(/\s+/);
@@ -31,7 +30,6 @@ export default function AboutSection() {
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
-    // Heading line‑by‑line animation
     const lineDivs = headingRef.current?.querySelectorAll('div') || [];
     lineDivs.forEach((div, index) => {
       wrapLineWords(div as HTMLElement);
@@ -56,7 +54,6 @@ export default function AboutSection() {
 
     const mm = gsap.matchMedia();
 
-    // Intro blur
     mm.add("all", () => {
       gsap.fromTo(
         containerRef.current,
@@ -76,17 +73,19 @@ export default function AboutSection() {
       );
     });
 
-    // Desktop – horizontal slider
+    // ---- DESKTOP (≥ 768px) – adds horizontal slider ----
     mm.add("(min-width: 768px)", () => {
       const wrapper = boxesWrapperRef.current;
       const container = containerRef.current;
       if (!wrapper || !container) return;
 
+      // Compute widths for slider
       const containerWidth = container.clientWidth;
       const wrapperWidth = wrapper.scrollWidth;
-      const startOffset = containerWidth * 0.6;
-      const finalX = -(wrapperWidth - containerWidth + 20); // third card fully visible
+      const startOffset = containerWidth * 0.6; // start off-screen right
+      const finalX = -(wrapperWidth - containerWidth + 48); // end with last card fully visible
 
+      // Set initial position
       gsap.set(wrapper, { x: startOffset });
 
       const tl = gsap.timeline({
@@ -99,50 +98,43 @@ export default function AboutSection() {
         },
       });
 
+      // Image animation (unchanged)
       tl.fromTo(
         imageRef.current,
         { filter: 'blur(12px) brightness(0.6)', opacity: 0.3 },
         { filter: 'blur(2px) brightness(1)', opacity: 1, duration: 1.0, ease: 'power2.out' },
         0
       )
+      // Text moves up (unchanged)
       .fromTo(
         textContainerRef.current,
         { y: '30px', opacity: 0.2 },
         { y: '-20px', opacity: 1, duration: 1.0, ease: 'power2.out' },
         0
       )
+      // ---- SLIDER: wrapper slides from right to left ----
       .to(wrapper, {
         x: finalX,
         duration: 2.0,
         ease: 'power2.inOut',
       }, 0.1)
+      // Boxes stagger (unchanged)
       .fromTo(
         boxRefs.current,
-        { scale: 0.92, opacity: 0 },
+        { y: '80px', scale: 0.92 },
         {
+          y: 0,
           scale: 1,
-          opacity: 1,
-          stagger: 0.25,
-          duration: 1.0,
+          stagger: 0.35,
+          duration: 1.2,
           ease: 'power2.out',
         },
         0.2
       );
     });
 
-    // Mobile – horizontal slider
+    // ---- MOBILE (< 768px) – already had the slider; keep as is ----
     mm.add("(max-width: 767px)", () => {
-      const wrapper = boxesWrapperRef.current;
-      const container = containerRef.current;
-      if (!wrapper || !container) return;
-
-      const containerWidth = container.clientWidth;
-      const wrapperWidth = wrapper.scrollWidth;
-      const startOffset = containerWidth * 0.6;
-      const finalX = -(wrapperWidth - containerWidth + 20);
-
-      gsap.set(wrapper, { x: startOffset });
-
       const tl = gsap.timeline({
         scrollTrigger: {
           trigger: containerRef.current,
@@ -168,22 +160,30 @@ export default function AboutSection() {
       )
       .fromTo(
         boxRefs.current,
-        { y: '30px', scale: 0.92, opacity: 0 },
+        { y: '40px', scale: 0.92 },
         {
           y: 0,
           scale: 1,
-          opacity: 1,
-          stagger: 0.15,
-          duration: 0.7,
+          stagger: 0.2,
+          duration: 0.9,
           ease: 'power2.out',
         },
         0.1
       )
-      .to(wrapper, {
-        x: finalX,
-        duration: 1.5,
-        ease: 'power2.inOut',
-      }, 0.1);
+      .to(
+        boxesWrapperRef.current,
+        {
+          x: () => {
+            if (!boxesWrapperRef.current) return 0;
+            const wrapperWidth = boxesWrapperRef.current.scrollWidth || 0;
+            const viewportWidth = window.innerWidth;
+            return -(wrapperWidth - viewportWidth + 48);
+          },
+          duration: 1.8,
+          ease: 'power2.inOut',
+        },
+        0.1
+      );
     });
 
     return () => mm.revert();
@@ -192,16 +192,16 @@ export default function AboutSection() {
   return (
     <section
       ref={containerRef}
-      className="relative w-full h-screen bg-black text-offwhite overflow-hidden flex flex-col justify-center px-4 sm:px-6 md:px-16 will-change-transform"
+      className="relative w-full h-screen bg-black text-offwhite overflow-hidden flex flex-col justify-center px-6 md:px-16 will-change-transform"
     >
-      {/* Heading – 3 lines, with line‑by‑line animation */}
+      {/* Heading (unchanged) */}
       <div
         ref={textContainerRef}
-        className="relative z-10 w-full max-w-xl md:max-w-3xl ml-0 md:ml-20 flex flex-col pt-6 md:pt-12"
+        className="relative z-10 w-full max-w-xl md:max-w-3xl ml-0 md:ml-20 flex flex-col"
       >
         <div
           ref={headingRef}
-          className="space-y-0.5 sm:space-y-1 text-2xl sm:text-5xl md:text-6xl lg:text-[4.5rem] font-normal leading-[1.05] tracking-tight font-sans"
+          className="space-y-0.5 sm:space-y-1 text-3xl sm:text-5xl md:text-6xl lg:text-[4.5rem] font-normal leading-[1.05] tracking-tight font-sans"
         >
           <div><span className="font-serif italic font-normal text-gradient-brand">3 key benefits</span> &amp;</div>
           <div>outcomes for</div>
@@ -209,37 +209,31 @@ export default function AboutSection() {
         </div>
       </div>
 
-      {/* Boxes – full cards, horizontal slider */}
-      <div className="absolute bottom-4 sm:bottom-8 md:bottom-20 left-0 right-0 w-full z-30 px-4 sm:px-6 md:px-16 pointer-events-none overflow-hidden">
+      {/* Boxes – wrapper modified to allow horizontal slide */}
+      <div className="relative z-30 pointer-events-none px-6 md:px-16 mt-4 md:mt-8 w-full overflow-hidden">
         <div
           ref={boxesWrapperRef}
-          className="flex flex-row items-end gap-3 sm:gap-4 md:gap-6 lg:gap-8 w-max"
+          className="flex flex-row justify-start items-end gap-4 sm:gap-6 lg:gap-8 pb-1 md:pb-0 w-max"
           style={{ width: 'max-content' }}
         >
           {benefits.map((benefit, index) => (
             <div
               key={index}
               ref={(el) => { boxRefs.current[index] = el; }}
-              className="pointer-events-auto shrink-0 w-[240px] sm:w-[320px] md:w-[35vw] lg:w-[30vw] max-w-[400px] will-change-transform"
-              style={{ transform: 'translateY(30px) scale(0.92)', opacity: 0 }}
+              className="pointer-events-auto shrink-0 w-[280px] sm:w-[320px] md:w-[300px] lg:w-[320px] will-change-transform"
+              style={{ transform: 'translateY(40px)', opacity: 1 }}
             >
-              <div
-                className="h-[200px] sm:h-[260px] md:h-[300px] flex flex-col justify-between p-3 sm:p-6 md:p-8 rounded-[16px] sm:rounded-[24px] md:rounded-[32px] 
-                              bg-white/[0.08] backdrop-blur-2xl border border-white/20 
-                              shadow-[0_8px_32px_0_rgba(0,0,0,0.5)]
-                              transition-transform duration-500 hover:-translate-y-2
-                              relative overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-coral/10 via-transparent to-purple/10 pointer-events-none rounded-[16px] sm:rounded-[24px] md:rounded-[32px]" />
+              <div className="h-[260px] sm:h-[280px] md:h-[300px] flex flex-col justify-between p-5 sm:p-6 md:p-8 rounded-[20px] sm:rounded-[24px] md:rounded-[32px] bg-white/[0.08] backdrop-blur-2xl border border-white/20 shadow-[0_8px_32px_0_rgba(0,0,0,0.5)] transition-transform duration-500 hover:-translate-y-2 relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-coral/10 via-transparent to-purple/10 pointer-events-none rounded-[20px] sm:rounded-[24px] md:rounded-[32px]" />
                 <div className="relative z-10">
-                  <span className="font-sans text-[8px] sm:text-xs md:text-xs font-medium tracking-widest text-coral-light uppercase">
+                  <span className="font-sans text-[10px] sm:text-xs md:text-xs font-medium tracking-widest text-coral-light uppercase">
                     {benefit.step}
                   </span>
-                  <h3 className="text-base sm:text-2xl md:text-3xl font-serif italic font-normal text-offwhite mt-1 sm:mt-3 md:mt-4 leading-[1.2]">
+                  <h3 className="text-xl sm:text-2xl md:text-3xl font-serif italic font-normal text-offwhite mt-3 sm:mt-4 leading-[1.2]">
                     {benefit.title}
                   </h3>
                 </div>
-                <p className="relative z-10 text-[11px] sm:text-sm md:text-sm text-neutral-300 font-light leading-relaxed font-sans line-clamp-3 sm:line-clamp-none">
+                <p className="relative z-10 text-[13px] sm:text-sm md:text-sm text-neutral-300 font-light leading-relaxed font-sans">
                   {benefit.desc}
                 </p>
               </div>
@@ -248,7 +242,7 @@ export default function AboutSection() {
         </div>
       </div>
 
-      {/* Arch Image */}
+      {/* Arch Image (unchanged) */}
       <div
         ref={imageRef}
         className="absolute right-0 top-0 h-full w-[65vw] md:w-[55vw] min-w-[320px] rounded-l-[120px] md:rounded-l-[220px] overflow-hidden bg-neutral-900 z-0 pointer-events-none"
